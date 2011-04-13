@@ -5,9 +5,9 @@
 #include <QtNetwork/QTcpSocket>
 #include <QtNetwork/QLocalSocket>
 
-uint qHash(const QPointer<Pillow::HttpRequest>& ptr)
+ulong qHash(const QPointer<Pillow::HttpRequest>& ptr)
 {
-	return qHash(uint(static_cast<Pillow::HttpRequest*>(ptr)));
+	return qHash(ulong(static_cast<Pillow::HttpRequest*>(ptr)));
 }
 
 void HttpServerTestBase::init()

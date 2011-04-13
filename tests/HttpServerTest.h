@@ -11,7 +11,7 @@ namespace Pillow
 }
 class QIODevice;
 
-uint qHash(const QPointer<Pillow::HttpRequest>& ptr);
+ulong qHash(const QPointer<Pillow::HttpRequest>& ptr);
 
 class HttpServerTestBase : public QObject
 {
