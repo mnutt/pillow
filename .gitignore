@@ -11,3 +11,8 @@ release
 lib
 *.pdb
 *.obj
+examples/fileserver/fileserver
+examples/qtscript/qtscript
+examples/simple/simple
+examples/simplessl/simplessl
+tests/tests
