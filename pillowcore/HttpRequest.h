@@ -17,10 +17,10 @@ namespace Pillow
 	typedef QPair<QString, QString> HttpParam;
 	typedef QVector<HttpParam> HttpParamCollection;
 
-	struct HttpHeaderRef 
-	{ 
-		int fieldPos, fieldLength, valuePos, valueLength; 
-		HttpHeaderRef(int fieldPos, int fieldLength, int valuePos, int valueLength) 
+	struct HttpHeaderRef
+	{
+		int fieldPos, fieldLength, valuePos, valueLength;
+		HttpHeaderRef(int fieldPos, int fieldLength, int valuePos, int valueLength)
 			: fieldPos(fieldPos), fieldLength(fieldLength), valuePos(valuePos), valueLength(valueLength) {}
 		HttpHeaderRef() {}
 	};
@@ -32,7 +32,7 @@ namespace Pillow
 		http_parser _parser;
 
 	public:
-		enum State { Uninitialized, ReceivingHeaders, ReceivingContent, SendingHeaders, SendingContent, Completed, Flushing, Closed };
+		enum State { Uninitialized, ReceivingHeaders, ReceivingContent, SendingHeaders, SendingContent, StreamingContent, Completed, Flushing, Closed };
 		enum { MaximumRequestHeaderLength = 32 * 1024 };
 		enum { MaximumRequestContentLength = 128 * 1024 * 1024 };
 		Q_ENUMS(State);
@@ -59,6 +59,7 @@ namespace Pillow
 		void transitionToReceivingContent();
 		void transitionToSendingHeaders();
 		void transitionToSendingContent();
+		void transitionToStreamingContent();
 		void transitionToCompleted();
 		void transitionToFlushing();
 		void transitionToClosed();
@@ -77,7 +78,7 @@ namespace Pillow
 		~HttpRequest();
 
 		void initialize(QIODevice* inputDevice, QIODevice* outputDevice);
-		
+
 		inline QIODevice* inputDevice() const { return _inputDevice; }
 		inline QIODevice* outputDevice() const { return _outputDevice; }
 		inline State state() const { return _state; }
@@ -95,7 +96,7 @@ namespace Pillow
 		inline const HttpHeaderCollection& requestHeaders() const { return _requestHeaders; }
 		QByteArray getRequestHeaderValue(const QByteArray& field);
 		QByteArray requestContent() const;
-		
+
 		const HttpParamCollection& requestParams();
 		QString getRequestParam(const QString& name);
 		void setRequestParam(const QString& name, const QString& value);
@@ -106,9 +107,12 @@ namespace Pillow
 
 	public slots:
 		void writeResponse(int statusCode = 200, const Pillow::HttpHeaderCollection& headers = Pillow::HttpHeaderCollection(), const QByteArray& content = QByteArray());
+		void writeStreamingResponse(int statusCode = 200, const Pillow::HttpHeaderCollection& headers = Pillow::HttpHeaderCollection());
 		void writeResponseString(int statusCode = 200, const Pillow::HttpHeaderCollection& headers = Pillow::HttpHeaderCollection(), const QString& content = QString());
 		void writeHeaders(int statusCode = 200, const Pillow::HttpHeaderCollection& headers = Pillow::HttpHeaderCollection());
+		void writeStreamingHeaders(const Pillow::HttpHeaderCollection& headers = Pillow::HttpHeaderCollection());
 		void writeContent(const QByteArray& content);
+		void writeStreamingContent(const QByteArray& content);
 		void close(); // Close communication channels right away, no matter if a response was sent or not.
 
 	signals:
