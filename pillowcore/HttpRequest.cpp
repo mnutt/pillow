@@ -58,7 +58,7 @@ static const QByteArray contentTypeToken("content-type");
 static const QByteArray expectToken("expect");
 static const QByteArray hundredDashContinueToken("100-continue");
 static const QByteArray keepAliveToken("keep-alive");
-static const QByteArray xMixedReplaceToken("multipart/x-mixed-replace; boundary=xstringx");
+static const QByteArray xMixedReplaceToken("__xstringx__");
 
 HttpRequest::HttpRequest(QObject* parent /*= 0*/)
 	: QObject(parent), _inputDevice(NULL), _outputDevice(NULL), _state(Uninitialized)
@@ -373,6 +373,8 @@ void HttpRequest::writeStreamingResponse(int statusCode, const HttpHeaderCollect
 	const char* statusCodeAndMessage = HttpProtocol::StatusCodes::getStatusCodeAndMessage(statusCode);
 	_responseHeadersBuffer.append(_requestHttpVersion).append(' ').append(statusCodeAndMessage).append(crLfToken);
 
+	_responseHeadersBuffer.append("Content-Type: multipart/x-mixed-replace; boundary=" + xMixedReplaceToken).append(crLfToken);
+
 	for (int i = 0, iE = headers.size(); i < iE; ++i)
 	{
 		const HttpHeader& header = headers.at(i);
@@ -470,7 +472,7 @@ void HttpRequest::writeStreamingHeaders(const HttpHeaderCollection& headers)
 	if (_responseHeadersBuffer.capacity() == 0)
     _responseHeadersBuffer.reserve(2048);
 
-	_responseHeadersBuffer.append(crLfToken).append("--xstringx").append(crLfToken);
+	_responseHeadersBuffer.append(crLfToken).append(xMixedReplaceToken).append(crLfToken);
 
   for (int i = 0, iE = headers.size(); i < iE; ++i)
     {
