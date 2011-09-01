@@ -112,7 +112,7 @@ namespace Pillow
 		void writeHeaders(int statusCode = 200, const Pillow::HttpHeaderCollection& headers = Pillow::HttpHeaderCollection());
 		void writeStreamingHeaders(const Pillow::HttpHeaderCollection& headers = Pillow::HttpHeaderCollection());
 		void writeContent(const QByteArray& content);
-		void writeStreamingContent(const QByteArray& content);
+		void writeStreamingContent(QByteArray& content);
 		void close(); // Close communication channels right away, no matter if a response was sent or not.
 
 	signals:

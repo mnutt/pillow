@@ -52,13 +52,14 @@ inline void appendNumber(QByteArray& target, const Integer number)
 
 static const int responseHeadersBufferRecyclingCapacity = 4096; // The capacity above which the response buffer will not be preserved between requests.
 static const QByteArray crLfToken("\r\n");
+static const QByteArray lfToken("\n");
 static const QByteArray connectionToken("connection");
 static const QByteArray contentLengthToken("content-length");
 static const QByteArray contentTypeToken("content-type");
 static const QByteArray expectToken("expect");
 static const QByteArray hundredDashContinueToken("100-continue");
 static const QByteArray keepAliveToken("keep-alive");
-static const QByteArray xMixedReplaceToken("__xstringx__");
+static const QByteArray xMixedReplaceToken("Movable-[^_^]-Ink");
 
 HttpRequest::HttpRequest(QObject* parent /*= 0*/)
 	: QObject(parent), _inputDevice(NULL), _outputDevice(NULL), _state(Uninitialized)
@@ -365,6 +366,12 @@ void HttpRequest::writeResponse(int statusCode, const HttpHeaderCollection& head
 
 void HttpRequest::writeStreamingResponse(int statusCode, const HttpHeaderCollection& headers)
 {
+	if (_state != SendingHeaders)
+	{
+		qWarning() << "HttpRequest::writeStreamingResponse called while state is not 'SendingHeaders', not proceeding with sending headers.";
+		return;
+	}
+
 	_responseStatusCode = statusCode;
 
 	if (_responseHeadersBuffer.capacity() == 0)
@@ -373,8 +380,6 @@ void HttpRequest::writeStreamingResponse(int statusCode, const HttpHeaderCollect
 	const char* statusCodeAndMessage = HttpProtocol::StatusCodes::getStatusCodeAndMessage(statusCode);
 	_responseHeadersBuffer.append(_requestHttpVersion).append(' ').append(statusCodeAndMessage).append(crLfToken);
 
-	_responseHeadersBuffer.append("Content-Type: multipart/x-mixed-replace; boundary=" + xMixedReplaceToken).append(crLfToken);
-
 	for (int i = 0, iE = headers.size(); i < iE; ++i)
 	{
 		const HttpHeader& header = headers.at(i);
@@ -382,6 +387,11 @@ void HttpRequest::writeStreamingResponse(int statusCode, const HttpHeaderCollect
 
 		_responseHeadersBuffer.append(header.first).append(": ").append(header.second).append(crLfToken);
 	}
+
+	_responseHeadersBuffer.append("Content-Type: multipart/x-mixed-replace; boundary=").append(xMixedReplaceToken).append(crLfToken);
+	_responseHeadersBuffer.append("Connection: keep-alive").append(crLfToken);
+	_responseHeadersBuffer.append("Transfer-Encoding: chunked").append(crLfToken);
+  _responseHeadersBuffer.append(crLfToken);
 
 	_outputDevice->write(_responseHeadersBuffer);
 
@@ -472,18 +482,23 @@ void HttpRequest::writeStreamingHeaders(const HttpHeaderCollection& headers)
 	if (_responseHeadersBuffer.capacity() == 0)
     _responseHeadersBuffer.reserve(2048);
 
-	_responseHeadersBuffer.append(crLfToken).append(xMixedReplaceToken).append(crLfToken);
+	_responseHeadersBuffer.append("--").append(xMixedReplaceToken).append(lfToken);
 
   for (int i = 0, iE = headers.size(); i < iE; ++i)
     {
       const HttpHeader& header = headers.at(i);
       QByteArray field = header.first.toLower();
-      _responseHeadersBuffer.append(header.first).append(": ").append(header.second).append(crLfToken);
+      _responseHeadersBuffer.append(header.first).append(": ").append(header.second).append(lfToken);
     }
 
-  _responseHeadersBuffer.append(crLfToken);
+  _responseHeadersBuffer.append(lfToken);
 
+  QByteArray length = QByteArray::number(_responseHeadersBuffer.size(),16);
+  length.append(crLfToken);
+
+  _outputDevice->write(length);
   _outputDevice->write(_responseHeadersBuffer);
+  _outputDevice->write(crLfToken);
 }
 
 void HttpRequest::writeContent(const QByteArray& content)
@@ -514,7 +529,7 @@ void HttpRequest::writeContent(const QByteArray& content)
 	}
 }
 
-void HttpRequest::writeStreamingContent(const QByteArray& content)
+void HttpRequest::writeStreamingContent(QByteArray& content)
 {
   if (_state != StreamingContent)
   {
@@ -530,7 +545,14 @@ void HttpRequest::writeStreamingContent(const QByteArray& content)
 	if (content.size() > 0 && _requestMethod != "HEAD")
 	{
     _responseContentBytesSent += content.size();
-		_outputDevice->write(content);
+
+    QByteArray length = QByteArray::number(content.size(),16);
+    length.append(crLfToken);
+
+    _outputDevice->write(length);
+    _outputDevice->write(content);
+    _outputDevice->write(crLfToken);
+
     flush();
 	}
 
