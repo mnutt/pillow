@@ -1,19 +1,20 @@
 #include "HttpServerTest.h"
 #include <HttpServer.h>
-#include <HttpRequest.h>
+#include <HttpConnection.h>
 #include <QtTest/QtTest>
 #include <QtNetwork/QTcpSocket>
 #include <QtNetwork/QLocalSocket>
 
-ulong qHash(const QPointer<Pillow::HttpRequest>& ptr)
+ulong qHash(const QPointer<Pillow::HttpConnection>& ptr)
 {
-	return qHash(ulong(static_cast<Pillow::HttpRequest*>(ptr)));
+	Pillow::HttpConnection* c = static_cast<Pillow::HttpConnection*>(ptr);
+	return qHash(c);
 }
 
 void HttpServerTestBase::init()
 {
 	server = createServer();
-	connect(server, SIGNAL(requestReady(Pillow::HttpRequest*)), this, SLOT(requestReady(Pillow::HttpRequest*)));
+	connect(server, SIGNAL(requestReady(Pillow::HttpConnection*)), this, SLOT(requestReady(Pillow::HttpConnection*)));
 }
 
 void HttpServerTestBase::cleanup()
@@ -23,7 +24,7 @@ void HttpServerTestBase::cleanup()
 	guardedHandledRequests.clear();
 }
 
-void HttpServerTestBase::requestReady(Pillow::HttpRequest *request)
+void HttpServerTestBase::requestReady(Pillow::HttpConnection *request)
 {
 	handledRequests << request;
 	guardedHandledRequests << request;
@@ -45,9 +46,9 @@ void HttpServerTestBase::sendRequest(QIODevice *device, const QByteArray &conten
 
 void HttpServerTestBase::sendResponses()
 {
-	foreach (Pillow::HttpRequest* request, guardedHandledRequests)
+	foreach (Pillow::HttpConnection* request, guardedHandledRequests)
 	{
-		if (request && request->state() == Pillow::HttpRequest::SendingHeaders)
+		if (request && request->state() == Pillow::HttpConnection::SendingHeaders)
 		{
 			// Echo the request content as the response content.			
 			request->writeResponse(200, Pillow::HttpHeaderCollection(), request->requestContent());
@@ -89,7 +90,7 @@ void HttpServerTestBase::testHandlesConnectionsAsRequests()
 
 void HttpServerTestBase::testHandlesConcurrentConnections()
 {
-	const int clientCount = 30; // Note: on Windows the maximum number of concurrent QLocalSocket clients is 62, so putting this below the limit.
+	const int clientCount = 10; // Note: on Windows the maximum number of concurrent QLocalSocket clients is 62, so putting this well below the limit.
 	QVector<QIODevice*> clients;
 	for (int i = 0; i < clientCount; ++i)
 		clients << createClientConnection();

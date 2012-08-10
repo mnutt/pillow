@@ -6,27 +6,42 @@ DESTDIR = ../lib
 QT       += core network script
 QT       -= gui
 
-CONFIG   += static
+CONFIG   += static precompile_header
+
+PRECOMPILED_HEADER = pch.h
 
 DEPENDPATH = .
 INCLUDEPATH = .
 
 SOURCES += \
 	parser/parser.c \
-    HttpServer.cpp \
-    HttpHandler.cpp \
-    HttpHandlerQtScript.cpp \
-    HttpRequest.cpp \
-    HttpHelpers.cpp \
-    HttpsServer.cpp \
-    HttpHandlerSimpleRouter.cpp
+	parser/http_parser.c \
+	HttpServer.cpp \
+	HttpHandler.cpp \
+	HttpHandlerQtScript.cpp \
+	HttpHelpers.cpp \
+	HttpsServer.cpp \
+	HttpHandlerSimpleRouter.cpp \
+	HttpConnection.cpp \
+	HttpHandlerProxy.cpp \
+	HttpClient.cpp \
+	HttpHeader.cpp
 
 HEADERS += \
 	parser/parser.h \
-    HttpServer.h \
-    HttpHandler.h \
-    HttpHandlerQtScript.h \
-    HttpRequest.h \
-    HttpHelpers.h \
-    HttpsServer.h \
-    HttpHandlerSimpleRouter.h
+	parser/http_parser.h \
+	HttpServer.h \
+	HttpHandler.h \
+	HttpHandlerQtScript.h \
+	HttpHelpers.h \
+	HttpsServer.h \
+	HttpHandlerSimpleRouter.h \
+	HttpConnection.h \
+	HttpHandlerProxy.h \
+	ByteArrayHelpers.h \
+	private/ByteArray.h \
+	HttpClient.h \
+	pch.h \
+	HttpHeader.h
+
+OTHER_FILES +=

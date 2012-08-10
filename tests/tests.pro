@@ -1,29 +1,36 @@
 include(../config.pri)
 TEMPLATE = app
 
-QT       += core network testlib script
-QT       -= gui
+QT       += core network testlib script gui
 
-CONFIG   += console
+CONFIG   += console precompile_header
 CONFIG   -= app_bundle
+
+PRECOMPILED_HEADER = pch.h
 
 INCLUDEPATH = . ../pillowcore
 DEPENDPATH = . ../pillowcore
 LIBS += -L../lib -l$${PILLOWCORE_LIB_NAME}
-unix: POST_TARGETDEPS += ../lib/lib$${PILLOWCORE_LIB_NAME}.a
-win32: POST_TARGETDEPS += ../lib/$${PILLOWCORE_LIB_NAME}.lib
+unix: LIBS += -lz
+POST_TARGETDEPS += ../lib/$$PILLOWCORE_LIB_FILE
 
 SOURCES += main.cpp \
-    HttpServerTest.cpp \
-    HttpRequestTest.cpp \
-    HttpHandlerTest.cpp \
-    HttpsServerTest.cpp
+	HttpServerTest.cpp \
+	HttpConnectionTest.cpp \
+	HttpHandlerTest.cpp \
+	HttpsServerTest.cpp \
+	HttpHandlerProxyTest.cpp \
+	ByteArrayHelpersTest.cpp \
+	HttpClientTest.cpp \
+	HttpHeaderTest.cpp
 
 HEADERS += \
-    HttpServerTest.h \
-    HttpRequestTest.h \
-    HttpHandlerTest.h \
-    HttpsServerTest.h
+	HttpServerTest.h \
+	HttpConnectionTest.h \
+	HttpHandlerTest.h \
+	HttpsServerTest.h \
+	HttpHandlerProxyTest.h \
+	Helpers.h \
+	pch.h
 
 RESOURCES += tests.qrc
-

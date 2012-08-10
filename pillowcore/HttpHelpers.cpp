@@ -1,4 +1,5 @@
 #include "HttpHelpers.h"
+#include "ByteArrayHelpers.h"
 
 namespace Pillow
 {
@@ -8,6 +9,7 @@ namespace Pillow
 		{
 			if (filename.endsWith(".html", Qt::CaseInsensitive)) return "text/html";
 			if (filename.endsWith(".jpg", Qt::CaseInsensitive)) return "image/jpeg";
+			if (filename.endsWith(".jpeg", Qt::CaseInsensitive)) return "image/jpeg";
 			if (filename.endsWith(".png", Qt::CaseInsensitive)) return "image/png";
 			if (filename.endsWith(".gif", Qt::CaseInsensitive)) return "image/gif";
 			if (filename.endsWith(".css", Qt::CaseInsensitive)) return "text/css";
@@ -54,8 +56,8 @@ namespace Pillow
 					case 408: return "408 Request Timeout";
 					case 409: return "409 Conflict";
 					case 410: return "410 Gone";
-					case 411: return "411 Conflict";
-					case 412: return "412 Length Required";
+					case 411: return "411 Length Required";
+					case 412: return "412 Precondition Failed";
 					case 413: return "413 Request Entity Too Large";
 					case 414: return "414 Request-URI Too Long";
 					case 415: return "415 Unsupported Media Type";
@@ -64,7 +66,7 @@ namespace Pillow
 
 					case 500: return "500 Internal Server Error";
 					case 501: return "501 Not Implemented";
-					case 502: return "512 Bad Gateway";
+					case 502: return "502 Bad Gateway";
 					case 503: return "503 Service Unavailable";
 					case 504: return "504 Gateway Timeout";
 					case 505: return "505 HTTP Version Not Supported";
@@ -91,8 +93,11 @@ namespace Pillow
 				const QDate& date = utcDateTime.date();
 				const QTime& time = utcDateTime.time();
 
-				QByteArray httpDate; httpDate.reserve(30); httpDate.resize(29);
-				qsnprintf(httpDate.data(), httpDate.size(), "%s, %s %s %d %s:%s:%s GMT", dayNames[date.dayOfWeek()], intNames[date.day()], monthNames[date.month()], date.year(), intNames[time.hour()], intNames[time.minute()], intNames[time.second()]);
+				QByteArray httpDate; httpDate.reserve(32);
+				httpDate.append(dayNames[date.dayOfWeek()]).append(", ").append(intNames[date.day()]).append(' ').append(monthNames[date.month()]).append(' ');
+				Pillow::ByteArrayHelpers::appendNumber<int, 10>(httpDate, date.year());
+				httpDate.append(' ').append(intNames[time.hour()]).append(':').append(intNames[time.minute()]).append(':').append(intNames[time.second()]).append(" GMT");
+
 				return httpDate;
 			}
 		}
