@@ -32,7 +32,11 @@ bool Pillow::HttpHandlerProxy::handleRequest(Pillow::HttpConnection *request)
 
 	QUrl targetUrl = _proxiedUrl;
 	targetUrl.setPath(request->requestPath());
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 0, 0))
 	if (!request->requestQueryString().isEmpty()) targetUrl.setQuery(request->requestQueryString());
+#else
+	if (!request->requestQueryString().isEmpty()) targetUrl.setEncodedQuery(request->requestQueryString());
+#endif
 	if (!request->requestFragment().isEmpty()) targetUrl.setFragment(request->requestFragment());
 
 	QNetworkRequest proxiedRequest(targetUrl);

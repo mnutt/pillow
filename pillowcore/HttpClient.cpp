@@ -652,7 +652,11 @@ void Pillow::HttpClient::sendRequest()
 	}
 
 	QByteArray uri = QUrl::toAce(_request.url.path());
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 0, 0))
 	const QByteArray query = QUrl::toAce(_request.url.query());
+#else
+  const QByteArray query = _request.url.encodedQuery();
+#endif
 	if (!query.isEmpty()) uri.append('?').append(query);
 
 	Pillow::HttpHeaderCollection headers;

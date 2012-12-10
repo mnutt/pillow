@@ -3,7 +3,11 @@
 #include <QtScript/QScriptEngine>
 #include <QtScript/QScriptValueIterator>
 #include <QtCore/QUrl>
+
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 0, 0))
 #include <QtCore/QUrlQuery>
+#endif
+
 #include <QFile>
 #include <QFileInfo>
 using namespace Pillow;
@@ -91,7 +95,11 @@ bool HttpHandlerQtScript::handleRequest(Pillow::HttpConnection *connection)
 	requestObject.setProperty("requestHeaders", qScriptValueFromValue(engine, connection->requestHeaders()));
 	requestObject.setProperty("requestContent", QUrl::fromPercentEncoding(connection->requestContent()));
 
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 0, 0))
 	QList<QPair<QString, QString> > queryParams = QUrlQuery(QUrl(connection->requestUri())).queryItems();
+#else
+  QList<QPair<QString, QString> > queryParams = QUrl(connection->requestUri()).queryItems();
+#endif
 	QScriptValue queryParamsObject = engine->newObject();
 	for (int i = 0, iE = queryParams.size(); i < iE; ++i)
 		queryParamsObject.setProperty(queryParams.at(i).first, queryParams.at(i).second);
