@@ -1,7 +1,7 @@
 include(config.pri)
 
 TEMPLATE = subdirs
-SUBDIRS = pillowcore examples
+SUBDIRS = pillowcore
 
 tests.depends = pillowcore
 examples.depends = pillowcore
