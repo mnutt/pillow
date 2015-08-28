@@ -3,7 +3,7 @@ include(../config.pri)
 TEMPLATE = lib
 DESTDIR = ../lib
 
-QT       += core network script
+QT       += core network
 QT       -= gui
 
 CONFIG   += static precompile_header
