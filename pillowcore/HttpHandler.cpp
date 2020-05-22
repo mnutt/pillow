@@ -81,7 +81,7 @@ HttpHandler404::HttpHandler404(QObject *parent)
 
 bool HttpHandler404::handleRequest(Pillow::HttpConnection *connection)
 {
-	connection->writeResponseString(404, HttpHeaderCollection(), QString("The requested resource '%1' does not exist on this server").arg(QString(connection->requestPath())));
+	connection->writeResponseString(404, HttpHeaderCollection(), QString("The requested resource does not exist on this server").toUtf8());
 	return true;
 }
 
@@ -298,7 +298,7 @@ bool HttpHandlerFile::handleRequest(Pillow::HttpConnection *connection)
 	if (!file->open(QIODevice::ReadOnly))
 	{
 		// Could not read the file?
-		connection->writeResponse(403, HttpHeaderCollection(), QString("The requested resource '%1' is not accessible").arg(requestPath).toUtf8());
+		connection->writeResponse(403, HttpHeaderCollection(), QString("The requested resource is not accessible").toUtf8());
 		delete file;
 	}
 	else
