@@ -7,6 +7,7 @@
 #include <QtCore/QUrl>
 #include <QtCore/QStringBuilder>
 #include <QtNetwork/QTcpSocket>
+#include <QtNetwork/QTcpServer>
 #include <QtNetwork/QLocalSocket>
 #include <QtCore/QVarLengthArray>
 
@@ -541,6 +542,15 @@ inline void Pillow::HttpConnectionPrivate::writeHeaders(int statusCode, const Ht
 	}
 	else
 		_responseConnectionKeepAlive = false;
+
+	if (_outputDevice != 0 && _outputDevice->parent() != nullptr) {
+		QTcpServer* server = qobject_cast<QTcpServer*>(_outputDevice->parent());
+
+		if (server != nullptr && !server->isListening()) {
+			// The server has stopped listening for new connections, so disable keep-alive
+			_responseConnectionKeepAlive = false;
+		}
+	}
 
 	// Automatically add essential headers.
 	if (_responseContentLength != -1) { _responseHeadersBuffer.append(contentLengthOutToken); appendNumber<int, 10>(_responseHeadersBuffer, _responseContentLength); _responseHeadersBuffer.append(crLfToken); }
