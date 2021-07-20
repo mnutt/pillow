@@ -454,6 +454,29 @@ void HttpConnectionTest::testConnectionClose()
 	QCOMPARE(readySpy->size(), 1);
 	QCOMPARE(completedSpy->size(), 1);
 	QCOMPARE(closedSpy->size(), 1);
+
+	cleanup(); init();
+	clientWrite("GET /interrupted/request HTTP/1.1\r\n");
+	clientWrite("\r\n"); clientFlush();
+
+	// Server closes before response is sent
+	QTcpServer* server = new QTcpServer();
+	connection->outputDevice()->setParent(server);
+	server->close();
+
+	connection->writeHeaders(200, HttpHeaderCollection() << HttpHeader("Content-length", "5"));
+	connection->writeContent("hello");
+
+	data = clientReadAll();
+	QVERIFY(data.toLower().contains("connection: close"));
+	QVERIFY(!isClientConnected());
+	QCOMPARE(connection->state(), HttpConnection::Closed);
+	QCOMPARE(readySpy->size(), 1);
+	QCOMPARE(completedSpy->size(), 1);
+	QCOMPARE(closedSpy->size(), 1);
+	QCOMPARE(connection->requestPath(), QByteArray("/interrupted/request"));
+
+	server->deleteLater();
 }
 
 void HttpConnectionTest::testClientClosesConnectionEarly()

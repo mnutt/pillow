@@ -17,7 +17,7 @@ int main(int argc, char *argv[])
 	QCoreApplication a(argc, argv);
 
 	int result = 0;
-//    result += execTest<HttpConnectionTcpSocketTest>();
+	result += execTest<HttpConnectionTcpSocketTest>();
 //	//result += execTest<HttpConnectionSslSocketTest>();
 //	result += execTest<HttpConnectionLocalSocketTest>();
 //	result += execTest<HttpConnectionBufferTest>();
