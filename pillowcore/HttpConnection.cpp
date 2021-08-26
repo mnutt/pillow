@@ -144,7 +144,8 @@ inline void Pillow::HttpConnectionPrivate::initialize()
 	_parser.http_field = &HttpConnectionPrivate::parser_http_field;
 
 	// Clear any leftover data from a previous potentially failed request (that would not have gone though "transitionToCompleted")
-	if (_requestBuffer.capacity() <= Pillow::HttpConnection::MaximumRequestHeaderLength) _requestBuffer.data_ptr()->size = 0;
+	if (_requestBuffer.capacity() <= Pillow::HttpConnection::MaximumRequestHeaderLength
+		&& _requestBuffer.data_ptr()->size != 0) _requestBuffer.data_ptr()->size = 0;
 	else _requestBuffer.clear();
 	_requestHeadersRef.clear();
 	if (_requestParams.capacity() > 16) _requestParams.clear();
