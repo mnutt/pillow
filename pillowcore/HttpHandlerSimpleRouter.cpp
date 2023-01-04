@@ -2,7 +2,7 @@
 #include "HttpConnection.h"
 #include <QtCore/QPointer>
 #include <QtCore/QMetaMethod>
-#include <QtCore/QRegExp>
+#include <QtCore/QRegularExpression>
 #include <QtCore/QVarLengthArray>
 #include <QtCore/QUrl>
 using namespace Pillow;
@@ -14,7 +14,7 @@ namespace Pillow
 	struct Route
 	{
 		QByteArray method;
-		QRegExp regExp;
+		QRegularExpression regExp;
 		QStringList paramNames;
 
 		virtual ~Route() {}
@@ -110,7 +110,7 @@ HttpHandlerSimpleRouter::HttpHandlerSimpleRouter(QObject* parent /* = 0 */)
 
 HttpHandlerSimpleRouter::~HttpHandlerSimpleRouter()
 {
-	foreach (Route* route, d_ptr->routes)
+	Q_FOREACH (Route* route, d_ptr->routes)
 		delete route;
 	delete d_ptr;
 }
@@ -188,42 +188,32 @@ void HttpHandlerSimpleRouter::addRoute(const QByteArray &method, const QString &
 }
 #endif // Q_COMPILER_LAMBDA
 
-QRegExp Pillow::HttpHandlerSimpleRouter::pathToRegExp(const QString &p, QStringList* outParamNames)
+QRegularExpression Pillow::HttpHandlerSimpleRouter::pathToRegExp(const QString &p, QStringList* outParamNames)
 {
 	QString path = p;
 
-	QRegExp paramRegex(":(\\w+)"); QString paramReplacement("([\\w_-]+)");
+	QRegularExpression paramRegex(":(\\w+)"); QString paramReplacement("([\\w_-]+)");
+	QRegularExpressionMatch paramMatch = paramRegex.match(path);
 	QStringList paramNames;
-	int pos = 0;
-	while (pos >= 0)
-	{
-		pos = paramRegex.indexIn(path, pos);
-		if (pos >= 0)
-		{
-			paramNames << paramRegex.cap(1);
-			pos += paramRegex.matchedLength();
-		}
-	}
+
+	if (paramMatch.hasMatch())
+		paramNames = paramMatch.capturedTexts().sliced(1);
+
 	path.replace(paramRegex, paramReplacement);
 
-	QRegExp splatRegex("\\*(\\w+)"); QString splatReplacement("(.*)");
-	pos = 0;
-	while (pos >= 0)
-	{
-		pos = splatRegex.indexIn(path, pos);
-		if (pos >= 0)
-		{
-			paramNames << splatRegex.cap(1);
-			pos += splatRegex.matchedLength();
-		}
-	}
+	QRegularExpression splatRegex("\\*(\\w+)"); QString splatReplacement("(.*)");
+	QRegularExpressionMatch splatMatch = splatRegex.match(path);
+
+	if (splatMatch.hasMatch())
+		paramNames += splatMatch.capturedTexts().sliced(1);
+
 	path.replace(splatRegex, splatReplacement);
 
 	if (outParamNames)
 		*outParamNames = paramNames;
 
 	path = "^" + path + "$";
-	return QRegExp(path);
+	return QRegularExpression(path);
 }
 
 bool HttpHandlerSimpleRouter::handleRequest(Pillow::HttpConnection *request)
@@ -240,16 +230,17 @@ bool HttpHandlerSimpleRouter::handleRequest(Pillow::HttpConnection *request)
 
 	QString requestPath = QUrl::fromPercentEncoding(request->requestPath());
 
-	foreach (Route* route, d_ptr->routes)
+	Q_FOREACH (Route* route, d_ptr->routes)
 	{
-		if (route->regExp.indexIn(requestPath) != -1)
+		QRegularExpressionMatch match = route->regExp.match(requestPath);
+		if (match.hasMatch())
 		{
 			matchedRoutes.append(route);
 			if (route->method.isEmpty() ||
 				(route->method.size() == requestMethod.size() && qstricmp(route->method, requestMethod) == 0))
 			{
 				for (int i = 0, iE = route->paramNames.size(); i < iE; ++i)
-					request->setRequestParam(route->paramNames.at(i), route->regExp.cap(i + 1));
+					request->setRequestParam(route->paramNames.at(i), match.captured(i + 1));
 				route->invoke(request);
 				return true;
 			}

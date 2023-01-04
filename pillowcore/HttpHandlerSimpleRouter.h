@@ -3,7 +3,7 @@
 
 #include "HttpHandler.h"
 #include "HttpConnection.h"
-#include <QtCore/QRegExp>
+#include <QtCore/QRegularExpression>
 #include <QtCore/QStringList>
 #ifdef Q_COMPILER_LAMBDA
 #include <functional>
@@ -38,7 +38,7 @@ namespace Pillow
 		void addRoute(const QByteArray& method, const QString& path, const std::function<void(Pillow::HttpConnection*)>& func);
 #endif // Q_COMPILER_LAMBDA
 
-		QRegExp pathToRegExp(const QString& path, QStringList* outParamNames = NULL);
+		QRegularExpression pathToRegExp(const QString& path, QStringList* outParamNames = NULL);
 
 		RoutingErrorAction unmatchedRequestAction() const;
 		void setUnmatchedRequestAction(RoutingErrorAction action);

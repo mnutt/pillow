@@ -509,7 +509,7 @@ void Pillow::HttpClient::abort()
 		Pillow::HttpResponseParser::pause();
 		_error = AbortedError;
 		_responsePending = false;
-		emit finished();
+		Q_EMIT finished();
 	}
 }
 
@@ -546,7 +546,7 @@ void Pillow::HttpClient::device_error(QAbstractSocket::SocketError error)
 
 	_device->close();
 	_responsePending = false;
-	emit finished();
+	Q_EMIT finished();
 }
 
 void Pillow::HttpClient::device_connected()
@@ -616,7 +616,7 @@ void Pillow::HttpClient::device_readyRead()
 			_error = ResponseInvalidError;
 			_device->close();
 			_responsePending = false;
-			emit finished();
+			Q_EMIT finished();
 		}
 	}
 
@@ -679,7 +679,7 @@ void Pillow::HttpClient::headersComplete()
 	if (statusCode() == 100)
 		return;
 
-	emit headersCompleted();
+	Q_EMIT headersCompleted();
 
 	if (Pillow::ByteArrayHelpers::asciiEqualsCaseInsensitive(_request.method, Pillow::LowerCaseToken("head")))
 	{
@@ -711,7 +711,7 @@ void Pillow::HttpClient::messageContent(const char *data, int length)
 	{
 		Pillow::HttpResponseParser::messageContent(data, length);
 	}
-	emit contentReadyRead();
+	Q_EMIT contentReadyRead();
 }
 
 void Pillow::HttpClient::messageComplete()
@@ -739,7 +739,7 @@ void Pillow::HttpClient::messageComplete()
 			_keepAliveTimeoutTimer.start();
 		}
 
-		emit finished();
+		Q_EMIT finished();
 	}
 }
 
@@ -819,14 +819,14 @@ namespace Pillow
 
 			open(QIODevice::ReadOnly | QIODevice::Unbuffered);
 
-			emit metaDataChanged();
+			Q_EMIT metaDataChanged();
 		}
 
 		void client_contentReadyRead()
 		{
 			_content.append(_client->consumeContent());
-			 emit readyRead();
-			 //emit downloadProgress();
+			 Q_EMIT readyRead();
+			 //Q_EMIT downloadProgress();
 		}
 
 		void client_finished()
@@ -846,12 +846,12 @@ namespace Pillow
 				case Pillow::HttpClient::AbortedError: error = QNetworkReply::OperationCanceledError; break;
 				}
 
-				emit this->error(error);
+				Q_EMIT this->errorOccurred(error);
 			}
 
 			_client = 0;
 			setFinished(true);
-			emit finished();
+			Q_EMIT finished();
 		}
 
 	protected:

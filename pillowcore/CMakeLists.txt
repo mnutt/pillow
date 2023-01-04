@@ -17,5 +17,5 @@ add_library(pillow
 
 target_include_directories(pillow PUBLIC .)
 
-find_package(Qt5 COMPONENTS Network REQUIRED)
-target_link_libraries(pillow Qt5::Network)
+find_package(Qt6 COMPONENTS Network REQUIRED)
+target_link_libraries(pillow Qt6::Network)

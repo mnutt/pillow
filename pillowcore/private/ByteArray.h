@@ -32,12 +32,12 @@ namespace Pillow
 			return *this;
 		}
 
-		inline bool operator==(const QLatin1Literal& literal) const
+		inline bool operator==(const QLatin1String& literal) const
 		{
 			return size() == literal.size() && qstrncmp(constData(), literal.data(), size()) == 0;
 		}
 
-		inline bool operator!=(const QLatin1Literal& literal) const
+		inline bool operator!=(const QLatin1String& literal) const
 		{
 			return size() != literal.size() || qstrncmp(constData(), literal.data(), size()) != 0;
 		}
@@ -80,7 +80,7 @@ namespace Pillow
 			return *this;
 		}
 
-		inline ByteArray& append(const QLatin1Literal& literal)
+		inline ByteArray& append(const QLatin1String& literal)
 		{
 			if (capacity() >= size() + literal.size())
 			{
