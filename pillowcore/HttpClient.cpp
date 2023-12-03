@@ -141,8 +141,8 @@ void Pillow::HttpRequestWriter::write(const QByteArray &method, const QByteArray
 
 	_builder.append(method).append(' ').append(path).append(Pillow::HttpClientTokens::httpOneOneCrlfToken);
 
-	for (const Pillow::HttpHeader *h = headers.constBegin(), *hE = headers.constEnd(); h < hE; ++h)
-		_builder.append(h->first).append(Pillow::HttpClientTokens::colonSpaceToken).append(h->second).append(Pillow::HttpClientTokens::crlfToken);
+	for (const Pillow::HttpHeader &header : headers)
+		_builder.append(header.first).append(Pillow::HttpClientTokens::colonSpaceToken).append(header.second).append(Pillow::HttpClientTokens::crlfToken);
 
 	if (!data.isEmpty())
 	{

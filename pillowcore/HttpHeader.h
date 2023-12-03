@@ -63,6 +63,10 @@ namespace Pillow
 	class HttpHeaderCollection : public QVector<HttpHeader>
 	{
 	public:
+		//HttpHeaderCollection() : QVector<HttpHeader>() {}
+		//HttpHeaderCollection(const QVector<HttpHeader>& headers) : QVector<HttpHeader>(headers) {}
+		//HttpHeaderCollection(QVector<HttpHeader>&& headers) : QVector<HttpHeader>(std::move(headers)) {}
+
 		// Get the value of the first header with the specified field name.
 		// The field name is case insensitive.
 		const QByteArray& getFieldValue(const char *fieldName, int fieldNameLength) const;
@@ -87,11 +91,9 @@ namespace Pillow
 
 	public:
 		// Base methods reimplemented to return HttpHeaderCollection instead of QVector<HttpHeader>.
-		HttpHeaderCollection &operator+=(const QVector<HttpHeader> &l);
-		inline HttpHeaderCollection operator+(const QVector<HttpHeader> &l) const { HttpHeaderCollection n = *this; n += l; return n; }
-		inline HttpHeaderCollection &operator+=(const HttpHeader &t) { append(t); return *this; }
-		inline HttpHeaderCollection &operator<<(const HttpHeader &t) { append(t); return *this; }
-		inline HttpHeaderCollection &operator<<(const QVector<HttpHeader> &l) { *this += l; return *this; }
+		inline HttpHeaderCollection &operator+=(const HttpHeader& t) { QVector<HttpHeader>::operator+=(t); return *this; }
+		inline HttpHeaderCollection &operator<<(const HttpHeader &t) { QVector<HttpHeader>::operator<<(t); return *this; }
+		inline HttpHeaderCollection &operator<<(const QVector<HttpHeader> &l) { QVector<HttpHeader>::operator<<(l); return *this; }
 		inline operator const QVector<QPair<QByteArray, QByteArray> > &() const { return *reinterpret_cast<const QVector<QPair<QByteArray, QByteArray> >*>(this); }
 	};
 

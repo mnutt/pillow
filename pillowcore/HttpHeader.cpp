@@ -50,20 +50,6 @@ void Pillow::HttpHeader::setFromRawHeader(const char *rawHeader, int len)
 // Pillow::HttpHeaderCollection
 //
 
-Pillow::HttpHeaderCollection &Pillow::HttpHeaderCollection::operator+=(const QVector<HttpHeader> &l)
-{
-	int oldSize = size();
-	resize(size() + l.size());
-
-	Pillow::HttpHeader *dest = begin() + oldSize;
-	const Pillow::HttpHeader *src = l.begin();
-	const Pillow::HttpHeader *srcE = l.end();
-	while (src != srcE)
-		*(dest++) = *(src++);
-
-	return *this;
-}
-
 const QByteArray& Pillow::HttpHeaderCollection::getFieldValue(const char *fieldName, int fieldNameLength) const
 {
 	for (const_iterator it = constBegin(), itE = constEnd(); it != itE; ++it)

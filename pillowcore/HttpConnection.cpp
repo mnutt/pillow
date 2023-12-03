@@ -206,11 +206,11 @@ inline void Pillow::HttpConnectionPrivate::setupRequestHeaders()
 	if (_requestHeaders.capacity() == 0 && _requestHeadersRef.size() > 0) _requestHeaders.resize(_requestHeadersRef.size());
 	else while (_requestHeaders.size() < _requestHeadersRef.size()) _requestHeaders.push_back(HttpHeader());
 
-	HttpHeader* header = _requestHeaders.begin();
+	auto header = _requestHeaders.begin();
 	for (const HttpHeaderRef* ref = _requestHeadersRef.data(), *refE = _requestHeadersRef.data() + _requestHeadersRef.size(); ref < refE; ++ref, ++header)
 	{
-		setFromRawDataAndNullterm(header->first, data, ref->fieldPos, ref->fieldLength);
-		setFromRawDataAndNullterm(header->second, data, ref->valuePos, ref->valueLength);
+		setFromRawDataAndNullterm((*header).first, data, ref->fieldPos, ref->fieldLength);
+		setFromRawDataAndNullterm((*header).second, data, ref->valuePos, ref->valueLength);
 	}
 }
 
@@ -472,12 +472,12 @@ inline void Pillow::HttpConnectionPrivate::writeHeaders(int statusCode, const Ht
 	const HttpHeader* transferEncodingHeader = 0;
 
 	// Grab headers that are important to us so we can check their values and consistency.
-	for (const HttpHeader* header = headers.constBegin(), *headerE = headers.constEnd(); header != headerE; ++header)
+	for (const auto& header : headers)
 	{
-		if (asciiEqualsCaseInsensitive(header->first, contentLengthToken))
+		if (asciiEqualsCaseInsensitive(header.first, contentLengthToken))
 		{
 			bool ok = false;
-			_responseContentLength = header->second.toLongLong(&ok);
+			_responseContentLength = header.second.toLongLong(&ok);
 			if (!ok)
 			{
 				// Somebody trying to be a bad server? Pretend we don't know the length.
@@ -485,13 +485,22 @@ inline void Pillow::HttpConnectionPrivate::writeHeaders(int statusCode, const Ht
 				_responseContentLength = -1;
 			}
 		}
-		else if (asciiEqualsCaseInsensitive(header->first, contentTypeToken)) contentTypeHeader = header;
-		else if (asciiEqualsCaseInsensitive(header->first, connectionToken)) connectionHeader = header;
-		else if (asciiEqualsCaseInsensitive(header->first, transferEncodingToken)) transferEncodingHeader = header;
+		else if (asciiEqualsCaseInsensitive(header.first, contentTypeToken))
+		{
+			contentTypeHeader = &header;
+		}
+		else if (asciiEqualsCaseInsensitive(header.first, connectionToken))
+		{
+			connectionHeader = &header;
+		}
+		else if (asciiEqualsCaseInsensitive(header.first, transferEncodingToken))
+		{
+			transferEncodingHeader = &header;
+		}
 		else
 		{
 			// Not a special header for us. Write it out to the buffer.
-			_responseHeadersBuffer.append(*header);
+			_responseHeadersBuffer.append(header);
 		}
 	}
 
