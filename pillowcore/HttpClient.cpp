@@ -342,7 +342,7 @@ Pillow::HttpClient::HttpClient(QObject *parent)
 	: QObject(parent), _responsePending(false), _error(NoError), _keepAliveTimeout(-1), _contentDecoder(0)
 {
 	_device = new QTcpSocket(this);
-	connect(_device, SIGNAL(error(QAbstractSocket::SocketError)), this, SLOT(device_error(QAbstractSocket::SocketError)));
+	connect(_device, &QAbstractSocket::errorOccurred, this, &HttpClient::device_error);
 	connect(_device, SIGNAL(connected()), this, SLOT(device_connected()));
 	connect(_device, SIGNAL(readyRead()), this, SLOT(device_readyRead()));
 	_requestWriter.setDevice(_device);
@@ -651,12 +651,9 @@ void Pillow::HttpClient::sendRequest()
 		}
 	}
 
-	QByteArray uri = QUrl::toAce(_request.url.path());
-#if (QT_VERSION >= QT_VERSION_CHECK(5, 0, 0))
-	const QByteArray query = QUrl::toAce(_request.url.query());
-#else
-  const QByteArray query = _request.url.encodedQuery();
-#endif
+	QByteArray uri = _request.url.path(QUrl::FullyEncoded).toUtf8();
+	if (uri.isEmpty()) uri = "/";
+	const QByteArray query = _request.url.query(QUrl::FullyEncoded).toUtf8();
 	if (!query.isEmpty()) uri.append('?').append(query);
 
 	Pillow::HttpHeaderCollection headers;
