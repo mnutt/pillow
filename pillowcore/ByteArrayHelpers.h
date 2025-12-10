@@ -4,12 +4,18 @@
 #ifndef QBYTEARRAY_H
 #include <QtCore/QByteArray>
 #endif // QBYTEARRAY_H
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+#include <QtCore/QByteArrayView>
+#endif
 #ifndef QSTRING_H
 #include <QtCore/QString>
 #endif // QSTRING_H
 #ifndef QSTRINGBUILDER_H
 #include <QtCore/QStringBuilder>
 #endif // QSTRINGBUILDER_H
+
+// Forward declarations
+namespace Pillow { struct HttpHeader; }
 
 namespace Pillow
 {
@@ -23,10 +29,26 @@ namespace Pillow
 		inline const char* data() const { return m_data; }
 		inline char at(int index) const { return m_data[index]; }
 		template <int N> inline Token(const char (&str)[N]) : m_size(N - 1), m_data(str) {}
+		
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+		// Qt6 compatibility: implicit conversion to QByteArrayView
+		inline operator QByteArrayView() const { return QByteArrayView(m_data, m_size); }
+#endif
 	private:
 		const int m_size;
 		const char * const m_data;
 	};
+	
+	// Comparison operators for QByteArray with Token
+	inline bool operator==(const QByteArray& ba, const Token& token)
+	{
+		return ba.size() == token.size() && qstrncmp(ba.constData(), token.data(), ba.size()) == 0;
+	}
+	
+	inline bool operator!=(const QByteArray& ba, const Token& token)
+	{
+		return !(ba == token);
+	}
 
 	//
 	// Pillow::Token. A char array literal with the user-given assertion that it only contains lowercase data.
@@ -38,10 +60,37 @@ namespace Pillow
 		inline const char* data() const { return m_data; }
 		inline char at(int index) const { return m_data[index]; }
 		template <int N> inline LowerCaseToken(const char (&str)[N]) : m_size(N - 1), m_data(str) {}
+		
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+		// Qt6 compatibility: implicit conversion to QByteArrayView
+		inline operator QByteArrayView() const { return QByteArrayView(m_data, m_size); }
+#endif
 	private:
 		const int m_size;
 		const char * const m_data;
 	};
+	
+	// Comparison operators for QByteArray with LowerCaseToken
+	inline bool operator==(const QByteArray& ba, const LowerCaseToken& token)
+	{
+		return ba.size() == token.size() && qstrncmp(ba.constData(), token.data(), ba.size()) == 0;
+	}
+	
+	inline bool operator!=(const QByteArray& ba, const LowerCaseToken& token)
+	{
+		return !(ba == token);
+	}
+	
+	// Append functions for QByteArray with Token types
+	inline QByteArray& append(QByteArray& ba, const Token& token)
+	{
+		return ba.append(token.data(), token.size());
+	}
+	
+	inline QByteArray& append(QByteArray& ba, const LowerCaseToken& token)
+	{
+		return ba.append(token.data(), token.size());
+	}
 
 
 	//
@@ -56,58 +105,21 @@ namespace Pillow
 	{
 		inline void setFromRawDataAndNullterm(QByteArray& target, char* data, int start, int length)
 		{
-			// Switching between a deep copy/unshared target QByteArray and a shared data QByteArray
-			// will *not* cause memory leaks as Qt allocates and frees the QByteArray control data+buffer in one block.
-			// So the only downside that will happen if an unshared QByteArray is altered to share data is a few bytes wasted
-			// until the QByteArray control block releases the control data + the unshared buffer at some point in the future.
-
-#if (QT_VERSION >= QT_VERSION_CHECK(5, 0, 0))
+			// Make a deep copy to avoid memory corruption from null termination
+			// This is safer than the raw data approach for Qt6
 			if (length == 0)
 			{
-				target.setRawData("", 0);
+				target = QByteArray();
 			}
 			else
 			{
-				target.setRawData(data + start, length);
-				*(data + start + length) = 0; // Null terminate the string.
+				target = QByteArray(data + start, length);
 			}
-
-#else
-			target.data_ptr()->alloc = 0;
-			if (length == 0)
-				target.setRawData("", 0);
-			else
-			{
-				if (target.data_ptr()->ref == 1)
-				{
-					target.data_ptr()->data = data + start;
-					target.data_ptr()->alloc = target.data_ptr()->size = length;
-					target.data_ptr()->array[0] = 0;
-				}
-				else
-					target.setRawData(data + start, length);
-				*(data + start + length) = 0; // Null terminate the string.
-			}
-#endif
 		}
 
 		inline void setFromRawData(QByteArray& target, const char* data, int start, int length)
 		{
-#if (QT_VERSION >= QT_VERSION_CHECK(5, 0, 0))
 			target.setRawData(data + start, length);
-#else
-			if (target.data_ptr()->ref == 1)
-			{
-				target.data_ptr()->data = const_cast<char*>(data) + start;
-				target.data_ptr()->alloc = target.data_ptr()->size = length;
-				target.data_ptr()->array[0] = 0;
-			}
-			else
-			{
-				target.data_ptr()->alloc = 0;
-				target.setRawData(data + start, length);
-			}
-#endif
 		}
 
 		template <typename Integer, int Base>

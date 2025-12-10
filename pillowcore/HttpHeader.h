@@ -92,6 +92,7 @@ namespace Pillow
 	public:
 		// Base methods reimplemented to return HttpHeaderCollection instead of QVector<HttpHeader>.
 		inline HttpHeaderCollection &operator+=(const HttpHeader& t) { QVector<HttpHeader>::operator+=(t); return *this; }
+		inline HttpHeaderCollection &operator+=(const HttpHeaderCollection& other) { QVector<HttpHeader>::operator+=(other); return *this; }
 		inline HttpHeaderCollection &operator<<(const HttpHeader &t) { QVector<HttpHeader>::operator<<(t); return *this; }
 		inline HttpHeaderCollection &operator<<(const QVector<HttpHeader> &l) { QVector<HttpHeader>::operator<<(l); return *this; }
 		inline operator const QVector<QPair<QByteArray, QByteArray> > &() const { return *reinterpret_cast<const QVector<QPair<QByteArray, QByteArray> >*>(this); }

@@ -1,0 +1,59 @@
+Foremost version 1.5.7 by Jesse Kornblum, Kris Kendall, and Nick Mikus
+Audit File
+
+Foremost started at Fri Dec 29 13:18:51 2023
+Invocation: foremost -i /tmp/core.1592872 
+Output directory: /Users/mnutt/p/movableink/pillow/examples/output
+Configuration file: /opt/homebrew/etc/foremost.conf
+------------------------------------------------------------------
+File: /tmp/core.1592872
+Start: Fri Dec 29 13:18:51 2023
+Length: Unknown
+ 
+Num	 Name (bs=512)	       Size	 File Offset	 Comment 
+
+0:	00172286.jpg 	       2 KB 	   88210838 	 
+1:	00182178.htm 	      12 KB 	   93275576 	 
+2:	00182529.htm 	      12 KB 	   93454904 	 
+3:	00189927.htm 	      90 KB 	   97242896 	 
+4:	00172358.png 	       2 KB 	   88247331 	  (131 x 40)
+5:	00293956.gif 	      83 KB 	  150505960 	  (1200 x 410)
+6:	00413998.jpg 	      550 B 	  211967368 	 
+7:	00702655.png 	       1 KB 	  359759816 	  (35 x 40)
+8:	01209194.jpg 	      12 KB 	  619107784 	 
+9:	01033854.htm 	     211 KB 	  529333719 	 
+10:	01035523.htm 	       2 KB 	  530187808 	 
+11:	01046628.htm 	       4 KB 	  535873568 	 
+12:	01209962.htm 	       4 KB 	  619500576 	 
+13:	01255102.htm 	     977 KB 	  642612695 	 
+14:	01605060.htm 	       4 KB 	  821790752 	 
+15:	02148859.jpg 	      18 KB 	 1100216120 	 
+16:	02154294.jpg 	     215 KB 	 1102998872 	 
+17:	02146812.png 	     103 KB 	 1099167816 	  (600 x 257)
+18:	02312461.jpg 	       1 MB 	 1183980456 	 
+19:	02562229.htm 	     690 KB 	 1311861719 	 
+20:	02566991.png 	       2 KB 	 1314299848 	  (198 x 164)
+21:	02567012.png 	       2 KB 	 1314310600 	  (198 x 164)
+22:	02567033.png 	       2 KB 	 1314321352 	  (198 x 164)
+23:	02857182.htm 	       2 KB 	 1462877656 	 
+24:	02825410.png 	       2 KB 	 1446610120 	  (198 x 164)
+25:	02825428.png 	       2 KB 	 1446619336 	  (198 x 164)
+26:	02825432.png 	       2 KB 	 1446621640 	  (198 x 164)
+27:	02957320.jpg 	      29 KB 	 1514148280 	 
+28:	02960044.jpg 	      15 KB 	 1515542984 	 
+29:	02960076.jpg 	      15 KB 	 1515559400 	 
+30:	02961549.jpg 	     196 KB 	 1516313480 	 
+31:	02964436.jpg 	      36 KB 	 1517791368 	 
+32:	02965197.jpg 	      84 KB 	 1518181128 	 
+33:	02957822.png 	      18 KB 	 1514405320 	  (1280 x 180)
+Finish: Fri Dec 29 13:21:08 2023
+
+34 FILES EXTRACTED
+	
+jpg:= 12
+gif:= 1
+htm:= 11
+png:= 10
+------------------------------------------------------------------
+
+Foremost finished at Fri Dec 29 13:21:08 2023

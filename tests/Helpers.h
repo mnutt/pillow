@@ -213,7 +213,7 @@ template <typename Pred> bool waitFor(const Pred& predicate, int maxTime = 500)
 inline bool waitForSignal(QObject *obj, const char* signal, int maxTime = 500)
 {
 	QSignalSpy spy(obj, signal);
-	// return waitFor([&]{ return spy.size() > 0; }, maxTime);
+	return waitFor([&]{ return spy.size() > 0; }, maxTime);
 }
 
 #endif // HELPERS_H

@@ -193,19 +193,25 @@ QRegularExpression Pillow::HttpHandlerSimpleRouter::pathToRegExp(const QString &
 	QString path = p;
 
 	QRegularExpression paramRegex(":(\\w+)"); QString paramReplacement("([\\w_-]+)");
-	QRegularExpressionMatch paramMatch = paramRegex.match(path);
 	QStringList paramNames;
-
-	if (paramMatch.hasMatch())
-		paramNames = paramMatch.capturedTexts().sliced(1);
+	
+	// Find all parameter matches using globalMatch
+	QRegularExpressionMatchIterator paramIterator = paramRegex.globalMatch(path);
+	while (paramIterator.hasNext()) {
+		QRegularExpressionMatch paramMatch = paramIterator.next();
+		paramNames.append(paramMatch.captured(1));
+	}
 
 	path.replace(paramRegex, paramReplacement);
 
 	QRegularExpression splatRegex("\\*(\\w+)"); QString splatReplacement("(.*)");
-	QRegularExpressionMatch splatMatch = splatRegex.match(path);
-
-	if (splatMatch.hasMatch())
-		paramNames += splatMatch.capturedTexts().sliced(1);
+	
+	// Find all splat matches using globalMatch
+	QRegularExpressionMatchIterator splatIterator = splatRegex.globalMatch(path);
+	while (splatIterator.hasNext()) {
+		QRegularExpressionMatch splatMatch = splatIterator.next();
+		paramNames.append(splatMatch.captured(1));
+	}
 
 	path.replace(splatRegex, splatReplacement);
 

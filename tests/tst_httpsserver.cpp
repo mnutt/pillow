@@ -1,0 +1,86 @@
+#include "httpserverbase.h"
+#include <HttpsServer.h>
+#include <QtCore/QCoreApplication>
+#include <QtCore/QFile>
+#include <QtTest/QtTest>
+#include <QtNetwork/QSslSocket>
+#include <QtNetwork/QSslKey>
+#include <QtNetwork/QSslCertificate>
+
+#if !defined(PILLOW_NO_SSL) && !defined(QT_NO_SSL)
+
+static QSslCertificate sslCertificate()
+{
+	static QSslCertificate certificate;
+	if (certificate.isNull())
+	{
+		QFile file(":/test.crt");
+		if (file.open(QIODevice::ReadOnly))
+			certificate = QSslCertificate(&file);
+		else
+			qWarning() << "Failed to open SSL certificate file 'test.crt'";
+	}
+	return certificate;
+}
+
+static QSslKey sslPrivateKey()
+{
+	static QSslKey key;
+	if (key.isNull())
+	{
+		QFile file(":/test.key");
+		if (file.open(QIODevice::ReadOnly))
+			key = QSslKey(&file, QSsl::Rsa);
+		else
+			qWarning() << "Failed to open SSL key file 'test.key'";
+	}
+	return key;
+}
+
+class HttpsServerTest : public HttpServerTestBase
+{
+	Q_OBJECT
+
+private slots: // Test slots.
+	void init() { HttpServerTestBase::init(); }
+	void cleanup() { HttpServerTestBase::cleanup(); }
+
+	void testInit() { HttpServerTestBase::testInit(); }
+	void testHandlesConnectionsAsRequests() { HttpServerTestBase::testHandlesConnectionsAsRequests(); }
+	void testHandlesConcurrentConnections() { HttpServerTestBase::testHandlesConcurrentConnections(); }
+	void testReusesRequests() { HttpServerTestBase::testReusesRequests(); }
+	void testDestroysRequests() { HttpServerTestBase::testDestroysRequests(); }
+
+protected:
+	virtual QObject* createServer();
+	virtual QIODevice* createClientConnection();
+};
+
+QObject* HttpsServerTest::createServer()
+{
+	return new Pillow::HttpsServer(sslCertificate(), sslPrivateKey(), QHostAddress::Any, 4588);
+}
+
+QIODevice * HttpsServerTest::createClientConnection()
+{
+	QSslSocket* socket = new QSslSocket(server);
+	socket->setLocalCertificate(sslCertificate());
+	socket->setPrivateKey(sslPrivateKey());
+	socket->setPeerVerifyMode(QSslSocket::VerifyNone);
+	socket->connectToHostEncrypted("127.0.0.1", 4588);
+	while (socket->state() != QAbstractSocket::ConnectedState || !socket->isEncrypted())
+		QCoreApplication::processEvents();
+	return socket;
+}
+
+#else
+
+class HttpsServerTest : public QObject
+{
+	Q_OBJECT
+};
+
+#endif // !defined(PILLOW_NO_SSL) && !defined(QT_NO_SSL)
+
+QTEST_MAIN(HttpsServerTest)
+#include "tst_httpsserver.moc"

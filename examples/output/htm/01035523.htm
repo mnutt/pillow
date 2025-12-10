@@ -1,0 +1,111 @@
+<html>
+  <head>
+    <meta charset="UTF-8">
+    
+    <link href="build/css/styles.css?fd37362c4a3964b70a93" rel="stylesheet">
+    
+  </head>
+  <body>
+
+    <div id="mi_size_container">
+
+      <div class="weather hidden">
+        <div class="icon"></div>
+        <div class="day"></div>
+      </div>
+
+      <div class="price hidden">
+        <div class="container">
+          <div class="blurb">starting from</div>
+          <div class="cost"></div>
+          <div class="points"></div>
+        </div>
+        <div class="book">Book Now</div>
+      </div>
+
+      <div class="details hidden">
+        <div class="container">
+          <div class="blurb">starting from</div>
+          <div class="cost"></div>
+          <div class="book">Book Now</div>
+        </div>
+      </div>
+
+    </div>
+
+    
+    <script src="build/js/bundle.js?fd37362c4a3964b70a93"></script>
+    
+
+    <script>
+      const app = new App({
+        itemIndex   : CD.param("mi_item_index")   || "0",
+        facilityID  : CD.param("mi_facility_id")  || null, // 4853
+        hotDeal     : CD.param("mi_hot_deal") === 'true',
+        currency    : CD.param("mi_currency")     || "USD",
+        lat         : CD.param("mi_lat")          || null, // 28.3957
+        lon         : CD.param("mi_lon")          || null, // -81.4666
+        blockType   : CD.param("mi_block_type")   || 'weather', // weather || price || details
+        linkType: CD.param('mi_link_type') || 'default' // default || kochava
+      });
+
+      app.on("MI:buildCard:weather", function(item) {
+
+        var details = item.detail;
+        console.log('details', details);
+
+        if(details.icon){
+          $('.icon').html('<img src="' + details.icon + '" />');
+          CD.waitForAsset(details.icon);
+        }else{
+          $('.day').css('top', '10px');
+        }
+        $('.day').html(details.day);
+        $('.weather').removeClass('hidden');
+        console.log(details);
+        if (details.cta) {
+          CD.setClickthrough(details.cta);
+        }
+
+      });
+
+      app.on("MI:buildCard:price", function(item) {
+
+        var details = item.detail;
+        
+        console.log('details', details);
+
+        if(details.rewards){
+          $('.points').html('earn up to ' + details.rewards + ' points');
+        }
+
+        if(details.isHotDeal){
+          $('.cost').addClass('hot');
+          $('.book').addClass('hot');
+          $('.price .container').append('<img class="hotDealImg" src="./build/img/hot-deal.png" />');
+          CD.waitForAsset('./build/img/hot-deal.png');
+        }
+
+        $('.cost').html(details.price);
+
+        CD.setClickthrough(details.cta);
+        $('.price').removeClass('hidden');
+      });
+
+      app.on("MI:buildCard:details", function(item) {
+
+        var details = item.detail;
+        console.log(details);
+
+        $('.cost').html(details.price);
+
+        CD.setClickthrough(details.cta);
+        $('.details').removeClass('hidden');
+      });
+
+      app.init();
+    </script>
+
+  <div>&nbsp;</div>
+</body>
+</html>

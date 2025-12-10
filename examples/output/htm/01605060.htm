@@ -1,0 +1,192 @@
+<html>
+<head>
+<meta charset="utf-8" />
+<script>
+  MI = {};
+  MI.options = {
+  "fallback_url": null,
+  "clickthrough_dynamic_property": null,
+  "animated": false,
+  "animation_local_palette": false,
+  "animation_loop": false,
+  "animation_interval": 1000,
+  "animation_length": 30000,
+  "timeout": 8,
+  "ttl": 3600,
+  "width": 300,
+  "height": 200,
+  "animation_function": "manualAdvance(-1);",
+  "dynamic_size_selector": "#mi_size_container",
+  "ignored_params": "",
+  "name": "Gap (all brands) - Legal Custom App",
+  "clickthrough_mapping": null,
+  "streaming": false,
+  "format": "jpeg",
+  "quality": 85,
+  "has_invalidations": true,
+  "data_loader_url": null,
+  "data_loader_ttl": 5,
+  "data_loader_timeout": 3,
+  "force_high_compression": false,
+  "use_static_image": false,
+  "static_image_url": "",
+  "preview_url": "/p/lp/2ea8350216f5e230.png?preview=true",
+  "created_at": "2022-01-14T16:06:36.400Z",
+  "updated_at": "2022-12-02T19:29:56.693Z",
+  "target_url": null,
+  "poll_for_availability": true,
+  "external_url": "//assets.movableink-templates.com/6168/templates/5ec38d83-94fb-4db0-92cb-be87c0c0e768/0075cf81-91b0-4655-b7ed-6c38c5eff055.html?",
+  "hide_asset": false,
+  "auto_pass_params": true,
+  "capturama_version": 3,
+  "original_asset_id": null,
+  "original_asset_key": null,
+  "transparent": false,
+  "style_properties": "{}",
+  "manifest_id": "399",
+  "data_source_id": null,
+  "perform_image_id": "7758524",
+  "campaign_pic_id": "4667936",
+  "company_id": "6168",
+  "promo_id": "",
+  "specialChar": "",
+  "specialCharManual": "",
+  "legal_text": "Select styles only. While supplies last. For a limited time. Online, In-Store and Outlet prices and exclusions may vary.",
+  "brand": "oldNavy",
+  "locale": "en_US",
+  "deviceType": "desktop",
+  "is_show_creative": 1
+};
+  MI.namespacedOptions = [];
+</script>
+<style>
+* {
+  box-sizing : border-box;
+  margin     : 0;
+  padding    : 0;
+}
+
+/***********
+Utilities
+**************/
+
+.clamp-line-2 {
+  display            : -webkit-box;
+  -webkit-line-clamp : 2;
+  -webkit-box-orient : vertical;
+  overflow           : hidden;
+}
+
+/***********
+Project Styles
+**************/
+
+#mi_size_container.hidden {
+  width      : 1px;
+  height     : 1px;
+  padding    : 0 !important;
+  margin     : 0 !important;
+  border     : 0 !important;
+  background : none !important;
+  overflow   : hidden !important;
+}
+
+.hide {
+  display : none !important;
+}
+
+#mi_size_container {
+  min-width        : 1px;
+  min-height       : 1px;
+  float            : left;
+  text-align       : center;
+  font-family      : 'Futura STD', 'FuturaBT Light', sans-serif;
+  font-size        : 14px;
+  display          : block;
+  background-color : #ffffff;
+}
+
+.legal_template {
+  width            : 640px;
+  background-color : #ffffff;
+  float            : left;
+  padding          : 10px 20px;
+  font-size        : 10px;
+  line-height      : 13px;
+  text-align       : left;
+  color            : #898989;
+  font-family      : 'arial_mi', arial, "sans-serif";
+}
+
+.legal_text {
+  float : left;
+}
+
+.legal_template.bananaRepublic {
+  font-family : Arial;
+  font-size   : 20px;
+  line-height : 26px;
+  color       : #595959;
+}
+
+.legal_template.bananaRepublic.mobile {
+  font-size   : 20px;
+  line-height : 26px;
+}
+
+.legal_template.bananaRepublic.desktop {
+  font-size   : 10px;
+  line-height : 13px;
+}
+</style>
+
+  <base href="//cartridges.movableink-templates.com/gap-all-legal-6289/7d178908fe7f5299d51a4b15cf245ef95f443c7e/" />
+
+  <meta charset="UTF-8">
+
+  
+  <link href="build/css/styles.css?78484f4e2a9473ee47ce" rel="stylesheet">
+  
+
+</head>
+<body>
+
+<div id="mi_size_container" class="hidden">
+  <div class="legal_template">
+    <div class="legal_text">
+      &nbsp;
+    </div>
+  </div>
+</div>
+
+<script src="build/js/bundle.js?78484f4e2a9473ee47ce"></script>
+
+
+
+<script type="text/javascript">
+
+  window.app.on('MI:buildCard:legal', function(data){
+    var settings = data.detail.settings;
+
+    if(settings.is_show_creative){
+      $('.legal_text').html(settings.legalText);
+      $('.legal_template').addClass(settings.$class);
+      $('#mi_size_container').removeClass('hidden').width();
+    } else{
+
+      $('#mi_size_container').css({
+        'height' : '1px',
+        'width'  : '1px'
+      });
+      $('.legal_text').html('');
+    }
+  });
+
+  // Start the app
+  app.init();
+
+</script>
+
+<div>&nbsp;</div>
+</body>
+</html>

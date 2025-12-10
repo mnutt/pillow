@@ -2,13 +2,27 @@
 #include <QtCore/QObject>
 #include "ByteArrayHelpers.h"
 #include "HttpConnection.h"
-#include "private/ByteArray.h"
+#include "HttpHeader.h"
 #include "Helpers.h"
 
-#if (QT_VERSION >= QT_VERSION_CHECK(5, 0, 0))
+// Helper function for tests to append HttpHeader to QByteArray
+inline QByteArray& appendHttpHeader(QByteArray& ba, const Pillow::HttpHeader& header)
+{
+	return ba.append(header.first).append(": ", 2).append(header.second).append("\r\n", 2);
+}
+
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+// Qt6 provides isDetached() method
+#define IS_SHARED(ba) (!ba.isDetached())
+#define IS_NOT_SHARED(ba) (ba.isDetached())
+#elif (QT_VERSION >= QT_VERSION_CHECK(5, 0, 0))
 #define REFCOUNT ref.atomic._q_value
+#define IS_SHARED(ba) (ba.data_ptr()->REFCOUNT > 1)
+#define IS_NOT_SHARED(ba) (ba.data_ptr()->REFCOUNT == 1)
 #else
 #define REFCOUNT ref
+#define IS_SHARED(ba) (ba.data_ptr()->REFCOUNT > 1)
+#define IS_NOT_SHARED(ba) (ba.data_ptr()->REFCOUNT == 1)
 #endif
 
 
@@ -21,23 +35,54 @@ private slots:
 		char rawData[] = "hello world!";
 
 		QByteArray ba;
-		QByteArray::DataPtr oldDataPtr = ba.data_ptr();
-		QVERIFY(ba.data_ptr() == oldDataPtr);
-		QVERIFY(ba.data_ptr()->REFCOUNT > 1); // Should be the multi-referenced shared null.
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+		const char* oldData = ba.constData();
+#else
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+		const char* oldData = ba.constData();
+#else
+		auto oldDataPtr = ba.data_ptr();
+#endif
+#endif
+		QVERIFY(IS_SHARED(ba)); // Should be the multi-referenced shared null.
 		QVERIFY(rawData[5] != '\0');
 
 		// Calling setFromRawDataAndNullterm on a shared byte array should detach it.
 		Pillow::ByteArrayHelpers::setFromRawDataAndNullterm(ba, rawData, 0, 5);
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+		QVERIFY(ba.constData() != oldData); // Data pointer changed
+#else
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+		QVERIFY(ba.constData() != oldData);
+#else
 		QVERIFY(ba.data_ptr() != oldDataPtr);
-		QVERIFY(ba.data_ptr()->REFCOUNT == 1);
+#endif
+#endif
+		QVERIFY(IS_NOT_SHARED(ba));
 		QVERIFY(rawData[5] == '\0');
 		QCOMPARE(ba, QByteArray("hello"));
 
 		// Calling setFromRawDataAndNullterm on a non-shared byte array should reuse its data block.
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+		oldData = ba.constData();
+#else
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+		oldData = ba.constData();
+#else
 		oldDataPtr = ba.data_ptr();
+#endif
+#endif
 		Pillow::ByteArrayHelpers::setFromRawDataAndNullterm(ba, rawData, 6, 5);
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+		QVERIFY(ba.constData() == oldData); // Data pointer should be reused
+#else
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+		QVERIFY(ba.constData() == oldData);
+#else
 		QVERIFY(ba.data_ptr() == oldDataPtr);
-		QVERIFY(ba.data_ptr()->REFCOUNT == 1);
+#endif
+#endif
+		QVERIFY(IS_NOT_SHARED(ba));
 		QVERIFY(rawData[11] == '\0');
 		QCOMPARE(ba, QByteArray("world"));
 
@@ -45,18 +90,34 @@ private slots:
 		QByteArray temp("New Value");
 		ba = temp; temp = QByteArray();
 		ba = QByteArray("New Value");
-		QVERIFY(ba.data_ptr()->REFCOUNT == 1);
+		QVERIFY(IS_NOT_SHARED(ba));
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+		QVERIFY(ba.constData() != oldData);
+#else
 		QVERIFY(ba.data_ptr() != oldDataPtr);
+#endif
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+		oldData = ba.constData();
+#else
 		oldDataPtr = ba.data_ptr();
+#endif
 		Pillow::ByteArrayHelpers::setFromRawDataAndNullterm(ba, rawData, 0, 2);
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+		QVERIFY(ba.constData() == oldData);
+#else
 		QVERIFY(ba.data_ptr() == oldDataPtr);
-		QVERIFY(ba.data_ptr()->REFCOUNT == 1);
+#endif
+		QVERIFY(IS_NOT_SHARED(ba));
 		QVERIFY(rawData[2] == '\0');
 		QCOMPARE(ba, QByteArray("he"));
 
 		Pillow::ByteArrayHelpers::setFromRawDataAndNullterm(ba, rawData, 0, 0);
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+		QVERIFY(ba.constData() == oldData);
+#else
 		QVERIFY(ba.data_ptr() == oldDataPtr);
-		QVERIFY(ba.data_ptr()->REFCOUNT == 1);
+#endif
+		QVERIFY(IS_NOT_SHARED(ba));
 		QVERIFY(rawData[0] != '\0');
 		QCOMPARE(ba, QByteArray());
 	}
@@ -66,33 +127,65 @@ private slots:
 		char rawData[] = "hello world!";
 
 		QByteArray ba;
-		QByteArray::DataPtr oldDataPtr = ba.data_ptr();
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+		const char* oldData = ba.constData();
+#else
+		auto oldDataPtr = ba.data_ptr();
+#endif
 		ba.setRawData(rawData, 5);
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+		QVERIFY(oldData != ba.constData());
+#else
 		QVERIFY(oldDataPtr != ba.data_ptr());
+#endif
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+		oldData = ba.constData();
+#else
 		oldDataPtr = ba.data_ptr();
+#endif
 		ba.setRawData(rawData + 6, 5);
 		// Start using QByteArray::setRawData directly if the following QVERIFY fails.
 		// This would mean that the QByteArray::setRawData behavior has been changed to the
 		// desired one where switching from one raw data to another does not cause a
 		// QByteArray data block reallocation. Qt5 maybe?
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+		QVERIFY(oldData != ba.constData());
+#else
 		QVERIFY(oldDataPtr != ba.data_ptr());
+#endif
 
 		// Go ahead and do tests on our replacement setFromRawData.
 		ba = QByteArray();
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+		oldData = ba.constData();
+#else
 		oldDataPtr = ba.data_ptr();
-		QVERIFY(ba.data_ptr()->REFCOUNT > 1); // Should be the multi-referenced shared null.
+#endif
+		QVERIFY(IS_SHARED(ba)); // Should be the multi-referenced shared null.
 		Pillow::ByteArrayHelpers::setFromRawData(ba, rawData, 0, 5);
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+		QVERIFY(ba.constData() != oldData);
+#else
 		QVERIFY(ba.data_ptr() != oldDataPtr);
-		QVERIFY(ba.data_ptr()->REFCOUNT == 1);
+#endif
+		QVERIFY(IS_NOT_SHARED(ba));
 		QVERIFY(rawData[5] != '\0');
 		QCOMPARE(ba, QByteArray("hello"));
 
 		// Calling out setFromRawData on a string that is already detached should not reallocate the
 		// QByteArray data block, as opposed to QByteArray::setRawData.
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+		oldData = ba.constData();
+#else
 		oldDataPtr = ba.data_ptr();
+#endif
 		Pillow::ByteArrayHelpers::setFromRawData(ba, rawData, 6, 5);
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+		QVERIFY(ba.constData() == oldData);
+#else
 		QVERIFY(ba.data_ptr() == oldDataPtr);
-		QVERIFY(ba.data_ptr()->REFCOUNT == 1);
+#endif
+		QVERIFY(IS_NOT_SHARED(ba));
 		QVERIFY(rawData[11] != '\0');
 		QCOMPARE(ba, QByteArray("world"));
 	}
@@ -146,14 +239,14 @@ private slots:
 		QVERIFY(!Pillow::ByteArrayHelpers::asciiEqualsCaseInsensitive("hello123", QByteArray("hElLo1234")));
 		QVERIFY(!Pillow::ByteArrayHelpers::asciiEqualsCaseInsensitive("hello", QByteArray("World")));
 		QVERIFY(!Pillow::ByteArrayHelpers::asciiEqualsCaseInsensitive("hello", QByteArray("hello\1")));
-		QVERIFY(Pillow::ByteArrayHelpers::asciiEqualsCaseInsensitive("", QLatin1Literal("")));
-		QVERIFY(Pillow::ByteArrayHelpers::asciiEqualsCaseInsensitive("hello", QLatin1Literal("hello")));
-		QVERIFY(Pillow::ByteArrayHelpers::asciiEqualsCaseInsensitive("hello", QLatin1Literal("hElLo")));
-		QVERIFY(Pillow::ByteArrayHelpers::asciiEqualsCaseInsensitive("hello123", QLatin1Literal("hElLo123")));
-		QVERIFY(Pillow::ByteArrayHelpers::asciiEqualsCaseInsensitive("12345", QLatin1Literal("12345")));
-		QVERIFY(!Pillow::ByteArrayHelpers::asciiEqualsCaseInsensitive("hello123", QLatin1Literal("hElLo1234")));
-		QVERIFY(!Pillow::ByteArrayHelpers::asciiEqualsCaseInsensitive("hello", QLatin1Literal("World")));
-		QVERIFY(!Pillow::ByteArrayHelpers::asciiEqualsCaseInsensitive("hello", QLatin1Literal("hello\1")));
+		QVERIFY(Pillow::ByteArrayHelpers::asciiEqualsCaseInsensitive("", QLatin1String("")));
+		QVERIFY(Pillow::ByteArrayHelpers::asciiEqualsCaseInsensitive("hello", QLatin1String("hello")));
+		QVERIFY(Pillow::ByteArrayHelpers::asciiEqualsCaseInsensitive("hello", QLatin1String("hElLo")));
+		QVERIFY(Pillow::ByteArrayHelpers::asciiEqualsCaseInsensitive("hello123", QLatin1String("hElLo123")));
+		QVERIFY(Pillow::ByteArrayHelpers::asciiEqualsCaseInsensitive("12345", QLatin1String("12345")));
+		QVERIFY(!Pillow::ByteArrayHelpers::asciiEqualsCaseInsensitive("hello123", QLatin1String("hElLo1234")));
+		QVERIFY(!Pillow::ByteArrayHelpers::asciiEqualsCaseInsensitive("hello", QLatin1String("World")));
+		QVERIFY(!Pillow::ByteArrayHelpers::asciiEqualsCaseInsensitive("hello", QLatin1String("hello\1")));
 	}
 
 	void test_unhex()
@@ -180,16 +273,16 @@ private slots:
 
 	void test_byteArray_equals_latin1Literal()
 	{
-		Pillow::ByteArray ba; ba = QByteArray("Some-string");
-		QVERIFY(ba == QLatin1Literal("Some-string"));
-		QVERIFY(!(ba == QLatin1Literal("Some-other-string")));
-		QVERIFY(ba != QLatin1Literal("Some-other-string"));
-		QVERIFY(!(ba != QLatin1Literal("Some-string")));
+		QByteArray ba; ba = QByteArray("Some-string");
+		QVERIFY(ba == QLatin1String("Some-string"));
+		QVERIFY(!(ba == QLatin1String("Some-other-string")));
+		QVERIFY(ba != QLatin1String("Some-other-string"));
+		QVERIFY(!(ba != QLatin1String("Some-string")));
 	}
 
 	void test_byteArray_equals_pillowToken()
 	{
-		Pillow::ByteArray ba; ba = QByteArray("Some-string");
+		QByteArray ba; ba = QByteArray("Some-string");
 		QVERIFY(ba == Pillow::Token("Some-string"));
 		QVERIFY(!(ba == Pillow::Token("Some-other-string")));
 		QVERIFY(ba != Pillow::Token("Some-other-string"));
@@ -198,7 +291,7 @@ private slots:
 
 	void test_byteArray_equals_pillowLowerCaseToken()
 	{
-		Pillow::ByteArray ba; ba = QByteArray("some-string");
+		QByteArray ba; ba = QByteArray("some-string");
 		QVERIFY(ba == Pillow::LowerCaseToken("some-string"));
 		QVERIFY(!(ba == Pillow::LowerCaseToken("some-other-string")));
 		QVERIFY(ba != Pillow::LowerCaseToken("some-other-string"));
@@ -207,62 +300,110 @@ private slots:
 
 	void test_byteArray_append_Header()
 	{
-		Pillow::ByteArray ba;
+		QByteArray ba;
 
 		// When there is not enough reserved space, append should work but the buffer might change.
-		QByteArray::DataPtr d = ba.data_ptr();
-		ba.append(Pillow::HttpHeader("Hello", "World"));
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+		const char* d = ba.constData();
+#else
+		auto d = ba.data_ptr();
+#endif
+		appendHttpHeader(ba, Pillow::HttpHeader("Hello", "World"));
 		QCOMPARE(static_cast<QByteArray&>(ba), QByteArray("Hello: World\r\n"));
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+		QVERIFY(ba.constData() != d);
+#else
 		QVERIFY(ba.data_ptr() != d);
+#endif
 
 		// When there is enough reserved space
 		ba.clear(); ba.reserve(128);
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+		d = ba.constData();
+#else
 		d = ba.data_ptr();
-		ba.append(Pillow::HttpHeader("Some", "Test"));
+#endif
+		appendHttpHeader(ba, Pillow::HttpHeader("Some", "Test"));
 		QCOMPARE(static_cast<QByteArray&>(ba), QByteArray("Some: Test\r\n"));
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+		QVERIFY(ba.constData() == d);
+#else
 		QVERIFY(ba.data_ptr() == d);
+#endif
 	}
 
 	void test_byteArray_append_latin1Literal()
 	{
-		Pillow::ByteArray ba;
+		QByteArray ba;
 
 		// When there is not enough reserved space, append should work but the buffer might change.
-		QByteArray::DataPtr d = ba.data_ptr();
-		ba.append(QLatin1Literal("12345678"));
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+		const char* d = ba.constData();
+#else
+		auto d = ba.data_ptr();
+#endif
+		ba.append(QLatin1String("12345678"));
 		QCOMPARE(static_cast<QByteArray&>(ba), QByteArray("12345678"));
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+		QVERIFY(ba.constData() != d);
+#else
 		QVERIFY(ba.data_ptr() != d);
+#endif
 
 		// When there is enough reserved space
 		ba.clear(); ba.reserve(10); QVERIFY(ba.capacity() == 10);
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+		d = ba.constData();
+#else
 		d = ba.data_ptr();
-		ba.append(QLatin1Literal("abcdefgh"));
+#endif
+		ba.append(QLatin1String("abcdefgh"));
 		QCOMPARE(static_cast<QByteArray&>(ba), QByteArray("abcdefgh"));
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+		QVERIFY(ba.constData() == d);
+#else
 		QVERIFY(ba.data_ptr() == d);
+#endif
 
 		// Trigger a realloc
-		ba.append(QLatin1Literal("12345678"));
+		ba.append(QLatin1String("12345678"));
 		QVERIFY(ba.capacity() > 10);
 		QCOMPARE(static_cast<QByteArray&>(ba), QByteArray("abcdefgh12345678"));
 	}
 
 	void test_byteArray_append_token()
 	{
-		Pillow::ByteArray ba;
+		QByteArray ba;
 
 		// When there is not enough reserved space, append should work but the buffer might change.
-		QByteArray::DataPtr d = ba.data_ptr();
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+		const char* d = ba.constData();
+#else
+		auto d = ba.data_ptr();
+#endif
 		ba.append(Pillow::Token("12345678"));
 		QCOMPARE(static_cast<QByteArray&>(ba), QByteArray("12345678"));
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+		QVERIFY(ba.constData() != d);
+#else
 		QVERIFY(ba.data_ptr() != d);
+#endif
 
 
 		// When there is enough reserved space
 		ba.clear(); ba.reserve(10); QVERIFY(ba.capacity() == 10);
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+		d = ba.constData();
+#else
 		d = ba.data_ptr();
+#endif
 		ba.append(Pillow::Token("abcdefgh"));
 		QCOMPARE(static_cast<QByteArray&>(ba), QByteArray("abcdefgh"));
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+		QVERIFY(ba.constData() == d);
+#else
 		QVERIFY(ba.data_ptr() == d);
+#endif
 
 		// Trigger a realloc
 		ba.append(Pillow::Token("12345678"));
@@ -272,20 +413,36 @@ private slots:
 
 	void test_byteArray_append_lowerCaseToken()
 	{
-		Pillow::ByteArray ba;
+		QByteArray ba;
 
 		// When there is not enough reserved space, append should work but the buffer might change.
-		QByteArray::DataPtr d = ba.data_ptr();
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+		const char* d = ba.constData();
+#else
+		auto d = ba.data_ptr();
+#endif
 		ba.append(Pillow::LowerCaseToken("12345678"));
 		QCOMPARE(static_cast<QByteArray&>(ba), QByteArray("12345678"));
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+		QVERIFY(ba.constData() != d);
+#else
 		QVERIFY(ba.data_ptr() != d);
+#endif
 
 		// When there is enough reserved space
 		ba.clear(); ba.reserve(10); QVERIFY(ba.capacity() == 10);
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+		d = ba.constData();
+#else
 		d = ba.data_ptr();
+#endif
 		ba.append(Pillow::LowerCaseToken("abcdefgh"));
 		QCOMPARE(static_cast<QByteArray&>(ba), QByteArray("abcdefgh"));
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+		QVERIFY(ba.constData() == d);
+#else
 		QVERIFY(ba.data_ptr() == d);
+#endif
 
 		// Trigger a realloc
 		ba.append(Pillow::LowerCaseToken("12345678"));
@@ -295,20 +452,36 @@ private slots:
 
 	void test_byteArray_append_constChar()
 	{
-		Pillow::ByteArray ba;
+		QByteArray ba;
 
 		// When there is not enough reserved space, append should work but the buffer might change.
-		QByteArray::DataPtr d = ba.data_ptr();
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+		const char* d = ba.constData();
+#else
+		auto d = ba.data_ptr();
+#endif
 		ba.append("12345678");
 		QCOMPARE(static_cast<QByteArray&>(ba), QByteArray("12345678"));
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+		QVERIFY(ba.constData() != d);
+#else
 		QVERIFY(ba.data_ptr() != d);
+#endif
 
 		// When there is enough reserved space
 		ba.clear(); ba.reserve(10); QVERIFY(ba.capacity() == 10);
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+		d = ba.constData();
+#else
 		d = ba.data_ptr();
+#endif
 		ba.append("abcdefgh");
 		QCOMPARE(static_cast<QByteArray&>(ba), QByteArray("abcdefgh"));
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+		QVERIFY(ba.constData() == d);
+#else
 		QVERIFY(ba.data_ptr() == d);
+#endif
 
 		// Trigger a realloc
 		ba.append("12345678");
@@ -318,20 +491,36 @@ private slots:
 
 	void test_byteArray_append_constCharPtr_len()
 	{
-		Pillow::ByteArray ba;
+		QByteArray ba;
 
 		// When there is not enough reserved space, append should work but the buffer might change.
-		QByteArray::DataPtr d = ba.data_ptr();
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+		const char* d = ba.constData();
+#else
+		auto d = ba.data_ptr();
+#endif
 		ba.append("12345678", 4);
 		QCOMPARE(static_cast<QByteArray&>(ba), QByteArray("1234"));
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+		QVERIFY(ba.constData() != d);
+#else
 		QVERIFY(ba.data_ptr() != d);
+#endif
 
 		// When there is enough reserved space
 		ba.clear(); ba.reserve(10); QVERIFY(ba.capacity() == 10);
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+		d = ba.constData();
+#else
 		d = ba.data_ptr();
+#endif
 		ba.append("abcdefgh", 3);
 		QCOMPARE(static_cast<QByteArray&>(ba), QByteArray("abc"));
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+		QVERIFY(ba.constData() == d);
+#else
 		QVERIFY(ba.data_ptr() == d);
+#endif
 
 		// Trigger a realloc
 		ba.append("12345678", 8);
@@ -341,23 +530,43 @@ private slots:
 
 	void test_byteArray_append_char()
 	{
-		Pillow::ByteArray ba;
+		QByteArray ba;
 
 		// When there is not enough reserved space, append should work but the buffer might change.
-		QByteArray::DataPtr d = ba.data_ptr();
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+		const char* d = ba.constData();
+#else
+		auto d = ba.data_ptr();
+#endif
 		ba.append('a');
 		QCOMPARE(static_cast<QByteArray&>(ba), QByteArray("a"));
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+		QVERIFY(ba.constData() != d);
+#else
 		QVERIFY(ba.data_ptr() != d);
+#endif
 
 		// When there is enough reserved space
 		ba.clear(); ba.reserve(2); QVERIFY(ba.capacity() == 2);
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+		d = ba.constData();
+#else
 		d = ba.data_ptr();
+#endif
 		ba.append('1');
 		QCOMPARE(static_cast<QByteArray&>(ba), QByteArray("1"));
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+		QVERIFY(ba.constData() == d);
+#else
 		QVERIFY(ba.data_ptr() == d);
+#endif
 		ba.append('2');
 		QCOMPARE(static_cast<QByteArray&>(ba), QByteArray("12"));
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+		QVERIFY(ba.constData() == d);
+#else
 		QVERIFY(ba.data_ptr() == d);
+#endif
 
 		// Trigger a realloc
 		ba.append('3');

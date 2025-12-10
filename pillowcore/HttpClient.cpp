@@ -52,7 +52,7 @@ namespace Pillow
 		{
 			unsigned char buffer[32 * 1024];
             if (_inflatedBuffer.isDetached())
-                _inflatedBuffer.data_ptr()->size = 0;
+                _inflatedBuffer.resize(0);
             else
                 _inflatedBuffer.clear();
 
@@ -78,7 +78,7 @@ namespace Pillow
 			if (_streamBad)
 			{
                 if (_inflatedBuffer.isDetached())
-                    _inflatedBuffer.data_ptr()->size = 0;
+                    _inflatedBuffer.resize(0);
                 else
                     _inflatedBuffer.clear();
                 _inflatedBuffer.append(data, length);
@@ -130,6 +130,7 @@ void Pillow::HttpRequestWriter::deleteResource(const QByteArray &path, const Pil
 
 void Pillow::HttpRequestWriter::write(const QByteArray &method, const QByteArray &path, const Pillow::HttpHeaderCollection &headers, const QByteArray &data)
 {
+	qDebug() << "HttpRequestWriter::write() - method:" << method << "path:" << path << "headers count:" << headers.size() << "data size:" << data.size();
 	if (_device == 0)
 	{
 		qWarning() << "Pillow::HttpRequestWriter::write: called while device is not set. Not proceeding.";
@@ -155,6 +156,7 @@ void Pillow::HttpRequestWriter::write(const QByteArray &method, const QByteArray
 
 	if (data.isEmpty())
 	{
+		qDebug() << "  Writing request to device (no data):" << _builder.left(200);
 		_device->write(_builder);
 	}
 	else
@@ -162,10 +164,13 @@ void Pillow::HttpRequestWriter::write(const QByteArray &method, const QByteArray
 		if (data.size() < 4096)
 		{
 			_builder.append(data);
+			qDebug() << "  Writing request to device (with small data):" << _builder.left(200);
 			_device->write(_builder);
 		}
 		else
 		{
+			qDebug() << "  Writing request to device (headers):" << _builder.left(200);
+			qDebug() << "  Writing request to device (large data):" << data.left(100);
 			_device->write(_builder);
 			_device->write(data);
 		}
@@ -174,7 +179,7 @@ void Pillow::HttpRequestWriter::write(const QByteArray &method, const QByteArray
 	if (_builder.size() > 16384)
 		_builder.clear();
 	else
-		_builder.data_ptr()->size = 0;
+		_builder.resize(0);
 }
 
 void Pillow::HttpRequestWriter::setDevice(QIODevice *device)
@@ -341,8 +346,13 @@ inline void Pillow::HttpResponseParser::pushHeader()
 Pillow::HttpClient::HttpClient(QObject *parent)
 	: QObject(parent), _responsePending(false), _error(NoError), _keepAliveTimeout(-1), _contentDecoder(0)
 {
+	qDebug() << "HttpClient::HttpClient() - constructor called";
 	_device = new QTcpSocket(this);
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+	connect(_device, SIGNAL(errorOccurred(QAbstractSocket::SocketError)), this, SLOT(device_error(QAbstractSocket::SocketError)));
+#else
 	connect(_device, SIGNAL(error(QAbstractSocket::SocketError)), this, SLOT(device_error(QAbstractSocket::SocketError)));
+#endif
 	connect(_device, SIGNAL(connected()), this, SLOT(device_connected()));
 	connect(_device, SIGNAL(readyRead()), this, SLOT(device_readyRead()));
 	_requestWriter.setDevice(_device);
@@ -453,6 +463,8 @@ void Pillow::HttpClient::request(const QByteArray &method, const QUrl &url, cons
 
 void Pillow::HttpClient::request(const Pillow::HttpClientRequest &request)
 {
+	qDebug() << "HttpClient::request() - method:" << request.method << "url:" << request.url.toString();
+	
 	if (_responsePending)
 	{
 		qWarning("Pillow::HttpClient::request: cannot send new request while another one is under way. Request pipelining is not supported.");
@@ -482,20 +494,28 @@ void Pillow::HttpClient::request(const Pillow::HttpClientRequest &request)
 	const bool keepAliveTimeoutExpired = sameServer && (_keepAliveTimeout >= 0 && _keepAliveTimeoutTimer.isValid() && _keepAliveTimeoutTimer.hasExpired(_keepAliveTimeout));
 	const bool reuseExistingConnection = isConnected && sameServer && !keepAliveTimeoutExpired;
 
+	qDebug() << "  isConnected:" << isConnected << "sameServer:" << sameServer << "reuseExistingConnection:" << reuseExistingConnection;
+	qDebug() << "  Device state:" << _device->state() << "host:" << _request.url.host() << "port:" << _request.url.port(80);
+
 	if (reuseExistingConnection)
 	{
 		// Reuse current connection to same host and port.
+		qDebug() << "  Reusing existing connection";
 		sendRequest();
 	}
 	else
 	{
         if (_hostHeaderValue.isDetached())
-            _hostHeaderValue.data_ptr()->size = 0; // Clear the previous host header value (if any), without deallocating memory.
+            _hostHeaderValue.resize(0); // Clear the previous host header value (if any), without deallocating memory.
         else
             _hostHeaderValue.clear();
 
 		if (_device->state() != QAbstractSocket::UnconnectedState)
+		{
+			qDebug() << "  Disconnecting from current host";
 			_device->disconnectFromHost();
+		}
+		qDebug() << "  Connecting to host:" << _request.url.host() << "port:" << _request.url.port(80);
 		_device->connectToHost(_request.url.host(), _request.url.port(80));
 	}
 }
@@ -551,6 +571,7 @@ void Pillow::HttpClient::device_error(QAbstractSocket::SocketError error)
 
 void Pillow::HttpClient::device_connected()
 {
+	qDebug() << "HttpClient::device_connected() - about to send request";
 	sendRequest();
 }
 
@@ -567,9 +588,6 @@ void Pillow::HttpClient::device_readyRead()
 	qint64 bytesAvailable = _device->bytesAvailable();
 	if (bytesAvailable == 0) return;
 
-	if (_buffer.capacity() < _buffer.size() + bytesAvailable)
-		_buffer.reserve(_buffer.size() + bytesAvailable);
-
 	qint64 bufferSize = readBufferSize();
 	if (bufferSize > 0)
 		bytesAvailable = bufferSize - _content.size();
@@ -580,8 +598,12 @@ void Pillow::HttpClient::device_readyRead()
 		return;
 	}
 
-	qint64 bytesRead = _device->read(_buffer.data() + _buffer.size(), bytesAvailable);
-	_buffer.data_ptr()->size += bytesRead;
+	if (_buffer.capacity() < _buffer.size() + bytesAvailable)
+		_buffer.reserve(_buffer.size() + bytesAvailable);
+
+	int oldSize = _buffer.size();
+	qint64 bytesRead = _device->read(_buffer.data() + oldSize, bytesAvailable);
+	_buffer.resize(oldSize + bytesRead);
 
 	int consumed = inject(_buffer);
 
@@ -624,7 +646,7 @@ void Pillow::HttpClient::device_readyRead()
 	if (_buffer.capacity() > 128 * 1024)
 		_buffer.clear();
 	else
-		_buffer.data_ptr()->size = 0;
+		_buffer.resize(0);
 
 	// Response completed or got aborted in a callback.
 	if (!responsePending() && !_pendingRequest.method.isNull())
@@ -639,11 +661,12 @@ void Pillow::HttpClient::device_readyRead()
 
 void Pillow::HttpClient::sendRequest()
 {
+	qDebug() << "HttpClient::sendRequest() - responsePending:" << responsePending();
 	if (!responsePending()) return;
 
 	if (_hostHeaderValue.isEmpty())
 	{
-    _hostHeaderValue = QUrl::toAce(_request.url.host());
+		_hostHeaderValue = _request.url.host().toUtf8();
 		if (_request.url.port(80) != 80)
 		{
 			_hostHeaderValue.append(':');
@@ -651,9 +674,10 @@ void Pillow::HttpClient::sendRequest()
 		}
 	}
 
-	QByteArray uri = QUrl::toAce(_request.url.path());
+	QByteArray uri = _request.url.path(QUrl::FullyEncoded).toUtf8();
+	if (uri.isEmpty()) uri = "/";
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 0, 0))
-	const QByteArray query = QUrl::toAce(_request.url.query());
+	const QByteArray query = _request.url.query(QUrl::FullyEncoded).toUtf8();
 #else
   const QByteArray query = _request.url.encodedQuery();
 #endif
@@ -665,6 +689,7 @@ void Pillow::HttpClient::sendRequest()
 	for (int i = 0, iE = _request.headers.size(); i < iE; ++i)
 		headers << _request.headers.at(i);
 
+	qDebug() << "  Calling _requestWriter.write() with method:" << _request.method << "uri:" << uri << "headers count:" << headers.size();
 	_requestWriter.write(_request.method, uri, headers, _request.data);
 }
 
@@ -894,13 +919,23 @@ QNetworkReply *Pillow::NetworkAccessManager::createRequest(QNetworkAccessManager
 
 	const QString urlAuthority = request.url().authority();
 
-	UrlClientsMap::Iterator it = _urlToClientsMap.find(urlAuthority);
 	Pillow::HttpClient *client = 0;
-	if (it != _urlToClientsMap.end())
+	
+	// Find an available (not busy) client for this URL authority
+	UrlClientsMap::Iterator it = _urlToClientsMap.find(urlAuthority);
+	while (it != _urlToClientsMap.end() && it.key() == urlAuthority)
 	{
-		client = it.value();
-		_urlToClientsMap.erase(it);
+		Pillow::HttpClient *candidateClient = it.value();
+		if (!candidateClient->responsePending())
+		{
+			// Found an available client, remove it from the map and use it
+			client = candidateClient;
+			_urlToClientsMap.erase(it);
+			break;
+		}
+		++it;
 	}
+	
 	if (client == 0)
 	{
 		client = new Pillow::HttpClient(this);

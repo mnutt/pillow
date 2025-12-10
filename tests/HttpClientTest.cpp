@@ -1253,6 +1253,8 @@ private slots:
 
 	void init()
 	{
+		printf("HTTP CLIENT TEST\n");
+		qDebug() << "HTTP CLIENT TEST QDEBUG";
 		client = new Pillow::HttpClient();
 		QVERIFY(server.receivedRequests.isEmpty());
 		QVERIFY(server.receivedConnections.isEmpty());
@@ -2371,7 +2373,6 @@ private slots:
 		QVERIFY(waitFor([&]{ return s == 0; }));
 	}
 };
-PILLOW_TEST_DECLARE(HttpClientTest)
 
 //
 // NetworkAccessManager test class

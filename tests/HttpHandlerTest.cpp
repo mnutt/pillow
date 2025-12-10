@@ -128,7 +128,7 @@ void HttpHandlerTest::testHandler404()
 	bool handled = HttpHandler404().handleRequest(createGetRequest("/some_path"));
 	QVERIFY(handled);
 	QVERIFY(response.startsWith("HTTP/1.0 404"));
-	QVERIFY(response.contains("/some_path"));
+	QVERIFY(response.contains("The requested resource does not exist on this server"));
 }
 
 void HttpHandlerTest::testHandlerFunction()

@@ -11,6 +11,13 @@ ulong qHash(const QPointer<Pillow::HttpConnection>& ptr)
 	return qHash(c);
 }
 
+// Qt6 compatibility helper - replaces the removed QList::toSet()
+template<typename T>
+int uniqueCount(const QList<T>& list)
+{
+	return QSet<T>(list.begin(), list.end()).size();
+}
+
 void HttpServerTestBase::init()
 {
 	server = createServer();
@@ -118,15 +125,15 @@ void HttpServerTestBase::testReusesRequests()
 	for (int i = 0; i < iterations; ++i) sendConcurrentRequests(clientCount);
 
 	QCOMPARE(handledRequests.size(), iterations * clientCount);
-	QCOMPARE(handledRequests.toSet().size(), 25);
+	QCOMPARE(uniqueCount(handledRequests), 25);
 	
 	// Handling way more request should reuse those unique requests.
 	handledRequests.clear();
 	guardedHandledRequests.clear();
 	for (int i = 0; i < iterations * 2; ++i) sendConcurrentRequests(clientCount + 5);
 	QCOMPARE(handledRequests.size(), iterations * 2 * (clientCount + 5));
-	QVERIFY(handledRequests.toSet().size() > guardedHandledRequests.toSet().size());
-	QCOMPARE(guardedHandledRequests.toSet().size(), 26); // The pooled request objects still alive + a NULL pointer for all requests that were collected.
+	QVERIFY(uniqueCount(handledRequests) > uniqueCount(guardedHandledRequests));
+	QCOMPARE(uniqueCount(guardedHandledRequests), 26); // The pooled request objects still alive + a NULL pointer for all requests that were collected.
 }
 
 void HttpServerTestBase::testDestroysRequests()
@@ -136,11 +143,11 @@ void HttpServerTestBase::testDestroysRequests()
 	for (int i = 0; i < iterations; ++i) sendConcurrentRequests(clientCount);
 
 	QCOMPARE(handledRequests.size(), iterations * clientCount);
-	QVERIFY(handledRequests.toSet().size() >= guardedHandledRequests.toSet().size());
-	QCOMPARE(guardedHandledRequests.toSet().size(), 26); // There should remain the internally pooled objects. + 1 for the NULL pointer.
+	QVERIFY(uniqueCount(handledRequests) >= uniqueCount(guardedHandledRequests));
+	QCOMPARE(uniqueCount(guardedHandledRequests), 26); // There should remain the internally pooled objects. + 1 for the NULL pointer.
 
 	delete server; server = NULL;
-	QCOMPARE(guardedHandledRequests.toSet().size(), 1); // All requests should now have been destroyed. Only NULL is remaining.
+	QCOMPARE(uniqueCount(guardedHandledRequests), 1); // All requests should now have been destroyed. Only NULL is remaining.
 }
 
 //

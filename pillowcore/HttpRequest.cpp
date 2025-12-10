@@ -7,6 +7,8 @@
 #include <QtCore/QUrl>
 #include <QtNetwork/QTcpSocket>
 #include <QtNetwork/QLocalSocket>
+#include <QtCore/QThread>
+#include <QtCore/QDebug>
 using namespace Pillow;
 
 inline void setFromRawDataAndNullterm(QByteArray& target, char* data, int start, int length)
@@ -16,7 +18,6 @@ inline void setFromRawDataAndNullterm(QByteArray& target, char* data, int start,
 	// So the only downside that will happen if an unshared QByteArray is altered to share data is a few bytes wasted
 	// until the QByteArray control block releases the control data + the unshared buffer at some point in the future.
 
-	if (target.data_ptr()) target.data_ptr()->alloc = 0;
 	if (length == 0)
 		target.setRawData("", 0);
 	else
@@ -89,7 +90,7 @@ void HttpRequest::initialize(QIODevice* inputDevice, QIODevice* outputDevice)
 	_requestHeadersRef.reserve(16);
 
 	// Clear any leftover data from a previous potentially failed request (that would not have gone though "transitionToCompleted")
-	if (_requestBuffer.capacity() <= MaximumRequestHeaderLength) _requestBuffer.data_ptr()->size = 0;
+	if (_requestBuffer.capacity() <= MaximumRequestHeaderLength) _requestBuffer.resize(0);
 	else _requestBuffer.clear();
 	if (_requestHeadersRef.capacity() > 16) _requestHeadersRef.clear();
 	else while (!_requestHeadersRef.isEmpty()) _requestHeadersRef.pop_back();
@@ -124,9 +125,12 @@ void HttpRequest::processInput()
 	{
 		if (_requestBuffer.capacity() < _requestBuffer.size() + bytesAvailable)
 			_requestBuffer.reserve(_requestBuffer.size() + bytesAvailable + 1);
-		qint64 bytesRead = _inputDevice->read(_requestBuffer.data() + _requestBuffer.size(), bytesAvailable);
-		_requestBuffer.data_ptr()->size += bytesRead;
-		_requestBuffer.data_ptr()->data[_requestBuffer.data_ptr()->size] = 0;
+		int oldSize = _requestBuffer.size();
+		qint64 bytesRead = _inputDevice->read(_requestBuffer.data() + oldSize, bytesAvailable);
+		_requestBuffer.resize(oldSize + bytesRead);
+		// Manually ensure null terminator is available after the data
+		if (_requestBuffer.capacity() > _requestBuffer.size())
+			_requestBuffer.data()[_requestBuffer.size()] = '\0';
 	}
 
 	if (_state == ReceivingHeaders)
@@ -231,10 +235,12 @@ void HttpRequest::transitionToSendingContent()
 	if (_responseHeadersBuffer.capacity() > responseHeadersBufferRecyclingCapacity)
 		_responseHeadersBuffer.clear();
 	else
-		_responseHeadersBuffer.data_ptr()->size = 0;
+		_responseHeadersBuffer.resize(0);
 
-	if (_responseContentLength == 0 || _requestMethod == "HEAD")
+	if (_responseContentLength == 0 || _requestMethod == "HEAD") {
+		qDebug() << "HttpRequest::transitionToSendingContent() - calling transitionToCompleted() because responseContentLength == 0 or HEAD request - responseContentLength:" << _responseContentLength << "requestMethod:" << _requestMethod;
 		transitionToCompleted();
+	}
 
 	if (_responseContentLength < 0)
 	{
@@ -251,15 +257,33 @@ void HttpRequest::transitionToStreamingContent()
 	if (_responseHeadersBuffer.capacity() > responseHeadersBufferRecyclingCapacity)
 		_responseHeadersBuffer.clear();
 	else
-		_responseHeadersBuffer.data_ptr()->size = 0;
+		_responseHeadersBuffer.resize(0);
 
-	if (_requestMethod == "HEAD")
+	if (_requestMethod == "HEAD") {
+		qDebug() << "HttpRequest::transitionToStreamingContent() - calling transitionToCompleted() because HEAD request - requestMethod:" << _requestMethod;
 		transitionToCompleted();
+	}
 }
 
 void HttpRequest::transitionToCompleted()
 {
-	if (_state == Completed)  return;
+	// Add detailed logging to track call patterns and detect infinite loops
+	static int callCount = 0;
+	callCount++;
+	qDebug() << "HttpRequest::transitionToCompleted() - call #" << callCount << "- current state:" << _state << "- thread:" << QThread::currentThread();
+	
+	// Log the call stack by checking if we're in an event vs direct call
+	QObject* sender = this->sender();
+	if (sender) {
+		qDebug() << "  Called from signal, sender:" << sender << "sender type:" << sender->metaObject()->className();
+	} else {
+		qDebug() << "  Called directly (not from signal)";
+	}
+	
+	if (_state == Completed) {
+		qDebug() << "  Already in Completed state - redundant call detected, returning early";
+		return;
+	}
 	if (_state == Closed)
 	{
 		qWarning() << "HttpRequest::transitionToCompleted called while the request is in the closed state.";
@@ -271,7 +295,7 @@ void HttpRequest::transitionToCompleted()
 	// Reuse the already allocated buffer if it is not too large.
 	int remainingBytes = _requestBuffer.size() - int(_parser.body_start) - _requestContentLength;
 	if (remainingBytes > 0) _requestBuffer = _requestBuffer.right(remainingBytes);
-	else if (_requestBuffer.capacity() <= MaximumRequestHeaderLength) _requestBuffer.data_ptr()->size = 0;
+	else if (_requestBuffer.capacity() <= MaximumRequestHeaderLength) _requestBuffer.resize(0);
 	else _requestBuffer.clear();
 
 	if (_requestHeadersRef.capacity() > 16) _requestHeadersRef.clear();
@@ -524,8 +548,10 @@ void HttpRequest::writeContent(const QByteArray& content)
 		_responseContentBytesSent += content.size();
 		_outputDevice->write(content);
 
-		if (_responseContentBytesSent == _responseContentLength)
+		if (_responseContentBytesSent == _responseContentLength) {
+			qDebug() << "HttpRequest::writeContent() - calling transitionToCompleted() because all content sent - responseContentBytesSent:" << _responseContentBytesSent << "responseContentLength:" << _responseContentLength;
 			transitionToCompleted();
+		}
 	}
 }
 
@@ -540,7 +566,7 @@ void HttpRequest::writeStreamingContent(QByteArray& content)
 	if (_responseHeadersBuffer.capacity() > responseHeadersBufferRecyclingCapacity)
 		_responseHeadersBuffer.clear();
 	else
-		_responseHeadersBuffer.data_ptr()->size = 0;
+		_responseHeadersBuffer.resize(0);
 
 	if (content.size() > 0 && _requestMethod != "HEAD")
 	{
@@ -560,7 +586,7 @@ void HttpRequest::writeStreamingContent(QByteArray& content)
 	// Reuse the already allocated buffer if it is not too large.
 	int remainingBytes = _requestBuffer.size() - int(_parser.body_start) - _requestContentLength;
 	if (remainingBytes > 0) _requestBuffer = _requestBuffer.right(remainingBytes);
-	else if (_requestBuffer.capacity() <= MaximumRequestHeaderLength) _requestBuffer.data_ptr()->size = 0;
+	else if (_requestBuffer.capacity() <= MaximumRequestHeaderLength) _requestBuffer.resize(0);
 	else _requestBuffer.clear();
 
 	if (_requestHeadersRef.capacity() > 16) _requestHeadersRef.clear();
