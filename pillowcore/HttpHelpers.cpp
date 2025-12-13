@@ -1,5 +1,7 @@
 #include "HttpHelpers.h"
 #include "ByteArrayHelpers.h"
+#include <QHash>
+#include <QStringView>
 
 namespace Pillow
 {
@@ -7,15 +9,32 @@ namespace Pillow
 	{
 		const char* getMimeTypeForFilename(const QString& filename)
 		{
-			if (filename.endsWith(".html", Qt::CaseInsensitive)) return "text/html";
-			if (filename.endsWith(".jpg", Qt::CaseInsensitive)) return "image/jpeg";
-			if (filename.endsWith(".jpeg", Qt::CaseInsensitive)) return "image/jpeg";
-			if (filename.endsWith(".png", Qt::CaseInsensitive)) return "image/png";
-			if (filename.endsWith(".gif", Qt::CaseInsensitive)) return "image/gif";
-			if (filename.endsWith(".css", Qt::CaseInsensitive)) return "text/css";
-			if (filename.endsWith(".js", Qt::CaseInsensitive)) return "text/javascript";
-			if (filename.endsWith(".xml", Qt::CaseInsensitive)) return "text/xml";
-			return "application/octet-stream";
+			static const QHash<QString, const char*> mimeTypes = {
+				{".html", "text/html"},
+				{".htm", "text/html"},
+				{".jpg", "image/jpeg"},
+				{".jpeg", "image/jpeg"},
+				{".png", "image/png"},
+				{".gif", "image/gif"},
+				{".css", "text/css"},
+				{".js", "text/javascript"},
+				{".xml", "text/xml"},
+				{".json", "application/json"},
+				{".svg", "image/svg+xml"},
+				{".woff", "font/woff"},
+				{".woff2", "font/woff2"},
+				{".ico", "image/x-icon"},
+				{".webp", "image/webp"},
+				{".txt", "text/plain"},
+			};
+
+			const qsizetype dotPos = filename.lastIndexOf(QLatin1Char('.'));
+			if (dotPos < 0)
+				return "application/octet-stream";
+
+			const QString ext = QStringView(filename).mid(dotPos).toString().toLower();
+			auto it = mimeTypes.find(ext);
+			return it != mimeTypes.end() ? it.value() : "application/octet-stream";
 		}
 	}
 
