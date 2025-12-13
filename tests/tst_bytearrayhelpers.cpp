@@ -31,53 +31,33 @@ private slots:
 		QVERIFY(IS_SHARED(ba)); // Should be the multi-referenced shared null.
 		QVERIFY(rawData[5] != '\0');
 
-		// Calling setFromRawDataAndNullterm on a shared byte array should detach it.
+		// Calling setFromRawDataAndNullterm sets ba to point directly into rawData (zero-copy).
 		Pillow::ByteArrayHelpers::setFromRawDataAndNullterm(ba, rawData, 0, 5);
-		QVERIFY(ba.constData() != oldData); // Data pointer changed
-		// TEMPORARY: Commenting out problematic test
-		// QVERIFY(IS_NOT_SHARED(ba));
-		// TEMPORARY: Deep copy approach doesn't modify original buffer
-		// Skip null terminator check since we make deep copies
+		QVERIFY(ba.constData() != oldData); // Data pointer changed from empty string
+		QVERIFY(ba.constData() == rawData); // Zero-copy: points directly to rawData
+		// In Qt6, setRawData creates a QByteArray that is "shared" with external data
+		// (isDetached() returns false), which is correct behavior.
+		QVERIFY(IS_SHARED(ba));
+		// Verify null termination happened in the source buffer
+		QVERIFY(rawData[5] == '\0');
 		QCOMPARE(ba, QByteArray("hello"));
 
-		// Calling setFromRawDataAndNullterm on a non-shared byte array should reuse its data block.
-		oldData = ba.constData();
+		// Calling setFromRawDataAndNullterm again points to a different part of rawData.
+		// In Qt6, this creates a new reference (no data block reuse optimization).
 		Pillow::ByteArrayHelpers::setFromRawDataAndNullterm(ba, rawData, 6, 5);
-		// TEMPORARY: Deep copy approach for Qt6 memory corruption fix
-		// setFromRawDataAndNullterm now makes deep copies, so data pointer changes
-		QVERIFY(ba.constData() != oldData);
-		// TEMPORARY: Commenting out problematic test
-		// QVERIFY(IS_NOT_SHARED(ba));
-		// TEMPORARY: Deep copy approach doesn't modify original buffer
-		// Skip null terminator check since we make deep copies
+		QVERIFY(ba.constData() == rawData + 6); // Zero-copy: points to rawData + 6
+		QVERIFY(IS_SHARED(ba)); // Still shared with external buffer
+		QVERIFY(rawData[11] == '\0'); // Null termination happened
 		QCOMPARE(ba, QByteArray("world"));
 
-		// Set it again from a brand new byte array data block that came from another QByteArray.
-		QByteArray temp("New Value");
-		ba = temp; temp = QByteArray();
-		ba = QByteArray("New Value");
-		// TEMPORARY: Commenting out problematic test
-		// QVERIFY(IS_NOT_SHARED(ba));
-		QVERIFY(ba.constData() != oldData);
-		oldData = ba.constData();
+		// Set from a different starting point
 		Pillow::ByteArrayHelpers::setFromRawDataAndNullterm(ba, rawData, 0, 2);
-		// TEMPORARY: Deep copy approach for Qt6 memory corruption fix
-		// setFromRawDataAndNullterm now makes deep copies, so data pointer changes
-		QVERIFY(ba.constData() != oldData);
-		// TEMPORARY: Commenting out problematic test
-		// QVERIFY(IS_NOT_SHARED(ba));
-		// TEMPORARY: Deep copy approach doesn't modify original buffer
-		// Skip null terminator check since we make deep copies
+		QVERIFY(ba.constData() == rawData); // Zero-copy
+		QVERIFY(rawData[2] == '\0'); // Null termination
 		QCOMPARE(ba, QByteArray("he"));
 
+		// Empty case
 		Pillow::ByteArrayHelpers::setFromRawDataAndNullterm(ba, rawData, 0, 0);
-		// TEMPORARY: Deep copy approach for Qt6 memory corruption fix
-		// setFromRawDataAndNullterm now makes deep copies, data pointer can change
-		// (Note: for zero-length strings, behavior may still reuse empty string)
-		// QVERIFY(ba.constData() == oldData);
-		// TEMPORARY: Skip this check - empty QByteArray may have special sharing behavior
-		// QVERIFY(IS_NOT_SHARED(ba));
-		QVERIFY(rawData[0] != '\0');
 		QCOMPARE(ba, QByteArray());
 	}
 
@@ -85,40 +65,34 @@ private slots:
 	{
 		char rawData[] = "hello world!";
 
+		// First, verify Qt's setRawData behavior - each call points to new data
 		QByteArray ba;
-		// An empty QByteArray might already be detached, so we need to ensure it's shared
-		QByteArray ba2 = ba; // Create a copy to ensure sharing
 		const char* oldData = ba.constData();
 		ba.setRawData(rawData, 5);
 		QVERIFY(oldData != ba.constData());
+		QVERIFY(ba.constData() == rawData); // Points directly to rawData
 		oldData = ba.constData();
 		ba.setRawData(rawData + 6, 5);
-		// Start using QByteArray::setRawData directly if the following QVERIFY fails.
-		// This would mean that the QByteArray::setRawData behavior has been changed to the
-		// desired one where switching from one raw data to another does not cause a
-		// QByteArray data block reallocation.
-		QVERIFY(oldData != ba.constData());
+		QVERIFY(oldData != ba.constData()); // Qt6 creates new reference each time
+		QVERIFY(ba.constData() == rawData + 6); // Points to new location
 
-		// Go ahead and do tests on our replacement setFromRawData.
+		// Test our setFromRawData wrapper - should have same zero-copy behavior
 		ba = QByteArray();
-		oldData = ba.constData();
+		QByteArray ba2 = ba; // Create a copy to ensure sharing
 		QVERIFY(IS_SHARED(ba)); // Should be the multi-referenced shared null.
+
 		Pillow::ByteArrayHelpers::setFromRawData(ba, rawData, 0, 5);
-		QVERIFY(ba.constData() != oldData);
-		// In Qt6, a QByteArray using setRawData is not detached
+		QVERIFY(ba.constData() == rawData); // Zero-copy: points directly to rawData
+		// In Qt6, a QByteArray using setRawData is "shared" with external buffer
 		QVERIFY(IS_SHARED(ba));
-		QVERIFY(rawData[5] != '\0');
+		QVERIFY(rawData[5] != '\0'); // setFromRawData does NOT null-terminate
 		QCOMPARE(ba, QByteArray("hello"));
 
-		// Calling out setFromRawData on a string that is already detached should not reallocate the
-		// QByteArray data block, as opposed to QByteArray::setRawData.
-		oldData = ba.constData();
+		// Calling setFromRawData again points to a different location
 		Pillow::ByteArrayHelpers::setFromRawData(ba, rawData, 6, 5);
-		// TEMPORARY: Commenting out until setFromRawData issue is investigated
-		// QVERIFY(ba.constData() == oldData);
-		// TEMPORARY: Commenting out problematic test
-		// QVERIFY(IS_NOT_SHARED(ba));
-		QVERIFY(rawData[11] != '\0');
+		QVERIFY(ba.constData() == rawData + 6); // Zero-copy
+		QVERIFY(IS_SHARED(ba)); // Still shared with external buffer
+		QVERIFY(rawData[11] != '\0'); // No null termination
 		QCOMPARE(ba, QByteArray("world"));
 	}
 
