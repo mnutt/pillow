@@ -130,7 +130,6 @@ void Pillow::HttpRequestWriter::deleteResource(const QByteArray &path, const Pil
 
 void Pillow::HttpRequestWriter::write(const QByteArray &method, const QByteArray &path, const Pillow::HttpHeaderCollection &headers, const QByteArray &data)
 {
-	qDebug() << "HttpRequestWriter::write() - method:" << method << "path:" << path << "headers count:" << headers.size() << "data size:" << data.size();
 	if (_device == 0)
 	{
 		qWarning() << "Pillow::HttpRequestWriter::write: called while device is not set. Not proceeding.";
@@ -156,7 +155,6 @@ void Pillow::HttpRequestWriter::write(const QByteArray &method, const QByteArray
 
 	if (data.isEmpty())
 	{
-		qDebug() << "  Writing request to device (no data):" << _builder.left(200);
 		_device->write(_builder);
 	}
 	else
@@ -164,13 +162,10 @@ void Pillow::HttpRequestWriter::write(const QByteArray &method, const QByteArray
 		if (data.size() < 4096)
 		{
 			_builder.append(data);
-			qDebug() << "  Writing request to device (with small data):" << _builder.left(200);
 			_device->write(_builder);
 		}
 		else
 		{
-			qDebug() << "  Writing request to device (headers):" << _builder.left(200);
-			qDebug() << "  Writing request to device (large data):" << data.left(100);
 			_device->write(_builder);
 			_device->write(data);
 		}
@@ -346,7 +341,6 @@ inline void Pillow::HttpResponseParser::pushHeader()
 Pillow::HttpClient::HttpClient(QObject *parent)
 	: QObject(parent), _responsePending(false), _error(NoError), _keepAliveTimeout(-1), _contentDecoder(0)
 {
-	qDebug() << "HttpClient::HttpClient() - constructor called";
 	_device = new QTcpSocket(this);
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
 	connect(_device, SIGNAL(errorOccurred(QAbstractSocket::SocketError)), this, SLOT(device_error(QAbstractSocket::SocketError)));
@@ -463,8 +457,6 @@ void Pillow::HttpClient::request(const QByteArray &method, const QUrl &url, cons
 
 void Pillow::HttpClient::request(const Pillow::HttpClientRequest &request)
 {
-	qDebug() << "HttpClient::request() - method:" << request.method << "url:" << request.url.toString();
-	
 	if (_responsePending)
 	{
 		qWarning("Pillow::HttpClient::request: cannot send new request while another one is under way. Request pipelining is not supported.");
@@ -494,28 +486,20 @@ void Pillow::HttpClient::request(const Pillow::HttpClientRequest &request)
 	const bool keepAliveTimeoutExpired = sameServer && (_keepAliveTimeout >= 0 && _keepAliveTimeoutTimer.isValid() && _keepAliveTimeoutTimer.hasExpired(_keepAliveTimeout));
 	const bool reuseExistingConnection = isConnected && sameServer && !keepAliveTimeoutExpired;
 
-	qDebug() << "  isConnected:" << isConnected << "sameServer:" << sameServer << "reuseExistingConnection:" << reuseExistingConnection;
-	qDebug() << "  Device state:" << _device->state() << "host:" << _request.url.host() << "port:" << _request.url.port(80);
-
 	if (reuseExistingConnection)
 	{
 		// Reuse current connection to same host and port.
-		qDebug() << "  Reusing existing connection";
 		sendRequest();
 	}
 	else
 	{
-        if (_hostHeaderValue.isDetached())
-            _hostHeaderValue.resize(0); // Clear the previous host header value (if any), without deallocating memory.
-        else
-            _hostHeaderValue.clear();
+		if (_hostHeaderValue.isDetached())
+			_hostHeaderValue.resize(0); // Clear the previous host header value (if any), without deallocating memory.
+		else
+			_hostHeaderValue.clear();
 
 		if (_device->state() != QAbstractSocket::UnconnectedState)
-		{
-			qDebug() << "  Disconnecting from current host";
 			_device->disconnectFromHost();
-		}
-		qDebug() << "  Connecting to host:" << _request.url.host() << "port:" << _request.url.port(80);
 		_device->connectToHost(_request.url.host(), _request.url.port(80));
 	}
 }
@@ -571,7 +555,6 @@ void Pillow::HttpClient::device_error(QAbstractSocket::SocketError error)
 
 void Pillow::HttpClient::device_connected()
 {
-	qDebug() << "HttpClient::device_connected() - about to send request";
 	sendRequest();
 }
 
@@ -661,7 +644,6 @@ void Pillow::HttpClient::device_readyRead()
 
 void Pillow::HttpClient::sendRequest()
 {
-	qDebug() << "HttpClient::sendRequest() - responsePending:" << responsePending();
 	if (!responsePending()) return;
 
 	if (_hostHeaderValue.isEmpty())
@@ -676,11 +658,7 @@ void Pillow::HttpClient::sendRequest()
 
 	QByteArray uri = _request.url.path(QUrl::FullyEncoded).toUtf8();
 	if (uri.isEmpty()) uri = "/";
-#if (QT_VERSION >= QT_VERSION_CHECK(5, 0, 0))
 	const QByteArray query = _request.url.query(QUrl::FullyEncoded).toUtf8();
-#else
-  const QByteArray query = _request.url.encodedQuery();
-#endif
 	if (!query.isEmpty()) uri.append('?').append(query);
 
 	Pillow::HttpHeaderCollection headers;
@@ -689,7 +667,6 @@ void Pillow::HttpClient::sendRequest()
 	for (int i = 0, iE = _request.headers.size(); i < iE; ++i)
 		headers << _request.headers.at(i);
 
-	qDebug() << "  Calling _requestWriter.write() with method:" << _request.method << "uri:" << uri << "headers count:" << headers.size();
 	_requestWriter.write(_request.method, uri, headers, _request.data);
 }
 

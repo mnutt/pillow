@@ -237,10 +237,8 @@ void HttpRequest::transitionToSendingContent()
 	else
 		_responseHeadersBuffer.resize(0);
 
-	if (_responseContentLength == 0 || _requestMethod == "HEAD") {
-		qDebug() << "HttpRequest::transitionToSendingContent() - calling transitionToCompleted() because responseContentLength == 0 or HEAD request - responseContentLength:" << _responseContentLength << "requestMethod:" << _requestMethod;
+	if (_responseContentLength == 0 || _requestMethod == "HEAD")
 		transitionToCompleted();
-	}
 
 	if (_responseContentLength < 0)
 	{
@@ -259,31 +257,14 @@ void HttpRequest::transitionToStreamingContent()
 	else
 		_responseHeadersBuffer.resize(0);
 
-	if (_requestMethod == "HEAD") {
-		qDebug() << "HttpRequest::transitionToStreamingContent() - calling transitionToCompleted() because HEAD request - requestMethod:" << _requestMethod;
+	if (_requestMethod == "HEAD")
 		transitionToCompleted();
-	}
 }
 
 void HttpRequest::transitionToCompleted()
 {
-	// Add detailed logging to track call patterns and detect infinite loops
-	static int callCount = 0;
-	callCount++;
-	qDebug() << "HttpRequest::transitionToCompleted() - call #" << callCount << "- current state:" << _state << "- thread:" << QThread::currentThread();
-	
-	// Log the call stack by checking if we're in an event vs direct call
-	QObject* sender = this->sender();
-	if (sender) {
-		qDebug() << "  Called from signal, sender:" << sender << "sender type:" << sender->metaObject()->className();
-	} else {
-		qDebug() << "  Called directly (not from signal)";
-	}
-	
-	if (_state == Completed) {
-		qDebug() << "  Already in Completed state - redundant call detected, returning early";
+	if (_state == Completed)
 		return;
-	}
 	if (_state == Closed)
 	{
 		qWarning() << "HttpRequest::transitionToCompleted called while the request is in the closed state.";
@@ -363,8 +344,6 @@ void HttpRequest::writeRequestErrorResponse(int statusCode)
 		qWarning() << "HttpRequest::writeRequestErrorResponse called while state is already 'Closed'";
 		return;
 	}
-
-	qDebug() << "HttpRequest: request error! (sending http status" << statusCode << "and closing connection.)";
 
 	QByteArray _responseHeadersBuffer; _responseHeadersBuffer.reserve(1024);
 	_responseHeadersBuffer.append("HTTP/1.0 ").append(HttpProtocol::StatusCodes::getStatusCodeAndMessage(statusCode)).append(crLfToken);
@@ -548,10 +527,8 @@ void HttpRequest::writeContent(const QByteArray& content)
 		_responseContentBytesSent += content.size();
 		_outputDevice->write(content);
 
-		if (_responseContentBytesSent == _responseContentLength) {
-			qDebug() << "HttpRequest::writeContent() - calling transitionToCompleted() because all content sent - responseContentBytesSent:" << _responseContentBytesSent << "responseContentLength:" << _responseContentLength;
+		if (_responseContentBytesSent == _responseContentLength)
 			transitionToCompleted();
-		}
 	}
 }
 
