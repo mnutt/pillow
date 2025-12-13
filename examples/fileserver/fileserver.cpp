@@ -44,17 +44,21 @@ int main(int argc, char *argv[])
 {
 	QCoreApplication a(argc, argv);
 
+	QString servePath = QDir::currentPath();
+	if (argc > 1)
+		servePath = QString::fromLocal8Bit(argv[1]);
+
 	HttpServer server(QHostAddress(QHostAddress::Any), 4567);
 	if (!server.isListening())
 		exit(1);
-	qDebug() << "Ready";
+	qDebug() << "Serving" << servePath << "on port 4567";
 
 	HttpHandlerStack* handler = new HttpHandlerStack(&server);
 		new HttpHandlerLog(handler);
 		new HttpHandlerStats(handler);
-		new HttpHandlerFile("/home/alcos/public", handler);
+		new HttpHandlerFile(servePath, handler);
 		new HttpHandler404(handler);
-	QObject::connect(&server, SIGNAL(requestReady(Pillow::HttpConnection*)), handler, SLOT(handleRequest(Pillow::HttpConnection*)));
+	QObject::connect(&server, &HttpServer::requestReady, handler, &HttpHandler::handleRequest);
 
-    return a.exec();
+	return a.exec();
 }
