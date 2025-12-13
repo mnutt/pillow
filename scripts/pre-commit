@@ -1,0 +1,33 @@
+#!/bin/bash
+
+# Pre-commit hook to run clang-format on staged C++ files
+
+# Check if clang-format is installed
+if ! command -v clang-format &> /dev/null; then
+    echo "Error: clang-format is not installed."
+    echo "Please install clang-format before committing."
+    exit 1
+fi
+
+# Get list of staged C++ files
+STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(cpp|h|hpp|c|cc|cxx)$')
+
+if [ -z "$STAGED_FILES" ]; then
+    exit 0
+fi
+
+# Format each file and re-stage
+FORMATTED=0
+for FILE in $STAGED_FILES; do
+    if [ -f "$FILE" ]; then
+        clang-format -i "$FILE"
+        git add "$FILE"
+        FORMATTED=$((FORMATTED + 1))
+    fi
+done
+
+if [ $FORMATTED -gt 0 ]; then
+    echo "clang-format: formatted $FORMATTED file(s)"
+fi
+
+exit 0
