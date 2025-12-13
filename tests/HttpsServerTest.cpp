@@ -41,7 +41,7 @@ QObject* HttpsServerTest::createServer()
 	return new Pillow::HttpsServer(sslCertificate(), sslPrivateKey(), QHostAddress::Any, 4588);
 }
 
-QIODevice * HttpsServerTest::createClientConnection()
+QIODevice* HttpsServerTest::createClientConnection()
 {
 	QSslSocket* socket = new QSslSocket(server);
 	socket->setLocalCertificate(sslCertificate());
@@ -54,4 +54,3 @@ QIODevice * HttpsServerTest::createClientConnection()
 }
 
 #endif // !defined(PILLOW_NO_SSL) && !defined(QT_NO_SSL)
-

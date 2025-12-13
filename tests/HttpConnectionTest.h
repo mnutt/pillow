@@ -1,5 +1,4 @@
-#ifndef HTTPCONNECTIONTEST_H
-#define HTTPCONNECTIONTEST_H
+#pragma once
 
 #include <QObject>
 #include <QPointer>
@@ -10,7 +9,10 @@ class QLocalServer;
 class QLocalSocket;
 class QSignalSpy;
 class QBuffer;
-namespace Pillow { class HttpConnection; }
+namespace Pillow
+{
+	class HttpConnection;
+}
 class HttpConnectionTest : public QObject
 {
 	Q_OBJECT
@@ -20,7 +22,7 @@ public:
 
 protected:
 	Pillow::HttpConnection* connection;
-	QSignalSpy* readySpy, *completedSpy, *closedSpy;
+	QSignalSpy *readySpy, *completedSpy, *closedSpy;
 	bool reuseConnection;
 
 protected: // Helper methods.
@@ -85,7 +87,11 @@ private slots: // Test methods.
 	virtual void init();
 	virtual void cleanup();
 
-	void testInit() { cleanup(); init(); }
+	void testInit()
+	{
+		cleanup();
+		init();
+	}
 
 	// Behavior tests.
 	void testInitialState() { HttpConnectionTest::testInitialState(); }
@@ -144,7 +150,11 @@ private slots: // Test methods.
 	virtual void init();
 	virtual void cleanup();
 
-	void testInit() { cleanup(); init(); }
+	void testInit()
+	{
+		cleanup();
+		init();
+	}
 
 	// Behavior tests.
 	void testInitialState() { HttpConnectionTest::testInitialState(); }
@@ -204,7 +214,11 @@ private slots: // Test methods.
 	virtual void init();
 	virtual void cleanup();
 
-	void testInit() { cleanup(); init(); }
+	void testInit()
+	{
+		cleanup();
+		init();
+	}
 
 	// Behavior tests.
 	void testInitialState() { HttpConnectionTest::testInitialState(); }
@@ -252,7 +266,11 @@ private slots: // Test methods.
 	virtual void init();
 	virtual void cleanup();
 
-	void testInit() { cleanup(); init(); }
+	void testInit()
+	{
+		cleanup();
+		init();
+	}
 
 	// Behavior tests.
 	void testInitialState() { HttpConnectionTest::testInitialState(); }
@@ -279,5 +297,3 @@ private slots: // Test methods.
 	void benchmarkSimpleGetClose() { HttpConnectionTest::benchmarkSimpleGetClose(); }
 	void benchmarkSimpleGetKeepAlive() { HttpConnectionTest::benchmarkSimpleGetKeepAlive(); }
 };
-
-#endif // HTTPCONNECTIONTEST_H

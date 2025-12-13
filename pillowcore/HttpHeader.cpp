@@ -3,14 +3,14 @@
 
 namespace
 {
-	inline const QByteArray & nullByteArray()
+	inline const QByteArray& nullByteArray()
 	{
 		static QByteArray null;
 		return null;
 	}
-}
+} // namespace
 
-void Pillow::HttpHeader::setFromRawHeader(const char *rawHeader, int len)
+void Pillow::HttpHeader::setFromRawHeader(const char* rawHeader, int len)
 {
 	if (!rawHeader || len <= 0)
 	{
@@ -50,7 +50,7 @@ void Pillow::HttpHeader::setFromRawHeader(const char *rawHeader, int len)
 // Pillow::HttpHeaderCollection
 //
 
-const QByteArray& Pillow::HttpHeaderCollection::getFieldValue(const char *fieldName, int fieldNameLength) const
+const QByteArray& Pillow::HttpHeaderCollection::getFieldValue(const char* fieldName, int fieldNameLength) const
 {
 	for (const_iterator it = constBegin(), itE = constEnd(); it != itE; ++it)
 	{
@@ -60,7 +60,7 @@ const QByteArray& Pillow::HttpHeaderCollection::getFieldValue(const char *fieldN
 	return nullByteArray();
 }
 
-const QByteArray& Pillow::HttpHeaderCollection::getFieldValue(const Pillow::LowerCaseToken &fieldName) const
+const QByteArray& Pillow::HttpHeaderCollection::getFieldValue(const Pillow::LowerCaseToken& fieldName) const
 {
 	for (const_iterator it = constBegin(), itE = constEnd(); it != itE; ++it)
 	{
@@ -70,7 +70,7 @@ const QByteArray& Pillow::HttpHeaderCollection::getFieldValue(const Pillow::Lowe
 	return nullByteArray();
 }
 
-QVector<QByteArray> Pillow::HttpHeaderCollection::getFieldValues(const char *fieldName, int fieldNameLength) const
+QVector<QByteArray> Pillow::HttpHeaderCollection::getFieldValues(const char* fieldName, int fieldNameLength) const
 {
 	QVector<QByteArray> result;
 	for (const_iterator it = constBegin(); it != constEnd(); ++it)
@@ -81,14 +81,15 @@ QVector<QByteArray> Pillow::HttpHeaderCollection::getFieldValues(const char *fie
 	return result;
 }
 
-bool Pillow::HttpHeaderCollection::testFieldValue(const char *fieldName, int fieldNameLength, const char *value, int valueLength) const
+bool Pillow::HttpHeaderCollection::testFieldValue(const char* fieldName, int fieldNameLength, const char* value, int valueLength) const
 {
 	for (const_iterator it = constBegin(), itE = constEnd(); it != itE; ++it)
 	{
-		if (it->first.size() != fieldNameLength || it->second.size() != valueLength) continue;
+		if (it->first.size() != fieldNameLength || it->second.size() != valueLength)
+			continue;
 
-		if (Pillow::ByteArrayHelpers::asciiEqualsCaseInsensitive(it->first.constData(), it->first.size(), fieldName, fieldNameLength)
-			&& Pillow::ByteArrayHelpers::asciiEqualsCaseInsensitive(it->second.constData(), it->second.size(), value, valueLength))
+		if (Pillow::ByteArrayHelpers::asciiEqualsCaseInsensitive(it->first.constData(), it->first.size(), fieldName, fieldNameLength) &&
+		    Pillow::ByteArrayHelpers::asciiEqualsCaseInsensitive(it->second.constData(), it->second.size(), value, valueLength))
 			return true;
 	}
 

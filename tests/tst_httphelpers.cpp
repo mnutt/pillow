@@ -16,25 +16,13 @@ private slots:
 		QCOMPARE(Pillow::HttpMimeHelper::getMimeTypeForFilename("test.htm"), "text/html");
 	}
 
-	void testMimeType_css()
-	{
-		QCOMPARE(Pillow::HttpMimeHelper::getMimeTypeForFilename("style.css"), "text/css");
-	}
+	void testMimeType_css() { QCOMPARE(Pillow::HttpMimeHelper::getMimeTypeForFilename("style.css"), "text/css"); }
 
-	void testMimeType_javascript()
-	{
-		QCOMPARE(Pillow::HttpMimeHelper::getMimeTypeForFilename("app.js"), "text/javascript");
-	}
+	void testMimeType_javascript() { QCOMPARE(Pillow::HttpMimeHelper::getMimeTypeForFilename("app.js"), "text/javascript"); }
 
-	void testMimeType_json()
-	{
-		QCOMPARE(Pillow::HttpMimeHelper::getMimeTypeForFilename("data.json"), "application/json");
-	}
+	void testMimeType_json() { QCOMPARE(Pillow::HttpMimeHelper::getMimeTypeForFilename("data.json"), "application/json"); }
 
-	void testMimeType_xml()
-	{
-		QCOMPARE(Pillow::HttpMimeHelper::getMimeTypeForFilename("config.xml"), "text/xml");
-	}
+	void testMimeType_xml() { QCOMPARE(Pillow::HttpMimeHelper::getMimeTypeForFilename("config.xml"), "text/xml"); }
 
 	void testMimeType_images()
 	{
@@ -46,10 +34,7 @@ private slots:
 		QCOMPARE(Pillow::HttpMimeHelper::getMimeTypeForFilename("modern.webp"), "image/webp");
 	}
 
-	void testMimeType_svg()
-	{
-		QCOMPARE(Pillow::HttpMimeHelper::getMimeTypeForFilename("icon.svg"), "image/svg+xml");
-	}
+	void testMimeType_svg() { QCOMPARE(Pillow::HttpMimeHelper::getMimeTypeForFilename("icon.svg"), "image/svg+xml"); }
 
 	void testMimeType_fonts()
 	{
@@ -57,10 +42,7 @@ private slots:
 		QCOMPARE(Pillow::HttpMimeHelper::getMimeTypeForFilename("font.woff2"), "font/woff2");
 	}
 
-	void testMimeType_text()
-	{
-		QCOMPARE(Pillow::HttpMimeHelper::getMimeTypeForFilename("readme.txt"), "text/plain");
-	}
+	void testMimeType_text() { QCOMPARE(Pillow::HttpMimeHelper::getMimeTypeForFilename("readme.txt"), "text/plain"); }
 
 	void testMimeType_unknownExtension()
 	{
@@ -152,10 +134,7 @@ private slots:
 		QCOMPARE(Pillow::HttpProtocol::StatusCodes::getStatusMessage(500), "Internal Server Error");
 	}
 
-	void testStatusMessage_unknownCode()
-	{
-		QCOMPARE(Pillow::HttpProtocol::StatusCodes::getStatusMessage(999), nullptr);
-	}
+	void testStatusMessage_unknownCode() { QCOMPARE(Pillow::HttpProtocol::StatusCodes::getStatusMessage(999), nullptr); }
 
 	// HttpProtocol::Dates tests
 	void testHttpDate_format()
@@ -200,12 +179,13 @@ private slots:
 	void testHttpDate_allMonths()
 	{
 		const char* months[] = {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
-		for (int m = 1; m <= 12; ++m) {
+		for (int m = 1; m <= 12; ++m)
+		{
 			QDateTime dt = QDateTime(QDate(2015, m, 15), QTime(12, 0, 0), QTimeZone::utc());
 			QByteArray httpDate = Pillow::HttpProtocol::Dates::getHttpDate(dt);
-			QVERIFY2(httpDate.contains(months[m - 1]),
-					 qPrintable(QString("Month %1 should contain '%2', got '%3'")
-								.arg(m).arg(months[m - 1]).arg(QString::fromUtf8(httpDate))));
+			QVERIFY2(
+			    httpDate.contains(months[m - 1]),
+			    qPrintable(QString("Month %1 should contain '%2', got '%3'").arg(m).arg(months[m - 1]).arg(QString::fromUtf8(httpDate))));
 		}
 	}
 
@@ -222,8 +202,7 @@ private slots:
 		// Passing local time should produce the same result as the equivalent UTC time
 		QDateTime localDt = QDateTime(QDate(2015, 10, 21), QTime(10, 28, 0), QTimeZone("Europe/Paris"));
 		QDateTime utcDt = localDt.toUTC();
-		QCOMPARE(Pillow::HttpProtocol::Dates::getHttpDate(localDt),
-				 Pillow::HttpProtocol::Dates::getHttpDate(utcDt));
+		QCOMPARE(Pillow::HttpProtocol::Dates::getHttpDate(localDt), Pillow::HttpProtocol::Dates::getHttpDate(utcDt));
 	}
 
 	void testHttpDate_paddedDays()

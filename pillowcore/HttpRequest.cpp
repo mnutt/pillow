@@ -27,13 +27,20 @@ inline void setFromRawDataAndNullterm(QByteArray& target, char* data, int start,
 	}
 }
 
-template <typename Integer>
+template<typename Integer>
 inline void appendNumber(QByteArray& target, const Integer number)
 {
 	int start = target.size();
-	Integer n = number; if (n < 0) n = -n;
-	do { target.append(char(n % 10) + '0');	} while ((n /= 10) > 0);
-	if (number < 0) target.append('-');
+	Integer n = number;
+	if (n < 0)
+		n = -n;
+	do
+	{
+		target.append(char(n % 10) + '0');
+	}
+	while ((n /= 10) > 0);
+	if (number < 0)
+		target.append('-');
 
 	// Reverse the string we've just output
 	int end = target.size() - 1;
@@ -43,7 +50,8 @@ inline void appendNumber(QByteArray& target, const Integer number)
 		char c = data[start];
 		data[start] = data[end];
 		data[end] = c;
-		++start; --end;
+		++start;
+		--end;
 	}
 }
 
@@ -51,7 +59,8 @@ inline void appendNumber(QByteArray& target, const Integer number)
 // HttpRequest
 //
 
-static const int responseHeadersBufferRecyclingCapacity = 4096; // The capacity above which the response buffer will not be preserved between requests.
+static const int responseHeadersBufferRecyclingCapacity =
+    4096; // The capacity above which the response buffer will not be preserved between requests.
 static const QByteArray crLfToken("\r\n");
 static const QByteArray lfToken("\n");
 static const QByteArray connectionToken("connection");
@@ -62,25 +71,21 @@ static const QByteArray hundredDashContinueToken("100-continue");
 static const QByteArray keepAliveToken("keep-alive");
 static const QByteArray xMixedReplaceToken("Movable-[^_^]-Ink");
 
-HttpRequest::HttpRequest(QObject* parent /*= 0*/)
-	: QObject(parent), _inputDevice(nullptr), _outputDevice(nullptr), _state(Uninitialized)
-{
-}
+HttpRequest::HttpRequest(QObject* parent /*= 0*/) : QObject(parent), _inputDevice(nullptr), _outputDevice(nullptr), _state(Uninitialized) {}
 
 HttpRequest::HttpRequest(QIODevice* inputOutputDevice, QObject* parent /* = 0 */)
-	: QObject(parent), _inputDevice(nullptr), _outputDevice(nullptr), _state(Uninitialized)
+    : QObject(parent), _inputDevice(nullptr), _outputDevice(nullptr), _state(Uninitialized)
 {
 	initialize(inputOutputDevice, inputOutputDevice);
 }
 
 HttpRequest::HttpRequest(QIODevice* inputDevice, QIODevice* outputDevice, QObject* parent /*= 0*/)
-	: QObject(parent), _inputDevice(nullptr), _outputDevice(nullptr), _state(Uninitialized)
+    : QObject(parent), _inputDevice(nullptr), _outputDevice(nullptr), _state(Uninitialized)
 {
 	initialize(inputDevice, outputDevice);
 }
 
-HttpRequest::~HttpRequest()
-{}
+HttpRequest::~HttpRequest() {}
 
 void HttpRequest::initialize(QIODevice* inputDevice, QIODevice* outputDevice)
 {
@@ -90,12 +95,20 @@ void HttpRequest::initialize(QIODevice* inputDevice, QIODevice* outputDevice)
 	_requestHeadersRef.reserve(16);
 
 	// Clear any leftover data from a previous potentially failed request (that would not have gone though "transitionToCompleted")
-	if (_requestBuffer.capacity() <= MaximumRequestHeaderLength) _requestBuffer.resize(0);
-	else _requestBuffer.clear();
-	if (_requestHeadersRef.capacity() > 16) _requestHeadersRef.clear();
-	else while (!_requestHeadersRef.isEmpty()) _requestHeadersRef.pop_back();
-	if (_requestParams.capacity() > 16) _requestParams.clear();
-	else while(!_requestParams.isEmpty()) _requestParams.pop_back();
+	if (_requestBuffer.capacity() <= MaximumRequestHeaderLength)
+		_requestBuffer.resize(0);
+	else
+		_requestBuffer.clear();
+	if (_requestHeadersRef.capacity() > 16)
+		_requestHeadersRef.clear();
+	else
+		while (!_requestHeadersRef.isEmpty())
+			_requestHeadersRef.pop_back();
+	if (_requestParams.capacity() > 16)
+		_requestParams.clear();
+	else
+		while (!_requestParams.isEmpty())
+			_requestParams.pop_back();
 
 	if (inputDevice != _inputDevice)
 	{
@@ -115,12 +128,14 @@ void HttpRequest::initialize(QIODevice* inputDevice, QIODevice* outputDevice)
 
 	// Enter the initial working state and schedule processing of any data already available on the device.
 	transitionToReceivingHeaders();
-	if (_inputDevice->bytesAvailable() > 0) QTimer::singleShot(0, this, &HttpRequest::processInput);
+	if (_inputDevice->bytesAvailable() > 0)
+		QTimer::singleShot(0, this, &HttpRequest::processInput);
 }
 
 void HttpRequest::processInput()
 {
-	if (_state != ReceivingHeaders && _state != ReceivingContent) return;
+	if (_state != ReceivingHeaders && _state != ReceivingContent)
+		return;
 
 	qint64 bytesAvailable = _inputDevice->bytesAvailable();
 	if (bytesAvailable > 0)
@@ -159,7 +174,8 @@ void HttpRequest::processInput()
 
 void HttpRequest::transitionToReceivingHeaders()
 {
-	if (_state == ReceivingHeaders) return;
+	if (_state == ReceivingHeaders)
+		return;
 	_state = ReceivingHeaders;
 
 	thin_http_parser_init(&_parser);
@@ -168,7 +184,8 @@ void HttpRequest::transitionToReceivingHeaders()
 
 void HttpRequest::transitionToReceivingContent()
 {
-	if (_state == ReceivingContent) return;
+	if (_state == ReceivingContent)
+		return;
 	_state = ReceivingContent;
 
 	char* data = _requestBuffer.data();
@@ -191,8 +208,10 @@ void HttpRequest::transitionToReceivingContent()
 	setFromRawDataAndNullterm(_requestQueryString, data, _parser.query_string_start, _parser.query_string_len);
 	setFromRawDataAndNullterm(_requestHttpVersion, data, _parser.http_version_start, _parser.http_version_len);
 
-	while (_requestHeaders.size() > _requestHeadersRef.size()) _requestHeaders.pop_back();
-	if (_requestHeaders.size() != _requestHeadersRef.size()) _requestHeaders.resize(_requestHeadersRef.size());
+	while (_requestHeaders.size() > _requestHeadersRef.size())
+		_requestHeaders.pop_back();
+	if (_requestHeaders.size() != _requestHeadersRef.size())
+		_requestHeaders.resize(_requestHeadersRef.size());
 
 	for (int i = 0, iE = _requestHeadersRef.size(); i < iE; ++i)
 	{
@@ -202,7 +221,8 @@ void HttpRequest::transitionToReceivingContent()
 		setFromRawDataAndNullterm(header.second, data, ref.valuePos, ref.valueLength);
 	}
 
-	QByteArray requestContentLengthValue = getRequestHeaderValue(contentLengthToken); bool parseOk = true;
+	QByteArray requestContentLengthValue = getRequestHeaderValue(contentLengthToken);
+	bool parseOk = true;
 	_requestContentLength = requestContentLengthValue.isEmpty() ? 0 : requestContentLengthValue.toInt(&parseOk);
 
 	if (_requestContentLength < 0)
@@ -212,14 +232,16 @@ void HttpRequest::transitionToReceivingContent()
 	else if (_requestContentLength == 0)
 		transitionToSendingHeaders(); // No content to receive. Go straight to sending headers.
 	else if (getRequestHeaderValue(expectToken) == hundredDashContinueToken)
-		_outputDevice->write("HTTP/1.1 100 Continue\r\n\r\n");// The client politely wanted to know if it could proceed with his payload. All clear!
+		_outputDevice->write(
+		    "HTTP/1.1 100 Continue\r\n\r\n"); // The client politely wanted to know if it could proceed with his payload. All clear!
 
 	processInput();
 }
 
 void HttpRequest::transitionToSendingHeaders()
 {
-	if (_state == SendingHeaders) return;
+	if (_state == SendingHeaders)
+		return;
 	_state = SendingHeaders;
 
 	// Reset our known information about the response.
@@ -231,8 +253,9 @@ void HttpRequest::transitionToSendingHeaders()
 
 void HttpRequest::transitionToSendingContent()
 {
-	if (_state == SendingContent) return;
-	_state= SendingContent;
+	if (_state == SendingContent)
+		return;
+	_state = SendingContent;
 
 	if (_responseHeadersBuffer.capacity() > responseHeadersBufferRecyclingCapacity)
 		_responseHeadersBuffer.clear();
@@ -251,8 +274,9 @@ void HttpRequest::transitionToSendingContent()
 
 void HttpRequest::transitionToStreamingContent()
 {
-  if (_state == StreamingContent) return;
-  _state = StreamingContent;
+	if (_state == StreamingContent)
+		return;
+	_state = StreamingContent;
 
 	if (_responseHeadersBuffer.capacity() > responseHeadersBufferRecyclingCapacity)
 		_responseHeadersBuffer.clear();
@@ -277,15 +301,24 @@ void HttpRequest::transitionToCompleted()
 	// Preserve any existing data in the request buffer that did not belong to the completed request.
 	// Reuse the already allocated buffer if it is not too large.
 	int remainingBytes = _requestBuffer.size() - int(_parser.body_start) - _requestContentLength;
-	if (remainingBytes > 0) _requestBuffer = _requestBuffer.right(remainingBytes);
-	else if (_requestBuffer.capacity() <= MaximumRequestHeaderLength) _requestBuffer.resize(0);
-	else _requestBuffer.clear();
+	if (remainingBytes > 0)
+		_requestBuffer = _requestBuffer.right(remainingBytes);
+	else if (_requestBuffer.capacity() <= MaximumRequestHeaderLength)
+		_requestBuffer.resize(0);
+	else
+		_requestBuffer.clear();
 
-	if (_requestHeadersRef.capacity() > 16) _requestHeadersRef.clear();
-	else while (!_requestHeadersRef.isEmpty()) _requestHeadersRef.pop_back();
+	if (_requestHeadersRef.capacity() > 16)
+		_requestHeadersRef.clear();
+	else
+		while (!_requestHeadersRef.isEmpty())
+			_requestHeadersRef.pop_back();
 
-	if (_requestParams.capacity() > 16) _requestParams.clear();
-	else while(!_requestParams.isEmpty()) _requestParams.pop_back();
+	if (_requestParams.capacity() > 16)
+		_requestParams.clear();
+	else
+		while (!_requestParams.isEmpty())
+			_requestParams.pop_back();
 
 	if (_responseConnectionKeepAlive)
 	{
@@ -301,21 +334,25 @@ void HttpRequest::transitionToFlushing()
 {
 	// This is a transient state that is meant to fully drain the write buffers and
 	// wait for all the data to make it to the kernel before closing the connection.
-	if (_state == Flushing) return;
+	if (_state == Flushing)
+		return;
 	_state = Flushing;
 
-	drain(); // Will transition to closed also if there was no data at all to flush.
+	drain();                // Will transition to closed also if there was no data at all to flush.
 	if (_state == Flushing) // A first flush was not enough. Schedule more flushes.
 		connect(_outputDevice, &QIODevice::bytesWritten, this, &HttpRequest::drain);
 }
 
 void HttpRequest::transitionToClosed()
 {
-	if (_state == Closed) return;
+	if (_state == Closed)
+		return;
 	_state = Closed;
 
-	if (_inputDevice && _inputDevice->isOpen()) _inputDevice->close();
-	if (_outputDevice && (_inputDevice != _outputDevice) && _outputDevice->isOpen()) _outputDevice->close();
+	if (_inputDevice && _inputDevice->isOpen())
+		_inputDevice->close();
+	if (_outputDevice && (_inputDevice != _outputDevice) && _outputDevice->isOpen())
+		_outputDevice->close();
 	emit closed(this);
 
 	disconnect(_inputDevice, nullptr, this, nullptr);
@@ -327,16 +364,20 @@ void HttpRequest::flush()
 {
 	if (_outputDevice->bytesToWrite() > 0)
 	{
-		if (qobject_cast<QTcpSocket*>(_outputDevice)) static_cast<QTcpSocket*>(_outputDevice)->flush();
-		else if (qobject_cast<QLocalSocket*>(_outputDevice)) static_cast<QLocalSocket*>(_outputDevice)->flush();
+		if (qobject_cast<QTcpSocket*>(_outputDevice))
+			static_cast<QTcpSocket*>(_outputDevice)->flush();
+		else if (qobject_cast<QLocalSocket*>(_outputDevice))
+			static_cast<QLocalSocket*>(_outputDevice)->flush();
 	}
 }
 
 void HttpRequest::drain()
 {
-	if (_state != Flushing) return;
+	if (_state != Flushing)
+		return;
 	flush();
-	if (_outputDevice->bytesToWrite() == 0) transitionToClosed();
+	if (_outputDevice->bytesToWrite() == 0)
+		transitionToClosed();
 }
 
 void HttpRequest::writeRequestErrorResponse(int statusCode)
@@ -347,7 +388,8 @@ void HttpRequest::writeRequestErrorResponse(int statusCode)
 		return;
 	}
 
-	QByteArray _responseHeadersBuffer; _responseHeadersBuffer.reserve(1024);
+	QByteArray _responseHeadersBuffer;
+	_responseHeadersBuffer.reserve(1024);
 	_responseHeadersBuffer.append("HTTP/1.0 ").append(HttpProtocol::StatusCodes::getStatusCodeAndMessage(statusCode)).append(crLfToken);
 	_responseHeadersBuffer.append("Connection: close").append(crLfToken);
 	_responseHeadersBuffer.append(crLfToken); // End of headers.
@@ -366,14 +408,16 @@ void HttpRequest::writeResponse(int statusCode, const HttpHeaderCollection& head
 	// Calculate the Content-Length header so it can be set in WriteHeaders, unless it is already present.
 	_responseContentLength = content.size();
 	writeHeaders(statusCode, headers);
-	if (!content.isEmpty() && _requestMethod != "HEAD") writeContent(content);
+	if (!content.isEmpty() && _requestMethod != "HEAD")
+		writeContent(content);
 }
 
 void HttpRequest::writeStreamingResponse(int statusCode, const HttpHeaderCollection& headers)
 {
 	if (_state != SendingHeaders)
 	{
-		qWarning() << "HttpRequest::writeStreamingResponse called while state is not 'SendingHeaders', not proceeding with sending headers.";
+		qWarning()
+		    << "HttpRequest::writeStreamingResponse called while state is not 'SendingHeaders', not proceeding with sending headers.";
 		return;
 	}
 
@@ -396,11 +440,11 @@ void HttpRequest::writeStreamingResponse(int statusCode, const HttpHeaderCollect
 	_responseHeadersBuffer.append("Content-Type: multipart/x-mixed-replace; boundary=").append(xMixedReplaceToken).append(crLfToken);
 	_responseHeadersBuffer.append("Connection: keep-alive").append(crLfToken);
 	_responseHeadersBuffer.append("Transfer-Encoding: chunked").append(crLfToken);
-  _responseHeadersBuffer.append(crLfToken);
+	_responseHeadersBuffer.append(crLfToken);
 
 	_outputDevice->write(_responseHeadersBuffer);
 
-  _state = StreamingContent;
+	_state = StreamingContent;
 }
 
 void HttpRequest::writeResponseString(int statusCode, const HttpHeaderCollection& headers, const QString& content)
@@ -438,9 +482,18 @@ void HttpRequest::writeHeaders(int statusCode, const HttpHeaderCollection& heade
 	{
 		const HttpHeader& header = headers.at(i);
 		QByteArray field = header.first.toLower();
-		if (!contentLengthFound && field == contentLengthToken) { contentLengthFound = true; _responseContentLength = header.second.toLongLong(); }
-		else if (!contentTypeFound && field == contentTypeToken) contentTypeFound = true;
-		else if (!connectionFound && field == connectionToken) { connectionFound = true; connectionKeepAlive = header.second.toLower() == keepAliveToken; }
+		if (!contentLengthFound && field == contentLengthToken)
+		{
+			contentLengthFound = true;
+			_responseContentLength = header.second.toLongLong();
+		}
+		else if (!contentTypeFound && field == contentTypeToken)
+			contentTypeFound = true;
+		else if (!connectionFound && field == connectionToken)
+		{
+			connectionFound = true;
+			connectionKeepAlive = header.second.toLower() == keepAliveToken;
+		}
 
 		_responseHeadersBuffer.append(header.first).append(": ").append(header.second).append(crLfToken);
 	}
@@ -461,15 +514,23 @@ void HttpRequest::writeHeaders(int statusCode, const HttpHeaderCollection& heade
 			connectionKeepAlive = !(qstrnicmp(requestConnectionValue.constData(), "close", 5) == 0);
 		}
 
-		if (!connectionKeepAlive) connectionFound = false; // The client wants the connection closed. Make sure we output the connection header.
+		if (!connectionKeepAlive)
+			connectionFound = false; // The client wants the connection closed. Make sure we output the connection header.
 	}
 
 	_responseConnectionKeepAlive = connectionKeepAlive;
 
 	// Automatically add essential headers.
-	if (!contentLengthFound) { _responseHeadersBuffer.append("Content-Length: "); appendNumber(_responseHeadersBuffer, _responseContentLength); _responseHeadersBuffer.append(crLfToken); }
-	if (!contentTypeFound && (contentLengthFound || _responseContentLength > 0)) _responseHeadersBuffer.append("Content-Type: text/plain").append(crLfToken);
-	if (!connectionFound) _responseHeadersBuffer.append(connectionKeepAlive ? "Connection: keep-alive": "Connection: close").append(crLfToken);
+	if (!contentLengthFound)
+	{
+		_responseHeadersBuffer.append("Content-Length: ");
+		appendNumber(_responseHeadersBuffer, _responseContentLength);
+		_responseHeadersBuffer.append(crLfToken);
+	}
+	if (!contentTypeFound && (contentLengthFound || _responseContentLength > 0))
+		_responseHeadersBuffer.append("Content-Type: text/plain").append(crLfToken);
+	if (!connectionFound)
+		_responseHeadersBuffer.append(connectionKeepAlive ? "Connection: keep-alive" : "Connection: close").append(crLfToken);
 	_responseHeadersBuffer.append(crLfToken); // End of headers.
 	_outputDevice->write(_responseHeadersBuffer);
 	transitionToSendingContent();
@@ -477,50 +538,55 @@ void HttpRequest::writeHeaders(int statusCode, const HttpHeaderCollection& heade
 
 void HttpRequest::writeStreamingHeaders(const HttpHeaderCollection& headers)
 {
-  if (_state != StreamingContent)
-  {
-    qWarning() << "HttpRequest::writeStreamingHeaders called while state is not 'StreamingContent', not proceeding with streaming content.";
-    return;
-  }
+	if (_state != StreamingContent)
+	{
+		qWarning()
+		    << "HttpRequest::writeStreamingHeaders called while state is not 'StreamingContent', not proceeding with streaming content.";
+		return;
+	}
 
-  _responseHeadersBuffer.clear();
+	_responseHeadersBuffer.clear();
 	if (_responseHeadersBuffer.capacity() == 0)
-    _responseHeadersBuffer.reserve(2048);
+		_responseHeadersBuffer.reserve(2048);
 
 	_responseHeadersBuffer.append("--").append(xMixedReplaceToken).append(lfToken);
 
-  for (int i = 0, iE = headers.size(); i < iE; ++i)
-    {
-      const HttpHeader& header = headers.at(i);
-      QByteArray field = header.first.toLower();
-      _responseHeadersBuffer.append(header.first).append(": ").append(header.second).append(lfToken);
-    }
+	for (int i = 0, iE = headers.size(); i < iE; ++i)
+	{
+		const HttpHeader& header = headers.at(i);
+		QByteArray field = header.first.toLower();
+		_responseHeadersBuffer.append(header.first).append(": ").append(header.second).append(lfToken);
+	}
 
-  _responseHeadersBuffer.append(lfToken);
+	_responseHeadersBuffer.append(lfToken);
 
-  QByteArray length = QByteArray::number(_responseHeadersBuffer.size(),16);
-  length.append(crLfToken);
+	QByteArray length = QByteArray::number(_responseHeadersBuffer.size(), 16);
+	length.append(crLfToken);
 
-  _outputDevice->write(length);
-  _outputDevice->write(_responseHeadersBuffer);
-  _outputDevice->write(crLfToken);
+	_outputDevice->write(length);
+	_outputDevice->write(_responseHeadersBuffer);
+	_outputDevice->write(crLfToken);
 }
 
 void HttpRequest::writeContent(const QByteArray& content)
 {
 	if (_state != SendingContent)
 	{
-		qWarning() << "HttpRequest::writeContent called while state is not 'SendingContent'. Not proceeding with sending content of size" << content.size() << "bytes.";
+		qWarning() << "HttpRequest::writeContent called while state is not 'SendingContent'. Not proceeding with sending content of size"
+		           << content.size() << "bytes.";
 		return;
 	}
 	else if (_responseContentLength == 0)
 	{
-		qWarning() << "HttpRequest::writeContent called while the specified response content-length is 0. Not proceeding with sending content of size" << content.size() << "bytes.";
+		qWarning() << "HttpRequest::writeContent called while the specified response content-length is 0. Not proceeding with sending "
+		              "content of size"
+		           << content.size() << "bytes.";
 		return;
 	}
 	else if (_responseContentLength > 0 && content.size() + _responseContentBytesSent > _responseContentLength)
 	{
-		qWarning() << "HttpRequest::writeContent called trying to send more data (" << (content.size() + _responseContentBytesSent) << "bytes) than the specified response content-length of" << _responseContentLength << "bytes.";
+		qWarning() << "HttpRequest::writeContent called trying to send more data (" << (content.size() + _responseContentBytesSent)
+		           << "bytes) than the specified response content-length of" << _responseContentLength << "bytes.";
 		return;
 	}
 
@@ -536,9 +602,11 @@ void HttpRequest::writeContent(const QByteArray& content)
 
 void HttpRequest::writeStreamingContent(QByteArray& content)
 {
-  if (_state != StreamingContent)
-  {
-		qWarning() << "HttpRequest::writeStreamingContent called while state is not 'StreamingContent'. Not proceeding with sending content of size" << content.size() << "bytes. (state: " << _state << ")";
+	if (_state != StreamingContent)
+	{
+		qWarning() << "HttpRequest::writeStreamingContent called while state is not 'StreamingContent'. Not proceeding with sending "
+		              "content of size"
+		           << content.size() << "bytes. (state: " << _state << ")";
 		return;
 	}
 
@@ -549,30 +617,39 @@ void HttpRequest::writeStreamingContent(QByteArray& content)
 
 	if (content.size() > 0 && _requestMethod != "HEAD")
 	{
-    _responseContentBytesSent += content.size();
+		_responseContentBytesSent += content.size();
 
-    QByteArray length = QByteArray::number(content.size(),16);
-    length.append(crLfToken);
+		QByteArray length = QByteArray::number(content.size(), 16);
+		length.append(crLfToken);
 
-    _outputDevice->write(length);
-    _outputDevice->write(content);
-    _outputDevice->write(crLfToken);
+		_outputDevice->write(length);
+		_outputDevice->write(content);
+		_outputDevice->write(crLfToken);
 
-    flush();
+		flush();
 	}
 
 	// Preserve any existing data in the request buffer that did not belong to the completed request.
 	// Reuse the already allocated buffer if it is not too large.
 	int remainingBytes = _requestBuffer.size() - int(_parser.body_start) - _requestContentLength;
-	if (remainingBytes > 0) _requestBuffer = _requestBuffer.right(remainingBytes);
-	else if (_requestBuffer.capacity() <= MaximumRequestHeaderLength) _requestBuffer.resize(0);
-	else _requestBuffer.clear();
+	if (remainingBytes > 0)
+		_requestBuffer = _requestBuffer.right(remainingBytes);
+	else if (_requestBuffer.capacity() <= MaximumRequestHeaderLength)
+		_requestBuffer.resize(0);
+	else
+		_requestBuffer.clear();
 
-	if (_requestHeadersRef.capacity() > 16) _requestHeadersRef.clear();
-	else while (!_requestHeadersRef.isEmpty()) _requestHeadersRef.pop_back();
+	if (_requestHeadersRef.capacity() > 16)
+		_requestHeadersRef.clear();
+	else
+		while (!_requestHeadersRef.isEmpty())
+			_requestHeadersRef.pop_back();
 
-	if (_requestParams.capacity() > 16) _requestParams.clear();
-	else while(!_requestParams.isEmpty()) _requestParams.pop_back();
+	if (_requestParams.capacity() > 16)
+		_requestParams.clear();
+	else
+		while (!_requestParams.isEmpty())
+			_requestParams.pop_back();
 }
 
 void Pillow::HttpRequest::close()
@@ -581,7 +658,7 @@ void Pillow::HttpRequest::close()
 		transitionToClosed();
 }
 
-QByteArray HttpRequest::getRequestHeaderValue(const QByteArray &field)
+QByteArray HttpRequest::getRequestHeaderValue(const QByteArray& field)
 {
 	for (int i = 0, iE = _requestHeaders.size(); i < iE; ++i)
 	{
@@ -607,16 +684,18 @@ const Pillow::HttpParamCollection& Pillow::HttpRequest::requestParams()
 	if (_requestParams.isEmpty() && !_requestQueryString.isEmpty())
 	{
 		// The params have not yet been initialized. Parse them.
-		QUrl url; url.setEncodedQuery(_requestQueryString);
+		QUrl url;
+		url.setEncodedQuery(_requestQueryString);
 		QList<HttpParam> params = url.queryItems();
-		if (_requestParams.capacity() < params.size()) _requestParams.reserve(params.size());
+		if (_requestParams.capacity() < params.size())
+			_requestParams.reserve(params.size());
 		for (int i = 0, iE = params.size(); i < iE; ++i)
 			_requestParams << params.at(i);
 	}
 	return _requestParams;
 }
 
-QString Pillow::HttpRequest::getRequestParam(const QString &name)
+QString Pillow::HttpRequest::getRequestParam(const QString& name)
 {
 	requestParams();
 	for (int i = 0, iE = _requestParams.size(); i < iE; ++i)
@@ -628,7 +707,7 @@ QString Pillow::HttpRequest::getRequestParam(const QString &name)
 	return QString();
 }
 
-void Pillow::HttpRequest::setRequestParam(const QString &name, const QString &value)
+void Pillow::HttpRequest::setRequestParam(const QString& name, const QString& value)
 {
 	requestParams();
 	for (int i = 0, iE = _requestParams.size(); i < iE; ++i)
@@ -648,7 +727,7 @@ QHostAddress HttpRequest::remoteAddress() const
 	return qobject_cast<QAbstractSocket*>(_inputDevice) ? static_cast<QAbstractSocket*>(_inputDevice)->peerAddress() : QHostAddress();
 }
 
-void HttpRequest::parser_http_field(void *data, const char *field, size_t flen, const char *value, size_t vlen)
+void HttpRequest::parser_http_field(void* data, const char* field, size_t flen, const char* value, size_t vlen)
 {
 	HttpRequest* request = reinterpret_cast<HttpRequest*>(data);
 	const char* begin = request->_requestBuffer.constData();

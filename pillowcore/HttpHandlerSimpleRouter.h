@@ -1,5 +1,4 @@
-#ifndef _PILLOW_HTTPHANDLERSIMPLEROUTER_H_
-#define _PILLOW_HTTPHANDLERSIMPLEROUTER_H_
+#pragma once
 
 #include "HttpHandler.h"
 #include "HttpConnection.h"
@@ -20,7 +19,11 @@ namespace Pillow
 		Q_ENUMS(RoutingErrorAction)
 
 	public:
-		enum RoutingErrorAction { Return4xxResponse, Passthrough };
+		enum RoutingErrorAction
+		{
+			Return4xxResponse,
+			Passthrough
+		};
 
 	public:
 		HttpHandlerSimpleRouter(QObject* parent = 0);
@@ -28,10 +31,15 @@ namespace Pillow
 
 		void addRoute(const QString& path, Pillow::HttpHandler* handler) { addRoute(QByteArray(), path, handler); }
 		void addRoute(const QString& path, QObject* object, const char* member) { addRoute(QByteArray(), path, object, member); }
-		void addRoute(const QString& path, int statusCode, const Pillow::HttpHeaderCollection& headers, const QByteArray& content = QByteArray()) { addRoute(QByteArray(), path, statusCode, headers, content); }
+		void addRoute(const QString& path, int statusCode, const Pillow::HttpHeaderCollection& headers,
+		              const QByteArray& content = QByteArray())
+		{
+			addRoute(QByteArray(), path, statusCode, headers, content);
+		}
 		void addRoute(const QByteArray& method, const QString& path, Pillow::HttpHandler* handler);
 		void addRoute(const QByteArray& method, const QString& path, QObject* object, const char* member);
-		void addRoute(const QByteArray& method, const QString& path, int statusCode, const Pillow::HttpHeaderCollection& headers, const QByteArray& content = QByteArray());
+		void addRoute(const QByteArray& method, const QString& path, int statusCode, const Pillow::HttpHeaderCollection& headers,
+		              const QByteArray& content = QByteArray());
 
 #ifdef Q_COMPILER_LAMBDA
 		void addRoute(const QString& path, const std::function<void(Pillow::HttpConnection*)>& func) { addRoute(QByteArray(), path, func); }
@@ -50,8 +58,6 @@ namespace Pillow
 		void setAcceptsMethodParam(bool accept);
 
 	public:
-		bool handleRequest(Pillow::HttpConnection *request);
+		bool handleRequest(Pillow::HttpConnection* request);
 	};
-}
-
-#endif // _PILLOW_HTTPHANDLERSIMPLEROUTER_H_
+} // namespace Pillow

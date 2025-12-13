@@ -15,33 +15,33 @@ namespace Pillow
 		Q_CLASSINFO("DefaultProperty", "data")
 
 	public:
-		inline BaseObject(QObject *parent = 0) : QObject(parent) {}
+		inline BaseObject(QObject* parent = 0) : QObject(parent) {}
 
 	private:
 		QDeclarativeListProperty<QObject> data()
 		{
-			return QDeclarativeListProperty<QObject>(this, 0, BaseObject::data_append, BaseObject::data_count, BaseObject::data_at, BaseObject::data_clear );
+			return QDeclarativeListProperty<QObject>(this, 0, BaseObject::data_append, BaseObject::data_count, BaseObject::data_at,
+			                                         BaseObject::data_clear);
 		}
 
-		static void data_append(QDeclarativeListProperty<QObject> *property, QObject *obj)
+		static void data_append(QDeclarativeListProperty<QObject>* property, QObject* obj)
 		{
-			if (!obj) return;
+			if (!obj)
+				return;
 			obj->setParent(property->object);
 		}
 
-		static int data_count(QDeclarativeListProperty<QObject> *property)
-		{
-			return property->object->children().size();
-		}
+		static int data_count(QDeclarativeListProperty<QObject>* property) { return property->object->children().size(); }
 
-		static QObject *data_at(QDeclarativeListProperty<QObject> *property, int index)
+		static QObject* data_at(QDeclarativeListProperty<QObject>* property, int index)
 		{
 			const QObjectList& children = property->object->children();
-			if (index < 0 || index > children.size()) return 0;
+			if (index < 0 || index > children.size())
+				return 0;
 			return children.at(index);
 		}
 
-		static void data_clear(QDeclarativeListProperty<QObject> *property)
+		static void data_clear(QDeclarativeListProperty<QObject>* property)
 		{
 			foreach (QObject* obj, property->object->children())
 				obj->setParent(0);
@@ -63,15 +63,13 @@ namespace Pillow
 			connect(_server, SIGNAL(requestReady(Pillow::HttpConnection*)), this, SIGNAL(request(Pillow::HttpConnection*)));
 		}
 
-		~DeclarativeHttpServer()
-		{
-			qDebug() << "Server is going away.";
-		}
+		~DeclarativeHttpServer() { qDebug() << "Server is going away."; }
 
 		const QString& address() const { return _address; }
 		void setAddress(const QString& address)
 		{
-			if (address == _address) return;
+			if (address == _address)
+				return;
 			_address = address;
 			rebind();
 			emit addressChanged();
@@ -80,7 +78,8 @@ namespace Pillow
 		int port() const { return _port; }
 		void setPort(int port)
 		{
-			if (port == _port) return;
+			if (port == _port)
+				return;
 			_port = port;
 			rebind();
 			emit portChanged();
@@ -117,8 +116,10 @@ namespace Pillow
 	private:
 		void rebind()
 		{
-			if (!_componentComplete) return;
-			if (_server->isListening()) _server->close();
+			if (!_componentComplete)
+				return;
+			if (_server->isListening())
+				_server->close();
 			QHostAddress addr = _address.isEmpty() ? QHostAddress(QHostAddress::Any) : QHostAddress(_address);
 			_server->listen(addr, _port);
 			emit listeningChanged();
@@ -146,7 +147,8 @@ namespace Pillow
 	public slots:
 		void setPath(const QString& path)
 		{
-			if (_path == path) return;
+			if (_path == path)
+				return;
 			_path = path;
 			rebuild();
 			emit changed();
@@ -154,7 +156,8 @@ namespace Pillow
 
 		bool match(Pillow::HttpConnection* request)
 		{
-			if (request == NULL) return false;
+			if (request == NULL)
+				return false;
 
 			if (_matchRegExp.indexIn(request->requestPathDecoded()) != -1)
 				return true;
@@ -171,8 +174,10 @@ namespace Pillow
 			QString path = _path;
 			QStringList paramNames;
 
-			QRegExp paramRegex(":(\\w+)"); QString paramReplacement("([\\w_-]+)");
-			int pos = 0; while (pos >= 0)
+			QRegExp paramRegex(":(\\w+)");
+			QString paramReplacement("([\\w_-]+)");
+			int pos = 0;
+			while (pos >= 0)
 			{
 				if ((pos = paramRegex.indexIn(path, pos)) >= 0)
 				{
@@ -182,8 +187,10 @@ namespace Pillow
 			}
 			path.replace(paramRegex, paramReplacement);
 
-			QRegExp splatRegex("\\*(\\w+)"); QString splatReplacement("(.*)");
-			pos = 0; while (pos >= 0)
+			QRegExp splatRegex("\\*(\\w+)");
+			QString splatReplacement("(.*)");
+			pos = 0;
+			while (pos >= 0)
 			{
 				if ((pos = splatRegex.indexIn(path, pos)) >= 0)
 				{
@@ -202,9 +209,9 @@ namespace Pillow
 		QRegExp _matchRegExp;
 		QStringList _matchParamNames;
 	};
-}
+} // namespace Pillow
 
-int main(int argc, char *argv[])
+int main(int argc, char* argv[])
 {
 	QApplication a(argc, argv);
 

@@ -24,21 +24,85 @@ private slots:
 
 		QByteArray bigData(16 * 1024 * 1024, '-');
 
-		{ QFile f(testPath + "/first"); f.open(QIODevice::WriteOnly); f.write("first content"); f.flush(); f.close(); }
-		{ QFile f(testPath + "/second"); f.open(QIODevice::WriteOnly); f.write("second content"); f.flush(); f.close(); }
-		{ QFile f(testPath + "/large"); f.open(QIODevice::WriteOnly); f.write(bigData); f.flush(); f.close(); }
-		{ QFile f(testPath + "/first"); f.open(QIODevice::ReadOnly); QCOMPARE(f.readAll(), QByteArray("first content")); }
-		{ QFile f(testPath + "/second"); f.open(QIODevice::ReadOnly); QCOMPARE(f.readAll(), QByteArray("second content")); }
-		{ QFile f(testPath + "/large"); f.open(QIODevice::ReadOnly); QCOMPARE(f.readAll(), bigData); }
+		{
+			QFile f(testPath + "/first");
+			f.open(QIODevice::WriteOnly);
+			f.write("first content");
+			f.flush();
+			f.close();
+		}
+		{
+			QFile f(testPath + "/second");
+			f.open(QIODevice::WriteOnly);
+			f.write("second content");
+			f.flush();
+			f.close();
+		}
+		{
+			QFile f(testPath + "/large");
+			f.open(QIODevice::WriteOnly);
+			f.write(bigData);
+			f.flush();
+			f.close();
+		}
+		{
+			QFile f(testPath + "/first");
+			f.open(QIODevice::ReadOnly);
+			QCOMPARE(f.readAll(), QByteArray("first content"));
+		}
+		{
+			QFile f(testPath + "/second");
+			f.open(QIODevice::ReadOnly);
+			QCOMPARE(f.readAll(), QByteArray("second content"));
+		}
+		{
+			QFile f(testPath + "/large");
+			f.open(QIODevice::ReadOnly);
+			QCOMPARE(f.readAll(), bigData);
+		}
 
 		// Create files for edge case tests
-		{ QFile f(testPath + "/empty"); f.open(QIODevice::WriteOnly); f.close(); }
-		{ QFile f(testPath + "/test.html"); f.open(QIODevice::WriteOnly); f.write("<html></html>"); f.close(); }
-		{ QFile f(testPath + "/style.css"); f.open(QIODevice::WriteOnly); f.write("body {}"); f.close(); }
-		{ QFile f(testPath + "/no_extension"); f.open(QIODevice::WriteOnly); f.write("no ext content"); f.close(); }
-		{ QFile f(testPath + "/file with spaces.txt"); f.open(QIODevice::WriteOnly); f.write("spaces content"); f.close(); }
-		{ QFile f(testPath + "/special%char.txt"); f.open(QIODevice::WriteOnly); f.write("special content"); f.close(); }
-		{ QFile f(testPath + "/subdir/nested.txt"); f.open(QIODevice::WriteOnly); f.write("nested content"); f.close(); }
+		{
+			QFile f(testPath + "/empty");
+			f.open(QIODevice::WriteOnly);
+			f.close();
+		}
+		{
+			QFile f(testPath + "/test.html");
+			f.open(QIODevice::WriteOnly);
+			f.write("<html></html>");
+			f.close();
+		}
+		{
+			QFile f(testPath + "/style.css");
+			f.open(QIODevice::WriteOnly);
+			f.write("body {}");
+			f.close();
+		}
+		{
+			QFile f(testPath + "/no_extension");
+			f.open(QIODevice::WriteOnly);
+			f.write("no ext content");
+			f.close();
+		}
+		{
+			QFile f(testPath + "/file with spaces.txt");
+			f.open(QIODevice::WriteOnly);
+			f.write("spaces content");
+			f.close();
+		}
+		{
+			QFile f(testPath + "/special%char.txt");
+			f.open(QIODevice::WriteOnly);
+			f.write("special content");
+			f.close();
+		}
+		{
+			QFile f(testPath + "/subdir/nested.txt");
+			f.open(QIODevice::WriteOnly);
+			f.write("nested content");
+			f.close();
+		}
 	}
 
 	void testServesFiles()

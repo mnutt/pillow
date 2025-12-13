@@ -13,15 +13,17 @@ namespace Pillow
 	class HttpServerPrivate
 	{
 	public:
-		enum { MaximumReserveCount = 25 };
+		enum
+		{
+			MaximumReserveCount = 25
+		};
 
 	public:
 		QObject* q_ptr;
 		QList<HttpConnection*> reservedConnections;
 
 	public:
-		HttpServerPrivate(QObject* server)
-			: q_ptr(server)
+		HttpServerPrivate(QObject* server) : q_ptr(server)
 		{
 			for (int i = 0; i < MaximumReserveCount; ++i)
 				reservedConnections << createConnection();
@@ -65,20 +67,22 @@ namespace Pillow
 			reservedConnections.append(connection);
 		}
 	};
-}
+} // namespace Pillow
 
-HttpServer::HttpServer(QObject *parent)
-: QTcpServer(parent), d_ptr(new HttpServerPrivate(this))
+HttpServer::HttpServer(QObject* parent) : QTcpServer(parent), d_ptr(new HttpServerPrivate(this))
 {
 	setMaxPendingConnections(128);
 }
 
-HttpServer::HttpServer(const QHostAddress &serverAddress, quint16 serverPort, QObject *parent)
-:	QTcpServer(parent), d_ptr(new HttpServerPrivate(this))
+HttpServer::HttpServer(const QHostAddress& serverAddress, quint16 serverPort, QObject* parent)
+    : QTcpServer(parent), d_ptr(new HttpServerPrivate(this))
 {
 	setMaxPendingConnections(128);
 	if (!listen(serverAddress, serverPort))
-		qWarning() << QString("HttpServer::HttpServer: could not bind to %1:%2 for listening: %3").arg(serverAddress.toString()).arg(serverPort).arg(errorString());
+		qWarning() << QString("HttpServer::HttpServer: could not bind to %1:%2 for listening: %3")
+		                  .arg(serverAddress.toString())
+		                  .arg(serverPort)
+		                  .arg(errorString());
 }
 
 HttpServer::~HttpServer()
@@ -97,12 +101,12 @@ void HttpServer::incomingConnection(qintptr socketDescriptor)
 	}
 	else
 	{
-        qWarning() << "HttpServer::incomingConnection: failed to set socket descriptor '" << socketDescriptor << "' on socket.";
+		qWarning() << "HttpServer::incomingConnection: failed to set socket descriptor '" << socketDescriptor << "' on socket.";
 		delete socket;
 	}
 }
 
-void HttpServer::connection_closed(Pillow::HttpConnection *connection)
+void HttpServer::connection_closed(Pillow::HttpConnection* connection)
 {
 	connection->inputDevice()->deleteLater();
 	d_ptr->putConnection(connection);
@@ -117,21 +121,21 @@ HttpConnection* Pillow::HttpServer::createHttpConnection()
 // HttpLocalServer
 //
 
-HttpLocalServer::HttpLocalServer(QObject *parent)
-	: QLocalServer(parent), d_ptr(new HttpServerPrivate(this))
+HttpLocalServer::HttpLocalServer(QObject* parent) : QLocalServer(parent), d_ptr(new HttpServerPrivate(this))
 {
 	setMaxPendingConnections(128);
 	connect(this, &QLocalServer::newConnection, this, &HttpLocalServer::this_newConnection);
 }
 
-HttpLocalServer::HttpLocalServer(const QString& serverName, QObject *parent /*= 0*/)
-	: QLocalServer(parent), d_ptr(new HttpServerPrivate(this))
+HttpLocalServer::HttpLocalServer(const QString& serverName, QObject* parent /*= 0*/)
+    : QLocalServer(parent), d_ptr(new HttpServerPrivate(this))
 {
 	setMaxPendingConnections(128);
 	connect(this, &QLocalServer::newConnection, this, &HttpLocalServer::this_newConnection);
 
 	if (!listen(serverName))
-		qWarning() << QString("HttpLocalServer::HttpLocalServer: could not bind to %1 for listening: %2").arg(serverName).arg(errorString());
+		qWarning()
+		    << QString("HttpLocalServer::HttpLocalServer: could not bind to %1 for listening: %2").arg(serverName).arg(errorString());
 }
 
 void HttpLocalServer::this_newConnection()
@@ -140,7 +144,7 @@ void HttpLocalServer::this_newConnection()
 	d_ptr->takeConnection()->initialize(device, device);
 }
 
-void HttpLocalServer::connection_closed(Pillow::HttpConnection *connection)
+void HttpLocalServer::connection_closed(Pillow::HttpConnection* connection)
 {
 	connection->inputDevice()->deleteLater();
 	d_ptr->putConnection(connection);

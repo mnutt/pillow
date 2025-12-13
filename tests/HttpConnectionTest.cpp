@@ -13,7 +13,8 @@ using namespace Pillow;
 
 static void wait(int milliseconds = 10)
 {
-	QElapsedTimer t; t.start();
+	QElapsedTimer t;
+	t.start();
 	do
 	{
 		QCoreApplication::processEvents(QEventLoop::AllEvents);
@@ -21,19 +22,14 @@ static void wait(int milliseconds = 10)
 	while (!t.hasExpired(milliseconds));
 }
 
-HttpConnectionTest::HttpConnectionTest()
-	: connection(NULL), readySpy(NULL), completedSpy(NULL), closedSpy(NULL), reuseConnection(false)
+HttpConnectionTest::HttpConnectionTest() : connection(NULL), readySpy(NULL), completedSpy(NULL), closedSpy(NULL), reuseConnection(false)
 {
 	qRegisterMetaType<Pillow::HttpConnection*>("Pillow::HttpConnection*");
 }
 
-void HttpConnectionTest::init()
-{
-}
+void HttpConnectionTest::init() {}
 
-void HttpConnectionTest::cleanup()
-{
-}
+void HttpConnectionTest::cleanup() {}
 
 void HttpConnectionTest::testInitialState()
 {
@@ -58,7 +54,8 @@ void HttpConnectionTest::testSimpleGet()
 	clientWrite("Host: example.org\r\n");
 	clientWrite("Weird: \r\n");
 	clientWrite("X-Dummy: DummyValue\r\n");
-	clientWrite("\r\n"); clientFlush();
+	clientWrite("\r\n");
+	clientFlush();
 
 	QCOMPARE(connection->state(), HttpConnection::SendingHeaders);
 	QCOMPARE(connection->requestMethod(), QByteArray("GET"));
@@ -97,7 +94,7 @@ void HttpConnectionTest::testSimpleGet()
 	QVERIFY(qstrcmp(connection->requestHeaders().at(0).first.constData(), "Host") == 0);
 	QVERIFY(qstrcmp(connection->requestHeaders().at(0).second.constData(), "example.org") == 0);
 	QVERIFY(qstrcmp(connection->requestHeaders().at(1).first.constData(), "Weird") == 0);
-	QVERIFY(qstrcmp(connection->requestHeaders().at(1).second.constData(),"") == 0);
+	QVERIFY(qstrcmp(connection->requestHeaders().at(1).second.constData(), "") == 0);
 }
 
 void HttpConnectionTest::testSimplePost()
@@ -106,7 +103,8 @@ void HttpConnectionTest::testSimplePost()
 	clientWrite("Host: example.org\r\n");
 	clientWrite("conTEnt-leNGtH: 11\r\n");
 	clientWrite("\r\n");
-	clientWrite("contentdata"); clientFlush();
+	clientWrite("contentdata");
+	clientFlush();
 
 	QCOMPARE(connection->state(), HttpConnection::SendingHeaders);
 	QCOMPARE(connection->requestMethod(), QByteArray("POST"));
@@ -131,12 +129,14 @@ void HttpConnectionTest::testSimplePost()
 
 void HttpConnectionTest::testIncrementalPost()
 {
-	clientWrite("POST /test/stuff HTTP/1.0\r\n"); clientFlush();
+	clientWrite("POST /test/stuff HTTP/1.0\r\n");
+	clientFlush();
 
 	QCOMPARE(connection->state(), HttpConnection::ReceivingHeaders);
 
 	clientWrite("Content-Length: 8\r\n");
-	clientWrite("\r\n"); clientFlush();
+	clientWrite("\r\n");
+	clientFlush();
 
 	QCOMPARE(connection->state(), HttpConnection::ReceivingContent);
 	QCOMPARE(connection->requestContent(), QByteArray()); // It should not mistake headers for request content
@@ -145,7 +145,8 @@ void HttpConnectionTest::testIncrementalPost()
 	QCOMPARE(closedSpy->size(), 0);
 
 	// Send incomplete post data.
-	clientWrite("some"); clientFlush();
+	clientWrite("some");
+	clientFlush();
 
 	QCOMPARE(connection->state(), HttpConnection::ReceivingContent);
 	QCOMPARE(connection->requestContent(), QByteArray()); // The request content should not be available until it is all received.
@@ -154,10 +155,11 @@ void HttpConnectionTest::testIncrementalPost()
 	QCOMPARE(closedSpy->size(), 0);
 
 	// Send remaining post data.
-	clientWrite("data"); clientFlush();
+	clientWrite("data");
+	clientFlush();
 
 	QCOMPARE(connection->state(), HttpConnection::SendingHeaders);
-	QCOMPARE(connection->requestMethod(), QByteArray("POST"));		// Receiving some content should not clear the request header info.
+	QCOMPARE(connection->requestMethod(), QByteArray("POST")); // Receiving some content should not clear the request header info.
 	QCOMPARE(connection->requestUri(), QByteArray("/test/stuff"));
 	QCOMPARE(connection->requestFragment(), QByteArray());
 	QCOMPARE(connection->requestPath(), QByteArray("/test/stuff"));
@@ -179,9 +181,11 @@ void HttpConnectionTest::testHugePost()
 	QByteArray postData(8 * 1024 * 1024, '*');
 	QByteArray clientRequest;
 	clientRequest.append("POST /test HTTP/1.1\r\n")
-				 .append("Content-Length: ").append(QByteArray::number(postData.size())).append("\r\n")
-				 .append("\r\n").append(postData);
-
+	    .append("Content-Length: ")
+	    .append(QByteArray::number(postData.size()))
+	    .append("\r\n")
+	    .append("\r\n")
+	    .append(postData);
 
 	QCOMPARE(connection->state(), HttpConnection::ReceivingHeaders);
 
@@ -209,7 +213,8 @@ void HttpConnectionTest::testInvalidRequestHeaders()
 {
 	clientWrite("INVALID REQUEST HEADERS\r\n");
 	clientWrite("Invalid headers\r\n");
-	clientWrite("Should close"); clientFlush();
+	clientWrite("Should close");
+	clientFlush();
 
 	QVERIFY(clientReadAll().startsWith("HTTP/1.0 400"));
 	QCOMPARE(connection->state(), HttpConnection::Closed);
@@ -223,9 +228,12 @@ void HttpConnectionTest::testOversizedRequestHeaders()
 {
 	QByteArray data;
 	data.append("GET /test/stuff HTTP/1.0\r\n")
-		.append("Some-Header: ").append(QByteArray(HttpConnection::MaximumRequestHeaderLength, 'a')).append("\r\n")
-		.append("\r\n");
-	clientWrite(data); 	clientFlush();
+	    .append("Some-Header: ")
+	    .append(QByteArray(HttpConnection::MaximumRequestHeaderLength, 'a'))
+	    .append("\r\n")
+	    .append("\r\n");
+	clientWrite(data);
+	clientFlush();
 
 	QVERIFY(clientReadAll().startsWith("HTTP/1.0 400")); // Bad Request
 	QCOMPARE(connection->state(), HttpConnection::Closed);
@@ -240,7 +248,8 @@ void HttpConnectionTest::testInvalidRequestContent()
 	clientWrite("POST / HTTP/1.0\r\n");
 	clientWrite("Content-Length: abcdefg\r\n");
 	clientWrite("\r\n");
-	clientWrite("Hello"); clientFlush();
+	clientWrite("Hello");
+	clientFlush();
 
 	QVERIFY(clientReadAll().startsWith("HTTP/1.0 413")); // Too large
 	QCOMPARE(readySpy->size(), 0);
@@ -248,11 +257,13 @@ void HttpConnectionTest::testInvalidRequestContent()
 	QCOMPARE(closedSpy->size(), 1);
 	QVERIFY(!isClientConnected());
 
-	cleanup(); init();
+	cleanup();
+	init();
 	clientWrite("POST / HTTP/1.0\r\n");
 	clientWrite("Content-Length: -1\r\n");
 	clientWrite("\r\n");
-	clientWrite("Hello"); clientFlush();
+	clientWrite("Hello");
+	clientFlush();
 
 	QVERIFY(clientReadAll().startsWith("HTTP/1.0 400")); // Bad request.
 	QCOMPARE(readySpy->size(), 0);
@@ -260,11 +271,13 @@ void HttpConnectionTest::testInvalidRequestContent()
 	QCOMPARE(closedSpy->size(), 1);
 	QVERIFY(!isClientConnected());
 
-	cleanup(); init();
+	cleanup();
+	init();
 	clientWrite("POST / HTTP/1.0\r\n");
 	clientWrite("Content-Length: 204800000000\r\n"); // Too large
 	clientWrite("\r\n");
-	clientWrite("Hello"); clientFlush();
+	clientWrite("Hello");
+	clientFlush();
 
 	QVERIFY(clientReadAll().startsWith("HTTP/1.0 413"));
 	QCOMPARE(readySpy->size(), 0);
@@ -275,11 +288,13 @@ void HttpConnectionTest::testInvalidRequestContent()
 	// In the case where the client sends more data than it is supposed too, the request shall
 	// process the request while honoring the expected content-length. Extra data will be kept
 	// in buffer for a future request (which will most likely end up being a 400 bad request).
-	cleanup(); init();
+	cleanup();
+	init();
 	clientWrite("POST / HTTP/1.0\r\n");
 	clientWrite("Content-Length: 3\r\n"); // Too large!
 	clientWrite("\r\n");
-	clientWrite("Hello"); clientFlush();
+	clientWrite("Hello");
+	clientFlush();
 
 	QCOMPARE(connection->state(), HttpConnection::SendingHeaders);
 	QCOMPARE(connection->requestContent(), QByteArray("Hel"));
@@ -292,12 +307,16 @@ void HttpConnectionTest::testInvalidRequestContent()
 void HttpConnectionTest::testWriteSimpleResponse()
 {
 	clientWrite("GET / HTTP/1.0\r\n");
-	clientWrite("\r\n"); clientFlush();
+	clientWrite("\r\n");
+	clientFlush();
 
-	connection->writeResponse(200, HttpHeaderCollection() << HttpHeader("Some-Header", "Some Value") << HttpHeader("Other-Header", "OtherValue"), "response content");
+	connection->writeResponse(200,
+	                          HttpHeaderCollection() << HttpHeader("Some-Header", "Some Value") << HttpHeader("Other-Header", "OtherValue"),
+	                          "response content");
 
 	QByteArray data = clientReadAll();
-	QCOMPARE(data, QByteArray("HTTP/1.0 200 OK\r\nSome-Header: Some Value\r\nOther-Header: OtherValue\r\nContent-Length: 16\r\nContent-Type: text/plain\r\nConnection: close\r\n\r\nresponse content"));
+	QCOMPARE(data, QByteArray("HTTP/1.0 200 OK\r\nSome-Header: Some Value\r\nOther-Header: OtherValue\r\nContent-Length: "
+	                          "16\r\nContent-Type: text/plain\r\nConnection: close\r\n\r\nresponse content"));
 	QCOMPARE(readySpy->size(), 1);
 	QCOMPARE(completedSpy->size(), 1);
 }
@@ -305,13 +324,15 @@ void HttpConnectionTest::testWriteSimpleResponse()
 void HttpConnectionTest::testWriteSimpleResponseString()
 {
 	clientWrite("GET / HTTP/1.0\r\n");
-	clientWrite("\r\n"); clientFlush();
+	clientWrite("\r\n");
+	clientFlush();
 
 	QString content = QString::fromUtf8("résponçë côntent"); // those 16 utf8 chars -> 20 bytes
 
-	connection->writeResponseString(200, HttpHeaderCollection(), content );
+	connection->writeResponseString(200, HttpHeaderCollection(), content);
 
-	QCOMPARE(clientReadAll(), QByteArray("HTTP/1.0 200 OK\r\nContent-Length: 20\r\nContent-Type: text/plain\r\nConnection: close\r\n\r\n") + content.toUtf8());
+	QCOMPARE(clientReadAll(), QByteArray("HTTP/1.0 200 OK\r\nContent-Length: 20\r\nContent-Type: text/plain\r\nConnection: close\r\n\r\n") +
+	                              content.toUtf8());
 	QCOMPARE(readySpy->size(), 1);
 	QCOMPARE(completedSpy->size(), 1);
 }
@@ -320,7 +341,8 @@ void HttpConnectionTest::testConnectionKeepAlive()
 {
 	// For HTTP/1.1, the server should use keep-alive by default.
 	clientWrite("GET /first/request?hello=world#frag HTTP/1.1\r\n");
-	clientWrite("\r\n"); clientFlush();
+	clientWrite("\r\n");
+	clientFlush();
 
 	connection->writeResponse(200);
 	QVERIFY(clientReadAll().startsWith("HTTP/1.1 200"));
@@ -336,7 +358,8 @@ void HttpConnectionTest::testConnectionKeepAlive()
 
 	// So it should be possible to send subsequent requests on the same connection.
 	clientWrite("GET /other HTTP/1.1\r\n");
-	clientWrite("\r\n"); clientFlush();
+	clientWrite("\r\n");
+	clientFlush();
 
 	connection->writeResponse(302);
 	QVERIFY(clientReadAll().startsWith("HTTP/1.1 302"));
@@ -351,7 +374,8 @@ void HttpConnectionTest::testConnectionKeepAlive()
 	QCOMPARE(connection->requestQueryString(), QByteArray());
 
 	clientWrite("GET /another HTTP/1.1\r\n");
-	clientWrite("\r\n"); clientFlush();
+	clientWrite("\r\n");
+	clientFlush();
 
 	connection->writeResponse(304);
 	QVERIFY(clientReadAll().startsWith("HTTP/1.1 304"));
@@ -364,7 +388,8 @@ void HttpConnectionTest::testConnectionKeepAlive()
 	// For HTTP/1.0, keep-alive is done only if requested by the client.
 	clientWrite("GET /another/but?http=1.0 HTTP/1.0\r\n");
 	clientWrite("cOnnEcTion: keep-alive\r\n");
-	clientWrite("\r\n"); clientFlush();
+	clientWrite("\r\n");
+	clientFlush();
 
 	connection->writeResponse(200);
 	QVERIFY(clientReadAll().startsWith("HTTP/1.0 200"));
@@ -379,7 +404,8 @@ void HttpConnectionTest::testConnectionKeepAlive()
 	QCOMPARE(connection->requestQueryString(), QByteArray("http=1.0"));
 
 	clientWrite("GET /another/but/http/1.0/without/keepalive HTTP/1.0\r\n");
-	clientWrite("\r\n"); clientFlush();
+	clientWrite("\r\n");
+	clientFlush();
 
 	connection->writeResponse(200);
 	QVERIFY(clientReadAll().startsWith("HTTP/1.0 200"));
@@ -395,7 +421,8 @@ void HttpConnectionTest::testConnectionClose()
 	// The server should close the connection if the client specifies Connection: close for any protocol version.
 	clientWrite("GET / HTTP/1.1\r\n");
 	clientWrite("coNNEction: close\r\n");
-	clientWrite("\r\n"); clientFlush();
+	clientWrite("\r\n");
+	clientFlush();
 
 	connection->writeResponse(200);
 	QVERIFY(clientReadAll().startsWith("HTTP/1.1 200"));
@@ -405,10 +432,12 @@ void HttpConnectionTest::testConnectionClose()
 	QCOMPARE(completedSpy->size(), 1);
 	QCOMPARE(closedSpy->size(), 1);
 
-	cleanup(); init();
+	cleanup();
+	init();
 	clientWrite("GET /another HTTP/1.0\r\n");
 	clientWrite("Connection: close\r\n");
-	clientWrite("\r\n"); clientFlush();
+	clientWrite("\r\n");
+	clientFlush();
 
 	connection->writeResponse(302);
 	QVERIFY(clientReadAll().startsWith("HTTP/1.0 302"));
@@ -419,9 +448,11 @@ void HttpConnectionTest::testConnectionClose()
 	QCOMPARE(closedSpy->size(), 1);
 
 	// The server should also close the connection if the responbse specifies Connection: close.
-	cleanup(); init();
+	cleanup();
+	init();
 	clientWrite("GET /other HTTP/1.1\r\n");
-	clientWrite("\r\n"); clientFlush();
+	clientWrite("\r\n");
+	clientFlush();
 
 	connection->writeResponse(304, HttpHeaderCollection() << HttpHeader("Connection", "close"));
 	QVERIFY(clientReadAll().startsWith("HTTP/1.1 304"));
@@ -432,9 +463,11 @@ void HttpConnectionTest::testConnectionClose()
 	QCOMPARE(closedSpy->size(), 1);
 
 	// The server should also close the response content-length is not known and chunked transfer encoding is not used.
-	cleanup(); init();
+	cleanup();
+	init();
 	clientWrite("GET /and_more HTTP/1.1\r\n");
-	clientWrite("\r\n"); clientFlush();
+	clientWrite("\r\n");
+	clientFlush();
 
 	connection->writeHeaders(200, HttpHeaderCollection());
 	QByteArray data = clientReadAll();
@@ -455,9 +488,11 @@ void HttpConnectionTest::testConnectionClose()
 	QCOMPARE(completedSpy->size(), 1);
 	QCOMPARE(closedSpy->size(), 1);
 
-	cleanup(); init();
+	cleanup();
+	init();
 	clientWrite("GET /interrupted/request HTTP/1.1\r\n");
-	clientWrite("\r\n"); clientFlush();
+	clientWrite("\r\n");
+	clientFlush();
 
 	// Server closes before response is sent
 	QTcpServer* server = new QTcpServer();
@@ -493,7 +528,8 @@ void HttpConnectionTest::testClientClosesConnectionEarly()
 	QCOMPARE(closedSpy->size(), 1);
 	QVERIFY(!isClientConnected());
 
-	cleanup(); init();
+	cleanup();
+	init();
 	clientWrite("GET /another HTTP/1.0\r\n");
 	clientFlush();
 	clientClose();
@@ -559,7 +595,8 @@ void HttpConnectionTest::testClientExpects100Continue()
 	QCOMPARE(completedSpy->size(), 0);
 	QCOMPARE(closedSpy->size(), 0);
 
-	clientWrite("hello"); clientFlush();
+	clientWrite("hello");
+	clientFlush();
 
 	QCOMPARE(connection->state(), HttpConnection::SendingHeaders);
 	QCOMPARE(connection->requestContent(), QByteArray("hello"));
@@ -571,11 +608,15 @@ void HttpConnectionTest::testClientExpects100Continue()
 void HttpConnectionTest::testHeadShouldNotSendResponseContent()
 {
 	clientWrite("HEAD / HTTP/1.0\r\n");
-	clientWrite("\r\n"); clientFlush();
+	clientWrite("\r\n");
+	clientFlush();
 
 	connection->writeResponse(200, HttpHeaderCollection() << HttpHeader("Some-Header", "Some Value"), "response content");
 
-	QCOMPARE(clientReadAll(), QByteArray("HTTP/1.0 200 OK\r\nSome-Header: Some Value\r\nContent-Length: 16\r\nContent-Type: text/plain\r\nConnection: close\r\n\r\n"));
+	QCOMPARE(
+	    clientReadAll(),
+	    QByteArray(
+	        "HTTP/1.0 200 OK\r\nSome-Header: Some Value\r\nContent-Length: 16\r\nContent-Type: text/plain\r\nConnection: close\r\n\r\n"));
 	QCOMPARE(readySpy->size(), 1);
 	QCOMPARE(completedSpy->size(), 1);
 }
@@ -583,7 +624,8 @@ void HttpConnectionTest::testHeadShouldNotSendResponseContent()
 void HttpConnectionTest::testWriteIncrementalResponseContent()
 {
 	clientWrite("GET / HTTP/1.0\r\n");
-	clientWrite("\r\n"); clientFlush();
+	clientWrite("\r\n");
+	clientFlush();
 
 	connection->writeHeaders(200, HttpHeaderCollection() << HttpHeader("Content-Length", "10"));
 
@@ -617,10 +659,12 @@ void HttpConnectionTest::testWriteIncrementalResponseContent()
 	QCOMPARE(closedSpy->size(), 1);
 
 	// Next, try sending an incremental response without specifying the content-length.
-	cleanup(); init();
+	cleanup();
+	init();
 
 	clientWrite("GET / HTTP/1.0\r\n");
-	clientWrite("\r\n"); clientFlush();
+	clientWrite("\r\n");
+	clientFlush();
 
 	connection->writeHeaders(200);
 
@@ -670,7 +714,8 @@ void HttpConnectionTest::testWriteIncrementalResponseContent()
 void HttpConnectionTest::testWriteChunkedResponseContent()
 {
 	clientWrite("GET / HTTP/1.1\r\n");
-	clientWrite("\r\n"); clientFlush();
+	clientWrite("\r\n");
+	clientFlush();
 
 	connection->writeHeaders(200, HttpHeaderCollection() << HttpHeader("Transfer-Encoding", "Chunked"));
 	QByteArray clientReceived = clientReadAll();
@@ -708,7 +753,8 @@ void HttpConnectionTest::testWriteChunkedResponseContent()
 
 	// Trying to specify chunked encoding when there is no data to send does not make sense.
 	clientWrite("GET / HTTP/1.1\r\n");
-	clientWrite("\r\n"); clientFlush();
+	clientWrite("\r\n");
+	clientFlush();
 	QCOMPARE(readySpy->size(), 2);
 	QCOMPARE(completedSpy->size(), 1);
 	QCOMPARE(closedSpy->size(), 0);
@@ -722,7 +768,8 @@ void HttpConnectionTest::testWriteChunkedResponseContent()
 
 	// Using chunked encoding does nothing on HTTP/1.0.
 	clientWrite("GET / HTTP/1.0\r\n");
-	clientWrite("\r\n"); clientFlush();
+	clientWrite("\r\n");
+	clientFlush();
 	QCOMPARE(readySpy->size(), 3);
 	QCOMPARE(completedSpy->size(), 2);
 	QCOMPARE(closedSpy->size(), 0);
@@ -745,7 +792,8 @@ void HttpConnectionTest::testWriteResponseWithoutRequest()
 
 	clientWrite("GET / HTTP/1.0\r\n");
 	clientWrite("Content-Length: 5\r\n");
-	clientWrite("\r\n"); clientFlush();
+	clientWrite("\r\n");
+	clientFlush();
 
 	QVERIFY(connection->state() == HttpConnection::ReceivingContent);
 	connection->writeResponse(200, HttpHeaderCollection(), "hello");
@@ -754,7 +802,8 @@ void HttpConnectionTest::testWriteResponseWithoutRequest()
 	QVERIFY(isClientConnected());
 	QCOMPARE(clientReadAll(), QByteArray());
 
-	clientWrite("hello"); clientFlush();
+	clientWrite("hello");
+	clientFlush();
 	QVERIFY(connection->state() == HttpConnection::SendingHeaders);
 }
 
@@ -763,7 +812,8 @@ void HttpConnectionTest::testMultipacketResponse()
 	// This is to test whether the HttpConnection correctly drains its send buffers
 	// before closing the connection.
 	clientWrite("GET / HTTP/1.0\r\n");
-	clientWrite("\r\n"); clientFlush();
+	clientWrite("\r\n");
+	clientFlush();
 
 	const int payloadSize = 32 * 1024 * 1024; // Needs to be very, very large for it to work in this test.
 	QByteArray r(payloadSize, '-');
@@ -775,7 +825,8 @@ void HttpConnectionTest::testMultipacketResponse()
 
 	connection->writeContent(r);
 
-	QByteArray receivedData; receivedData.reserve(r.size());
+	QByteArray receivedData;
+	receivedData.reserve(r.size());
 	while (isClientConnected() || receivedData.size() < r.size())
 		receivedData.append(clientReadAll());
 
@@ -788,8 +839,11 @@ void HttpConnectionTest::testReadsRequestParams()
 {
 	QVERIFY(connection->requestParams().isEmpty());
 
-	clientWrite("GET /path?first=value&second=other%20value&composite[property]=another+value&without_value&=without_name&final=true#fragment HTTP/1.1\r\n");
-	clientWrite("\r\n"); clientFlush();
+	clientWrite(
+	    "GET /path?first=value&second=other%20value&composite[property]=another+value&without_value&=without_name&final=true#fragment "
+	    "HTTP/1.1\r\n");
+	clientWrite("\r\n");
+	clientFlush();
 
 	QCOMPARE(connection->requestParamValue("first"), QString("value"));
 	QCOMPARE(connection->requestParamValue("fIRsT"), QString("value"));
@@ -799,7 +853,7 @@ void HttpConnectionTest::testReadsRequestParams()
 	QCOMPARE(connection->requestParamValue("final"), QString("true"));
 
 	Pillow::HttpParamCollection params = connection->requestParams();
-	QCOMPARE(params.size(),  6);
+	QCOMPARE(params.size(), 6);
 	QCOMPARE(params.at(0).first, QString("first"));
 	QCOMPARE(params.at(0).second, QString("value"));
 	QCOMPARE(params.at(1).first, QString("second"));
@@ -825,14 +879,16 @@ void HttpConnectionTest::testReadsRequestParams()
 	QVERIFY(clientReadAll().startsWith("HTTP/1.1 200"));
 	QCOMPARE(connection->state(), HttpConnection::ReceivingHeaders);
 	clientWrite("GET /other HTTP/1.1\r\n");
-	clientWrite("\r\n"); clientFlush();
+	clientWrite("\r\n");
+	clientFlush();
 	QCOMPARE(connection->requestParams().size(), 0);
 
 	connection->writeResponse(200);
 	QVERIFY(clientReadAll().startsWith("HTTP/1.1 200"));
 	QCOMPARE(connection->state(), HttpConnection::ReceivingHeaders);
 	clientWrite("GET /final?a=b HTTP/1.1\r\n");
-	clientWrite("\r\n"); clientFlush();
+	clientWrite("\r\n");
+	clientFlush();
 	QCOMPARE(connection->requestParams().size(), 1);
 	QCOMPARE(connection->requestParamValue("a"), QString("b"));
 
@@ -841,7 +897,8 @@ void HttpConnectionTest::testReadsRequestParams()
 	QVERIFY(clientReadAll().startsWith("HTTP/1.1 200"));
 	QCOMPARE(connection->state(), HttpConnection::ReceivingHeaders);
 	clientWrite("GET /final?nameonly HTTP/1.1\r\n");
-	clientWrite("\r\n"); clientFlush();
+	clientWrite("\r\n");
+	clientFlush();
 	QCOMPARE(connection->requestParams().size(), 1);
 	QCOMPARE(connection->requestParamValue("nameonly"), QString(""));
 
@@ -849,10 +906,10 @@ void HttpConnectionTest::testReadsRequestParams()
 	QVERIFY(clientReadAll().startsWith("HTTP/1.1 200"));
 	QCOMPARE(connection->state(), HttpConnection::ReceivingHeaders);
 	clientWrite("GET /final?=valueonly HTTP/1.1\r\n");
-	clientWrite("\r\n"); clientFlush();
+	clientWrite("\r\n");
+	clientFlush();
 	QCOMPARE(connection->requestParams().size(), 1);
 	QCOMPARE(connection->requestParamValue(""), QString("valueonly"));
-
 }
 
 void HttpConnectionTest::testReuseRequest()
@@ -861,8 +918,11 @@ void HttpConnectionTest::testReuseRequest()
 	QObject* firstRequest = connection;
 
 	clientWrite("GET / HTTP/1.0\r\n");
-	clientWrite("\r\n"); clientFlush();
-	connection->writeResponse(200, HttpHeaderCollection() << HttpHeader("Some-Header", "Some Value") << HttpHeader("Other-Header", "OtherValue"), "response content");
+	clientWrite("\r\n");
+	clientFlush();
+	connection->writeResponse(200,
+	                          HttpHeaderCollection() << HttpHeader("Some-Header", "Some Value") << HttpHeader("Other-Header", "OtherValue"),
+	                          "response content");
 	QCOMPARE(completedSpy->size(), 1);
 
 	cleanup();
@@ -871,15 +931,20 @@ void HttpConnectionTest::testReuseRequest()
 	QCOMPARE(completedSpy->size(), 0);
 	QVERIFY(connection == firstRequest);
 	clientWrite("GET / HTTP/1.0\r\n");
-	clientWrite("\r\n"); clientFlush();
-	connection->writeResponse(200, HttpHeaderCollection() << HttpHeader("Some-Header", "Some Value") << HttpHeader("Other-Header", "OtherValue"), "response content");
+	clientWrite("\r\n");
+	clientFlush();
+	connection->writeResponse(200,
+	                          HttpHeaderCollection() << HttpHeader("Some-Header", "Some Value") << HttpHeader("Other-Header", "OtherValue"),
+	                          "response content");
 	QCOMPARE(completedSpy->size(), 1);
 
-	cleanup(); init();
+	cleanup();
+	init();
 
 	clientWrite("INVALID REQUEST HEADERS\r\n");
 	clientWrite("Invalid headers\r\n");
-	clientWrite("Should close"); clientFlush();
+	clientWrite("Should close");
+	clientFlush();
 
 	QVERIFY(clientReadAll().startsWith("HTTP/1.0 400"));
 	QCOMPARE(connection->state(), HttpConnection::Closed);
@@ -888,21 +953,27 @@ void HttpConnectionTest::testReuseRequest()
 	QCOMPARE(closedSpy->size(), 1);
 	QVERIFY(!isClientConnected());
 
-	cleanup(); init();
+	cleanup();
+	init();
 
 	QCOMPARE(completedSpy->size(), 0);
 	QVERIFY(connection == firstRequest);
 	clientWrite("GET / HTTP/1.0\r\n");
-	clientWrite("\r\n"); clientFlush();
-	connection->writeResponse(200, HttpHeaderCollection() << HttpHeader("Some-Header", "Some Value") << HttpHeader("Other-Header", "OtherValue"), "response content");
+	clientWrite("\r\n");
+	clientFlush();
+	connection->writeResponse(200,
+	                          HttpHeaderCollection() << HttpHeader("Some-Header", "Some Value") << HttpHeader("Other-Header", "OtherValue"),
+	                          "response content");
 	QCOMPARE(completedSpy->size(), 1);
 
-	cleanup(); init();
+	cleanup();
+	init();
 
 	testInvalidRequestContent();
 	QVERIFY(connection == firstRequest);
 
-	cleanup(); init();
+	cleanup();
+	init();
 
 	testSimpleGet();
 	QVERIFY(connection == firstRequest);
@@ -965,10 +1036,7 @@ void HttpConnectionTest::benchmarkSimpleGetKeepAlive()
 // HttpConnectionTcpSocketTest
 //
 
-HttpConnectionTcpSocketTest::HttpConnectionTcpSocketTest()
-	: server(NULL), client(NULL)
-{
-}
+HttpConnectionTcpSocketTest::HttpConnectionTcpSocketTest() : server(NULL), client(NULL) {}
 
 void HttpConnectionTcpSocketTest::server_newConnection()
 {
@@ -997,15 +1065,29 @@ void HttpConnectionTcpSocketTest::init()
 
 void HttpConnectionTcpSocketTest::cleanup()
 {
-	if (connection && !reuseConnection) { delete connection; connection = NULL; }
-	if (server) delete server; server = NULL;
-	if (client) delete client; client = NULL;
-	if (readySpy) delete readySpy; readySpy = NULL;
-	if (completedSpy) delete completedSpy; completedSpy = NULL;
-	if (closedSpy) delete closedSpy; closedSpy = NULL;
+	if (connection && !reuseConnection)
+	{
+		delete connection;
+		connection = NULL;
+	}
+	if (server)
+		delete server;
+	server = NULL;
+	if (client)
+		delete client;
+	client = NULL;
+	if (readySpy)
+		delete readySpy;
+	readySpy = NULL;
+	if (completedSpy)
+		delete completedSpy;
+	completedSpy = NULL;
+	if (closedSpy)
+		delete closedSpy;
+	closedSpy = NULL;
 }
 
-void HttpConnectionTcpSocketTest::clientWrite(const QByteArray &data)
+void HttpConnectionTcpSocketTest::clientWrite(const QByteArray& data)
 {
 	client->write(data);
 }
@@ -1014,15 +1096,20 @@ void HttpConnectionTcpSocketTest::clientFlush(bool _wait /* = true */)
 {
 	QSignalSpy s(connection->inputDevice(), SIGNAL(readyRead()));
 	client->flush();
-	while (client->bytesToWrite() > 0) QCoreApplication::processEvents();
+	while (client->bytesToWrite() > 0)
+		QCoreApplication::processEvents();
 	QCoreApplication::processEvents();
-	if (_wait) while (s.size() == 0) QCoreApplication::processEvents();
+	if (_wait)
+		while (s.size() == 0)
+			QCoreApplication::processEvents();
 }
 
 QByteArray HttpConnectionTcpSocketTest::clientReadAll()
 {
-	QElapsedTimer timer; timer.start();
-	while (client->bytesAvailable() == 0 && !timer.hasExpired(500)) QCoreApplication::processEvents();
+	QElapsedTimer timer;
+	timer.start();
+	while (client->bytesAvailable() == 0 && !timer.hasExpired(500))
+		QCoreApplication::processEvents();
 	return client->readAll();
 }
 
@@ -1036,7 +1123,8 @@ void HttpConnectionTcpSocketTest::clientClose()
 {
 	client->disconnectFromHost();
 	client->close();
-	while (client->state() == QAbstractSocket::ConnectedState) wait();
+	while (client->state() == QAbstractSocket::ConnectedState)
+		wait();
 }
 
 //
@@ -1076,10 +1164,7 @@ protected:
 	}
 };
 
-HttpConnectionSslSocketTest::HttpConnectionSslSocketTest()
-	: server(NULL), client(NULL)
-{
-}
+HttpConnectionSslSocketTest::HttpConnectionSslSocketTest() : server(NULL), client(NULL) {}
 
 void HttpConnectionSslSocketTest::server_newConnection()
 {
@@ -1088,20 +1173,18 @@ void HttpConnectionSslSocketTest::server_newConnection()
 	connection->initialize(device, device);
 }
 
-void HttpConnectionSslSocketTest::sslSocket_encrypted()
-{
-}
+void HttpConnectionSslSocketTest::sslSocket_encrypted() {}
 
-void HttpConnectionSslSocketTest::sslSocket_sslErrors(const QList<QSslError>& )
-{
-}
+void HttpConnectionSslSocketTest::sslSocket_sslErrors(const QList<QSslError>&) {}
 
 void HttpConnectionSslSocketTest::init()
 {
 	QVERIFY(QFile::exists(":/test.crt"));
 	QVERIFY(QFile::exists(":/test.key"));
-	QFile certificateFile(":/test.crt"); QVERIFY(certificateFile.open(QIODevice::ReadOnly));
-	QFile keyFile(":/test.key"); QVERIFY(keyFile.open(QIODevice::ReadOnly));
+	QFile certificateFile(":/test.crt");
+	QVERIFY(certificateFile.open(QIODevice::ReadOnly));
+	QFile keyFile(":/test.key");
+	QVERIFY(keyFile.open(QIODevice::ReadOnly));
 	QSslCertificate certificate(&certificateFile);
 	QSslKey key(&keyFile, QSsl::Rsa);
 
@@ -1120,10 +1203,12 @@ void HttpConnectionSslSocketTest::init()
 	connect(client, SIGNAL(encrypted()), this, SLOT(sslSocket_encrypted()));
 	connect(client, SIGNAL(sslErrors(QList<QSslError>)), this, SLOT(sslSocket_sslErrors(QList<QSslError>)));
 	QVERIFY(client->waitForConnected());
-	while (!client->isEncrypted()) QCoreApplication::processEvents();
+	while (!client->isEncrypted())
+		QCoreApplication::processEvents();
 	QVERIFY(client->isEncrypted());
 
-	while (connection == NULL) QCoreApplication::processEvents();
+	while (connection == NULL)
+		QCoreApplication::processEvents();
 	readySpy = new QSignalSpy(connection, SIGNAL(requestReady(Pillow::HttpConnection*)));
 	completedSpy = new QSignalSpy(connection, SIGNAL(requestCompleted(Pillow::HttpConnection*)));
 	closedSpy = new QSignalSpy(connection, SIGNAL(closed(Pillow::HttpConnection*)));
@@ -1131,15 +1216,27 @@ void HttpConnectionSslSocketTest::init()
 
 void HttpConnectionSslSocketTest::cleanup()
 {
-	if (connection) delete connection; connection = NULL;
-	if (server) delete server; server = NULL;
-	if (client) delete client; client = NULL;
-	if (readySpy) delete readySpy; readySpy = NULL;
-	if (completedSpy) delete completedSpy; completedSpy = NULL;
-	if (closedSpy) delete closedSpy; closedSpy = NULL;
+	if (connection)
+		delete connection;
+	connection = NULL;
+	if (server)
+		delete server;
+	server = NULL;
+	if (client)
+		delete client;
+	client = NULL;
+	if (readySpy)
+		delete readySpy;
+	readySpy = NULL;
+	if (completedSpy)
+		delete completedSpy;
+	completedSpy = NULL;
+	if (closedSpy)
+		delete closedSpy;
+	closedSpy = NULL;
 }
 
-void HttpConnectionSslSocketTest::clientWrite(const QByteArray &data)
+void HttpConnectionSslSocketTest::clientWrite(const QByteArray& data)
 {
 	client->write(data);
 }
@@ -1148,15 +1245,20 @@ void HttpConnectionSslSocketTest::clientFlush(bool _wait /* = true */)
 {
 	QSignalSpy s(connection->inputDevice(), SIGNAL(readyRead()));
 	client->flush();
-	while (client->bytesToWrite() > 0) QCoreApplication::processEvents();
+	while (client->bytesToWrite() > 0)
+		QCoreApplication::processEvents();
 	QCoreApplication::processEvents();
-	if (_wait) while (s.size() == 0) QCoreApplication::processEvents();
+	if (_wait)
+		while (s.size() == 0)
+			QCoreApplication::processEvents();
 }
 
 QByteArray HttpConnectionSslSocketTest::clientReadAll()
 {
-	QElapsedTimer timer; timer.start();
-	while (client->bytesAvailable() == 0 && !timer.hasExpired(2000)) QCoreApplication::processEvents();
+	QElapsedTimer timer;
+	timer.start();
+	while (client->bytesAvailable() == 0 && !timer.hasExpired(2000))
+		QCoreApplication::processEvents();
 	QCoreApplication::processEvents();
 	return client->readAll();
 }
@@ -1171,7 +1273,8 @@ void HttpConnectionSslSocketTest::clientClose()
 {
 	client->disconnectFromHost();
 	client->close();
-	while (client->state() == QAbstractSocket::ConnectedState) wait();
+	while (client->state() == QAbstractSocket::ConnectedState)
+		wait();
 }
 
 #endif // !defined(PILLOW_NO_SSL) && !defined(QT_NO_SSL)
@@ -1180,10 +1283,7 @@ void HttpConnectionSslSocketTest::clientClose()
 // HttpConnectionLocalSocketTest
 //
 
-HttpConnectionLocalSocketTest::HttpConnectionLocalSocketTest()
-	: server(NULL), client(NULL)
-{
-}
+HttpConnectionLocalSocketTest::HttpConnectionLocalSocketTest() : server(NULL), client(NULL) {}
 
 void HttpConnectionLocalSocketTest::server_newConnection()
 {
@@ -1210,15 +1310,27 @@ void HttpConnectionLocalSocketTest::init()
 
 void HttpConnectionLocalSocketTest::cleanup()
 {
-	if (connection) delete connection; connection = NULL;
-	if (server) delete server; server = NULL;
-	if (client) delete client; client = NULL;
-	if (readySpy) delete readySpy; readySpy = NULL;
-	if (completedSpy) delete completedSpy; completedSpy = NULL;
-	if (closedSpy) delete closedSpy; closedSpy = NULL;
+	if (connection)
+		delete connection;
+	connection = NULL;
+	if (server)
+		delete server;
+	server = NULL;
+	if (client)
+		delete client;
+	client = NULL;
+	if (readySpy)
+		delete readySpy;
+	readySpy = NULL;
+	if (completedSpy)
+		delete completedSpy;
+	completedSpy = NULL;
+	if (closedSpy)
+		delete closedSpy;
+	closedSpy = NULL;
 }
 
-void HttpConnectionLocalSocketTest::clientWrite(const QByteArray &data)
+void HttpConnectionLocalSocketTest::clientWrite(const QByteArray& data)
 {
 	client->write(data);
 }
@@ -1227,24 +1339,29 @@ void HttpConnectionLocalSocketTest::clientFlush(bool _wait /* = true */)
 {
 	QSignalSpy s(connection->inputDevice(), SIGNAL(readyRead()));
 	client->flush();
-	while (client->bytesToWrite() > 0) QCoreApplication::processEvents();
+	while (client->bytesToWrite() > 0)
+		QCoreApplication::processEvents();
 	QCoreApplication::processEvents();
-	if (_wait) while (s.size() == 0) QCoreApplication::processEvents();
+	if (_wait)
+		while (s.size() == 0)
+			QCoreApplication::processEvents();
 }
 
 QByteArray HttpConnectionLocalSocketTest::clientReadAll()
 {
-//	if (client->waitForReadyRead(500))
-//	{
-//		qDebug() << client->bytesAvailable();
-//		return client->read(1024);
-//		//return client->readAll();
-//	}
-//	else
-//		return QByteArray();
-    QElapsedTimer timer; timer.start();
-    while (client->bytesAvailable() == 0 && !timer.hasExpired(500)) QCoreApplication::processEvents();
-    return client->readAll();
+	//	if (client->waitForReadyRead(500))
+	//	{
+	//		qDebug() << client->bytesAvailable();
+	//		return client->read(1024);
+	//		//return client->readAll();
+	//	}
+	//	else
+	//		return QByteArray();
+	QElapsedTimer timer;
+	timer.start();
+	while (client->bytesAvailable() == 0 && !timer.hasExpired(500))
+		QCoreApplication::processEvents();
+	return client->readAll();
 }
 
 void HttpConnectionLocalSocketTest::clientClose()
@@ -1258,20 +1375,18 @@ bool HttpConnectionLocalSocketTest::isClientConnected()
 	return client->state() == QLocalSocket::ConnectedState && client->isOpen();
 }
 
-
 //
 // HttpConnectionBufferTest
 //
 
-HttpConnectionBufferTest::HttpConnectionBufferTest()
-	: inputBuffer(NULL), outputBuffer(NULL)
-{
-}
+HttpConnectionBufferTest::HttpConnectionBufferTest() : inputBuffer(NULL), outputBuffer(NULL) {}
 
 void HttpConnectionBufferTest::init()
 {
-	inputBuffer = new QBuffer(); inputBuffer->open(QIODevice::ReadWrite);
-	outputBuffer = new QBuffer(); outputBuffer->open(QIODevice::ReadWrite);
+	inputBuffer = new QBuffer();
+	inputBuffer->open(QIODevice::ReadWrite);
+	outputBuffer = new QBuffer();
+	outputBuffer->open(QIODevice::ReadWrite);
 
 	connection = new HttpConnection(NULL);
 	connection->initialize(inputBuffer, outputBuffer);
@@ -1283,34 +1398,51 @@ void HttpConnectionBufferTest::init()
 
 void HttpConnectionBufferTest::cleanup()
 {
-	if (connection) delete connection; connection = NULL;
-	if (inputBuffer) delete inputBuffer; inputBuffer = NULL;
-	if (outputBuffer) delete outputBuffer; outputBuffer = NULL;
-	if (readySpy) delete readySpy; readySpy = NULL;
-	if (completedSpy) delete completedSpy; completedSpy = NULL;
-	if (closedSpy) delete closedSpy; closedSpy = NULL;
+	if (connection)
+		delete connection;
+	connection = NULL;
+	if (inputBuffer)
+		delete inputBuffer;
+	inputBuffer = NULL;
+	if (outputBuffer)
+		delete outputBuffer;
+	outputBuffer = NULL;
+	if (readySpy)
+		delete readySpy;
+	readySpy = NULL;
+	if (completedSpy)
+		delete completedSpy;
+	completedSpy = NULL;
+	if (closedSpy)
+		delete closedSpy;
+	closedSpy = NULL;
 }
 
-void HttpConnectionBufferTest::clientWrite(const QByteArray &data)
+void HttpConnectionBufferTest::clientWrite(const QByteArray& data)
 {
 	inputBuffer->write(data);
 }
 
 void HttpConnectionBufferTest::clientFlush(bool _wait /* = true */)
 {
-	if (inputBuffer->isOpen()) inputBuffer->seek(0);
+	if (inputBuffer->isOpen())
+		inputBuffer->seek(0);
 	QCoreApplication::processEvents();
-	if (_wait) wait();
-	if (inputBuffer->isOpen()) inputBuffer->seek(0);
+	if (_wait)
+		wait();
+	if (inputBuffer->isOpen())
+		inputBuffer->seek(0);
 	inputBuffer->buffer().clear();
 }
 
 QByteArray HttpConnectionBufferTest::clientReadAll()
 {
 	QCoreApplication::processEvents();
-	if (outputBuffer->isOpen()) outputBuffer->seek(0);
+	if (outputBuffer->isOpen())
+		outputBuffer->seek(0);
 	QByteArray data = outputBuffer->buffer();
-	if (outputBuffer->isOpen()) outputBuffer->seek(0);
+	if (outputBuffer->isOpen())
+		outputBuffer->seek(0);
 	outputBuffer->buffer().clear();
 	return data;
 }
@@ -1325,5 +1457,3 @@ bool HttpConnectionBufferTest::isClientConnected()
 {
 	return inputBuffer->isOpen();
 }
-
-

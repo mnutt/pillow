@@ -11,11 +11,11 @@ static const QByteArray helloWorldToken("Hello World!");
 class SimpleExerciser : public Pillow::HttpHandler
 {
 	qint64 n;
-public:
-	SimpleExerciser(QObject* parent = 0) : Pillow::HttpHandler(parent), n(0)
-	{}
 
-	bool handleRequest(Pillow::HttpConnection *connection)
+public:
+	SimpleExerciser(QObject* parent = 0) : Pillow::HttpHandler(parent), n(0) {}
+
+	bool handleRequest(Pillow::HttpConnection* connection)
 	{
 		n += connection->requestContent().size();
 		n += connection->requestFragment().size();
@@ -34,7 +34,7 @@ public:
 	}
 };
 
-int main(int argc, char *argv[])
+int main(int argc, char* argv[])
 {
 	QCoreApplication a(argc, argv);
 
@@ -45,11 +45,11 @@ int main(int argc, char *argv[])
 
 	Pillow::HttpHandler* handler = new Pillow::HttpHandlerFixed(200, "", &server);
 
-//	Pillow::HttpHandler* handler = new SimpleExerciser(&server);
+	//	Pillow::HttpHandler* handler = new SimpleExerciser(&server);
 
-//	Pillow::HttpHandler* handler = new Pillow::HttpHandlerStack(&server);
-//		new Pillow::HttpHandlerLog(handler);
-//		new Pillow::HttpHandlerFixed(200, "Hello from pillow!", handler);
+	//	Pillow::HttpHandler* handler = new Pillow::HttpHandlerStack(&server);
+	//		new Pillow::HttpHandlerLog(handler);
+	//		new Pillow::HttpHandlerFixed(200, "Hello from pillow!", handler);
 
 	QObject::connect(&server, SIGNAL(requestReady(Pillow::HttpConnection*)), handler, SLOT(handleRequest(Pillow::HttpConnection*)));
 

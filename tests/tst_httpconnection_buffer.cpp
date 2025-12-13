@@ -8,7 +8,8 @@ using namespace Pillow;
 
 static void wait(int milliseconds = 10)
 {
-	QElapsedTimer t; t.start();
+	QElapsedTimer t;
+	t.start();
 	do
 	{
 		QCoreApplication::processEvents(QEventLoop::AllEvents);
@@ -37,15 +38,14 @@ protected:
 	virtual bool isClientConnected();
 };
 
-HttpConnectionBufferTest::HttpConnectionBufferTest()
-	: inputBuffer(NULL), outputBuffer(NULL)
-{
-}
+HttpConnectionBufferTest::HttpConnectionBufferTest() : inputBuffer(NULL), outputBuffer(NULL) {}
 
 void HttpConnectionBufferTest::init()
 {
-	inputBuffer = new QBuffer(); inputBuffer->open(QIODevice::ReadWrite);
-	outputBuffer = new QBuffer(); outputBuffer->open(QIODevice::ReadWrite);
+	inputBuffer = new QBuffer();
+	inputBuffer->open(QIODevice::ReadWrite);
+	outputBuffer = new QBuffer();
+	outputBuffer->open(QIODevice::ReadWrite);
 
 	connection = new HttpConnection(NULL);
 	connection->initialize(inputBuffer, outputBuffer);
@@ -57,34 +57,51 @@ void HttpConnectionBufferTest::init()
 
 void HttpConnectionBufferTest::cleanup()
 {
-	if (connection) delete connection; connection = NULL;
-	if (inputBuffer) delete inputBuffer; inputBuffer = NULL;
-	if (outputBuffer) delete outputBuffer; outputBuffer = NULL;
-	if (readySpy) delete readySpy; readySpy = NULL;
-	if (completedSpy) delete completedSpy; completedSpy = NULL;
-	if (closedSpy) delete closedSpy; closedSpy = NULL;
+	if (connection)
+		delete connection;
+	connection = NULL;
+	if (inputBuffer)
+		delete inputBuffer;
+	inputBuffer = NULL;
+	if (outputBuffer)
+		delete outputBuffer;
+	outputBuffer = NULL;
+	if (readySpy)
+		delete readySpy;
+	readySpy = NULL;
+	if (completedSpy)
+		delete completedSpy;
+	completedSpy = NULL;
+	if (closedSpy)
+		delete closedSpy;
+	closedSpy = NULL;
 }
 
-void HttpConnectionBufferTest::clientWrite(const QByteArray &data)
+void HttpConnectionBufferTest::clientWrite(const QByteArray& data)
 {
 	inputBuffer->write(data);
 }
 
 void HttpConnectionBufferTest::clientFlush(bool _wait /* = true */)
 {
-	if (inputBuffer->isOpen()) inputBuffer->seek(0);
+	if (inputBuffer->isOpen())
+		inputBuffer->seek(0);
 	QCoreApplication::processEvents();
-	if (_wait) wait();
-	if (inputBuffer->isOpen()) inputBuffer->seek(0);
+	if (_wait)
+		wait();
+	if (inputBuffer->isOpen())
+		inputBuffer->seek(0);
 	inputBuffer->buffer().clear();
 }
 
 QByteArray HttpConnectionBufferTest::clientReadAll()
 {
 	QCoreApplication::processEvents();
-	if (outputBuffer->isOpen()) outputBuffer->seek(0);
+	if (outputBuffer->isOpen())
+		outputBuffer->seek(0);
 	QByteArray data = outputBuffer->buffer();
-	if (outputBuffer->isOpen()) outputBuffer->seek(0);
+	if (outputBuffer->isOpen())
+		outputBuffer->seek(0);
 	outputBuffer->buffer().clear();
 	return data;
 }

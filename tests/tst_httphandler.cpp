@@ -8,14 +8,14 @@ class MockHandler : public Pillow::HttpHandler
 {
 public:
 	MockHandler(const QByteArray& acceptPath, int statusCode, QObject* parent)
-		: Pillow::HttpHandler(parent), acceptPath(acceptPath), statusCode(statusCode), handleRequestCount(0)
+	    : Pillow::HttpHandler(parent), acceptPath(acceptPath), statusCode(statusCode), handleRequestCount(0)
 	{}
 
 	QByteArray acceptPath;
 	int statusCode;
 	int handleRequestCount;
 
-	bool handleRequest(Pillow::HttpConnection *connection)
+	bool handleRequest(Pillow::HttpConnection* connection)
 	{
 		++handleRequestCount;
 
@@ -81,10 +81,8 @@ private slots:
 	void testHandlerFunction()
 	{
 #ifdef Q_COMPILER_LAMBDA
-		HttpHandlerFunction handler([](Pillow::HttpConnection* request)
-		{
-			request->writeResponse(200, Pillow::HttpHeaderCollection(), "hello from lambda");
-		});
+		HttpHandlerFunction handler(
+		    [](Pillow::HttpConnection* request) { request->writeResponse(200, Pillow::HttpHeaderCollection(), "hello from lambda"); });
 
 		QVERIFY(handler.handleRequest(createGetRequest("/some/random/path")));
 		QVERIFY(response.startsWith("HTTP/1.0 200 OK"));
@@ -96,7 +94,8 @@ private slots:
 
 	void testHandlerLog()
 	{
-		QBuffer buffer; buffer.open(QIODevice::ReadWrite);
+		QBuffer buffer;
+		buffer.open(QIODevice::ReadWrite);
 		Pillow::HttpConnection* request1 = createGetRequest("/first");
 		Pillow::HttpConnection* request2 = createGetRequest("/second");
 		Pillow::HttpConnection* request3 = createGetRequest("/third");
@@ -120,7 +119,8 @@ private slots:
 
 	void testHandlerLogTrace()
 	{
-		QBuffer buffer; buffer.open(QIODevice::ReadWrite);
+		QBuffer buffer;
+		buffer.open(QIODevice::ReadWrite);
 		Pillow::HttpConnection* request1 = createGetRequest("/first", "1.1");
 		Pillow::HttpConnection* request2 = createGetRequest("/second", "1.1");
 		Pillow::HttpConnection* request3 = createGetRequest("/third", "1.1");
@@ -146,10 +146,10 @@ private slots:
 		QVERIFY(buffer.readLine().contains("GET /first"));
 		QVERIFY(buffer.readLine().contains("GET /second"));
 		QVERIFY(buffer.readLine().contains("GET /third"));
-		QVERIFY(buffer.readLine().contains("GET /third")); // END
-		QVERIFY(buffer.readLine().contains("GET /first")); // END
+		QVERIFY(buffer.readLine().contains("GET /third"));  // END
+		QVERIFY(buffer.readLine().contains("GET /first"));  // END
 		QVERIFY(buffer.readLine().contains("GET /second")); // END
-		QVERIFY(buffer.readLine().contains("GET /first")); // CLOSE
+		QVERIFY(buffer.readLine().contains("GET /first"));  // CLOSE
 		QVERIFY(buffer.readLine().isEmpty());
 	}
 };

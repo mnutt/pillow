@@ -1,5 +1,4 @@
-#ifndef HTTPSSERVERTEST_H
-#define HTTPSSERVERTEST_H
+#pragma once
 
 #include "HttpServerTest.h"
 
@@ -16,7 +15,7 @@ private slots: // Test slots.
 	void testInit() { HttpServerTestBase::testInit(); }
 	void testHandlesConnectionsAsRequests() { HttpServerTestBase::testHandlesConnectionsAsRequests(); }
 	void testHandlesConcurrentConnections() { HttpServerTestBase::testHandlesConcurrentConnections(); }
-    void testReusesRequests() { HttpServerTestBase::testReusesRequests(); }
+	void testReusesRequests() { HttpServerTestBase::testReusesRequests(); }
 	void testDestroysRequests() { HttpServerTestBase::testDestroysRequests(); }
 
 protected:
@@ -34,5 +33,3 @@ class HttpsServerTest : public QObject
 };
 
 #endif // !defined(PILLOW_NO_SSL) && !defined(QT_NO_SSL)
-
-#endif // HTTPSSERVERTEST_H

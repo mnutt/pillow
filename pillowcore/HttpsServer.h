@@ -1,5 +1,4 @@
-#ifndef _PILLOW_HTTPSSERVER_H_
-#define _PILLOW_HTTPSSERVER_H_
+#pragma once
 
 #include "HttpServer.h"
 #include <QtNetwork/QTcpServer>
@@ -30,7 +29,8 @@ namespace Pillow
 
 	public:
 		HttpsServer(QObject* parent = 0);
-		HttpsServer(const QSslCertificate& certificate, const QSslKey& privateKey, const QHostAddress& serverAddress, quint16 serverPort, QObject *parent = 0);
+		HttpsServer(const QSslCertificate& certificate, const QSslKey& privateKey, const QHostAddress& serverAddress, quint16 serverPort,
+		            QObject* parent = 0);
 
 		const QSslCertificate& certificate() const { return _certificate; }
 		const QSslKey& privateKey() const { return _privateKey; }
@@ -39,8 +39,6 @@ namespace Pillow
 		void setCertificate(const QSslCertificate& certificate);
 		void setPrivateKey(const QSslKey& privateKey);
 	};
-}
+} // namespace Pillow
 
 #endif // !defined(PILLOW_NO_SSL) && !defined(QT_NO_SSL)
-
-#endif // _PILLOW_HTTPSSERVER_H_

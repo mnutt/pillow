@@ -1,5 +1,4 @@
-#ifndef HTTPCONNECTIONBASE_H
-#define HTTPCONNECTIONBASE_H
+#pragma once
 
 #include <QObject>
 #include <QPointer>
@@ -10,7 +9,10 @@ class QLocalServer;
 class QLocalSocket;
 class QSignalSpy;
 class QBuffer;
-namespace Pillow { class HttpConnection; }
+namespace Pillow
+{
+	class HttpConnection;
+}
 
 class HttpConnectionTest : public QObject
 {
@@ -21,7 +23,7 @@ public:
 
 protected:
 	Pillow::HttpConnection* connection;
-	QSignalSpy* readySpy, *completedSpy, *closedSpy;
+	QSignalSpy *readySpy, *completedSpy, *closedSpy;
 	bool reuseConnection;
 
 protected: // Helper methods.
@@ -62,5 +64,3 @@ protected slots: // Test methods.
 	void benchmarkSimpleGetClose();
 	void benchmarkSimpleGetKeepAlive();
 };
-
-#endif // HTTPCONNECTIONBASE_H

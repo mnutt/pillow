@@ -1,5 +1,4 @@
-#ifndef PILLOW_BYTEARRAYHELPERS_H
-#define PILLOW_BYTEARRAYHELPERS_H
+#pragma once
 
 #ifndef QBYTEARRAY_H
 #include <QtCore/QByteArray>
@@ -13,7 +12,10 @@
 #endif // QSTRINGBUILDER_H
 
 // Forward declarations
-namespace Pillow { struct HttpHeader; }
+namespace Pillow
+{
+	struct HttpHeader;
+}
 
 namespace Pillow
 {
@@ -26,21 +28,24 @@ namespace Pillow
 		inline int size() const { return m_size; }
 		inline const char* data() const { return m_data; }
 		inline char at(int index) const { return m_data[index]; }
-		template <int N> inline Token(const char (&str)[N]) : m_size(N - 1), m_data(str) {}
+		template<int N>
+		inline Token(const char (&str)[N]) : m_size(N - 1), m_data(str)
+		{}
 
 		// Implicit conversion to QByteArrayView
 		inline operator QByteArrayView() const { return QByteArrayView(m_data, m_size); }
+
 	private:
 		const int m_size;
-		const char * const m_data;
+		const char* const m_data;
 	};
-	
+
 	// Comparison operators for QByteArray with Token
 	inline bool operator==(const QByteArray& ba, const Token& token)
 	{
 		return ba.size() == token.size() && qstrncmp(ba.constData(), token.data(), ba.size()) == 0;
 	}
-	
+
 	inline bool operator!=(const QByteArray& ba, const Token& token)
 	{
 		return !(ba == token);
@@ -55,13 +60,16 @@ namespace Pillow
 		inline int size() const { return m_size; }
 		inline const char* data() const { return m_data; }
 		inline char at(int index) const { return m_data[index]; }
-		template <int N> inline LowerCaseToken(const char (&str)[N]) : m_size(N - 1), m_data(str) {}
+		template<int N>
+		inline LowerCaseToken(const char (&str)[N]) : m_size(N - 1), m_data(str)
+		{}
 
 		// Implicit conversion to QByteArrayView
 		inline operator QByteArrayView() const { return QByteArrayView(m_data, m_size); }
+
 	private:
 		const int m_size;
-		const char * const m_data;
+		const char* const m_data;
 	};
 
 	// Comparison operators for QByteArray with LowerCaseToken
@@ -69,23 +77,22 @@ namespace Pillow
 	{
 		return ba.size() == token.size() && qstrncmp(ba.constData(), token.data(), ba.size()) == 0;
 	}
-	
+
 	inline bool operator!=(const QByteArray& ba, const LowerCaseToken& token)
 	{
 		return !(ba == token);
 	}
-	
+
 	// Append functions for QByteArray with Token types
 	inline QByteArray& append(QByteArray& ba, const Token& token)
 	{
 		return ba.append(token.data(), token.size());
 	}
-	
+
 	inline QByteArray& append(QByteArray& ba, const LowerCaseToken& token)
 	{
 		return ba.append(token.data(), token.size());
 	}
-
 
 	//
 	// Pillow::ByteArrayHelpers
@@ -122,14 +129,24 @@ namespace Pillow
 			target.setRawData(data + start, length);
 		}
 
-		template <typename Integer, int Base>
+		template<typename Integer, int Base>
 		inline void appendNumber(QByteArray& target, const Integer number)
 		{
-			static const char intToChar[16] = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f' };
+			static const char intToChar[16] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
 			int start = target.size();
-			Integer n = number; if (n < 0) n = -n;
-			do { if (Base <= 10) target.append(char(n % Base) + '0'); else target.append(intToChar[n % Base]); } while ((n /= Base) > 0);
-			if (number < 0) target.append('-');
+			Integer n = number;
+			if (n < 0)
+				n = -n;
+			do
+			{
+				if (Base <= 10)
+					target.append(char(n % Base) + '0');
+				else
+					target.append(intToChar[n % Base]);
+			}
+			while ((n /= Base) > 0);
+			if (number < 0)
+				target.append('-');
 
 			// Reverse the string we've just output
 			int end = target.size() - 1;
@@ -139,18 +156,21 @@ namespace Pillow
 				char c = data[start];
 				data[start] = data[end];
 				data[end] = c;
-				++start; --end;
+				++start;
+				--end;
 			}
 		}
 
 		inline bool asciiEqualsCaseInsensitive(QByteArrayView first, QByteArrayView second)
 		{
-			if (first.size() != second.size()) return false;
+			if (first.size() != second.size())
+				return false;
 			for (qsizetype i = 0; i < first.size(); ++i)
 			{
 				char f = first[i], s = second[i];
 				bool good = (f == s) || ((f - s) == 32 && f >= 'a' && f <= 'z') || ((f - s) == -32 && f >= 'A' && f <= 'Z');
-				if (!good) return false;
+				if (!good)
+					return false;
 			}
 			return true;
 		}
@@ -178,12 +198,14 @@ namespace Pillow
 		// Optimized version when second is known to be lowercase
 		inline bool asciiEqualsLowerCase(QByteArrayView first, QByteArrayView lowerCaseSecond)
 		{
-			if (first.size() != lowerCaseSecond.size()) return false;
+			if (first.size() != lowerCaseSecond.size())
+				return false;
 			for (qsizetype i = 0; i < first.size(); ++i)
 			{
 				char f = first[i], s = lowerCaseSecond[i];
 				bool good = (f == s) || ((f - s) == -32 && f >= 'A' && f <= 'Z');
-				if (!good) return false;
+				if (!good)
+					return false;
 			}
 			return true;
 		}
@@ -195,9 +217,12 @@ namespace Pillow
 
 		inline char unhex(const char c)
 		{
-			if (c >= '0' && c <= '9') return c - '0';
-			if (c >= 'a' && c <= 'f') return (c - 'a') + 10;
-			if (c >= 'A' && c <= 'F') return (c - 'A') + 10;
+			if (c >= '0' && c <= '9')
+				return c - '0';
+			if (c >= 'a' && c <= 'f')
+				return (c - 'a') + 10;
+			if (c >= 'A' && c <= 'F')
+				return (c - 'A') + 10;
 			return 0;
 		}
 
@@ -211,13 +236,15 @@ namespace Pillow
 				{
 					// Percent-encoded sequence.
 					*data = static_cast<char>(unhex(inData[1]) << 4 | unhex(inData[2]));
-					++data; inData += 3;
+					++data;
+					inData += 3;
 					size -= 2;
 				}
 				else
 				{
 					*data = *inData;
-					++data; ++inData;
+					++data;
+					++inData;
 				}
 			}
 			return size;
@@ -225,7 +252,8 @@ namespace Pillow
 
 		inline QString percentDecode(const QByteArray& byteArray)
 		{
-			if (byteArray.isEmpty()) return QString();
+			if (byteArray.isEmpty())
+				return QString();
 
 			if (byteArray.size() < 1024)
 			{
@@ -235,14 +263,16 @@ namespace Pillow
 			}
 			else
 			{
-				QByteArray temp = byteArray; temp.detach();
+				QByteArray temp = byteArray;
+				temp.detach();
 				return QString::fromUtf8(temp.constData(), percentDecodeInPlace(temp.data(), byteArray.size()));
 			}
 		}
 
 		inline QString percentDecode(const char* data, int size)
 		{
-			if (size == 0 || data == 0) return QString();
+			if (size == 0 || data == 0)
+				return QString();
 			if (size < 1024)
 			{
 				char buffer[1024];
@@ -256,7 +286,5 @@ namespace Pillow
 			}
 		}
 
-	}
-}
-
-#endif // PILLOW_BYTEARRAYHELPERS_H
+	} // namespace ByteArrayHelpers
+} // namespace Pillow

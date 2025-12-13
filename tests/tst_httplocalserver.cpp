@@ -8,11 +8,11 @@
 class HttpLocalServerTest : public HttpServerTestBase
 {
 	Q_OBJECT
-	
+
 private slots: // Test slots.
 	void init() { HttpServerTestBase::init(); }
 	void cleanup() { HttpServerTestBase::cleanup(); }
-	
+
 	void testInit() { HttpServerTestBase::testInit(); }
 	void testHandlesConnectionsAsRequests() { HttpServerTestBase::testHandlesConnectionsAsRequests(); }
 	void testHandlesConcurrentConnections() { HttpServerTestBase::testHandlesConcurrentConnections(); }
@@ -105,7 +105,7 @@ QObject* HttpLocalServerTest::createServer()
 	return new Pillow::HttpLocalServer("Pillow_HttpLocalServerTest");
 }
 
-QIODevice * HttpLocalServerTest::createClientConnection()
+QIODevice* HttpLocalServerTest::createClientConnection()
 {
 	QSignalSpy spy(server, SIGNAL(newConnection()));
 	QLocalSocket* socket = new QLocalSocket(server);

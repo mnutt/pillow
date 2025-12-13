@@ -1,5 +1,4 @@
-#ifndef PILLOW_HTTPCLIENT_H
-#define PILLOW_HTTPCLIENT_H
+#pragma once
 
 #ifndef QOBJECT_H
 #include <QtCore/QObject>
@@ -22,7 +21,10 @@
 
 class QIODevice;
 class QTcpSocket;
-namespace Pillow { class ContentTransformer; }
+namespace Pillow
+{
+	class ContentTransformer;
+}
 
 namespace Pillow
 {
@@ -44,11 +46,14 @@ namespace Pillow
 	public:
 		void get(const QByteArray& path, const Pillow::HttpHeaderCollection& headers = Pillow::HttpHeaderCollection());
 		void head(const QByteArray& path, const Pillow::HttpHeaderCollection& headers = Pillow::HttpHeaderCollection());
-		void post(const QByteArray& path, const Pillow::HttpHeaderCollection& headers = Pillow::HttpHeaderCollection(), const QByteArray& data = QByteArray());
-		void put(const QByteArray& path, const Pillow::HttpHeaderCollection& headers = Pillow::HttpHeaderCollection(), const QByteArray& data = QByteArray());
+		void post(const QByteArray& path, const Pillow::HttpHeaderCollection& headers = Pillow::HttpHeaderCollection(),
+		          const QByteArray& data = QByteArray());
+		void put(const QByteArray& path, const Pillow::HttpHeaderCollection& headers = Pillow::HttpHeaderCollection(),
+		         const QByteArray& data = QByteArray());
 		void deleteResource(const QByteArray& path, const Pillow::HttpHeaderCollection& headers = Pillow::HttpHeaderCollection());
 
-		void write(const QByteArray& method, const QByteArray& path, const Pillow::HttpHeaderCollection& headers = Pillow::HttpHeaderCollection(), const QByteArray& data = QByteArray());
+		void write(const QByteArray& method, const QByteArray& path,
+		           const Pillow::HttpHeaderCollection& headers = Pillow::HttpHeaderCollection(), const QByteArray& data = QByteArray());
 
 	private:
 		QIODevice* _device;
@@ -96,25 +101,27 @@ namespace Pillow
 		// Returns whether the http client should reuse the same communication channel at the end of the current request or close it.
 		inline bool shouldKeepAlive() const { return http_should_keep_alive(const_cast<http_parser*>(&parser)); }
 
-		// Returns whether the parser needs EOF to know where the message completes. The http client should use the injectEof() method to let the parser know that EOF was encountered.
+		// Returns whether the parser needs EOF to know where the message completes. The http client should use the injectEof() method to
+		// let the parser know that EOF was encountered.
 		inline bool completesOnEof() const { return http_message_needs_eof(const_cast<http_parser*>(&parser)); }
 
 	protected:
 		// Parser callbacks.
-		virtual void messageBegin();    // Defaults to clearing previous response members.
-		virtual void headersComplete(); // Defaults to doing nothing.
-		virtual void messageContent(const char *data, int length); // Defaults to appending to _content
-		virtual void messageComplete(); // Defaults to doing nothing.
+		virtual void messageBegin();                               // Defaults to clearing previous response members.
+		virtual void headersComplete();                            // Defaults to doing nothing.
+		virtual void messageContent(const char* data, int length); // Defaults to appending to _content
+		virtual void messageComplete();                            // Defaults to doing nothing.
 
-		// Pause the parser at the current parsing position and make it return from inject(). Only valid if called from within one of the callbacks above.
+		// Pause the parser at the current parsing position and make it return from inject(). Only valid if called from within one of the
+		// callbacks above.
 		void pause();
 
 	private:
 		static int parser_on_message_begin(http_parser* parser);
-		static int parser_on_header_field(http_parser* parser, const char *at, size_t length);
-		static int parser_on_header_value(http_parser* parser, const char *at, size_t length);
+		static int parser_on_header_field(http_parser* parser, const char* at, size_t length);
+		static int parser_on_header_value(http_parser* parser, const char* at, size_t length);
 		static int parser_on_headers_complete(http_parser* parser);
-		static int parser_on_body(http_parser* parser, const char *at, size_t length);
+		static int parser_on_body(http_parser* parser, const char* at, size_t length);
 		static int parser_on_message_complete(http_parser* parser);
 
 	private:
@@ -166,13 +173,13 @@ namespace Pillow
 	public:
 		enum Error
 		{
-			NoError,				// There was no error in sending and receiving the previous request (if any),
-									// including the 4xx and 5xx responses with represent client and server errors.
+			NoError, // There was no error in sending and receiving the previous request (if any),
+			         // including the 4xx and 5xx responses with represent client and server errors.
 
-			NetworkError,			// There was a network error (unable to connect, could not resolve host, etc.).
-			ResponseInvalidError,	// The response from the server could not be parsed as a valid Http response.
-			RemoteHostClosedError,  // The remote server has closed the connection before sending a full reply.
-			AbortedError            // The request was aborted before a pending response was completed.
+			NetworkError,          // There was a network error (unable to connect, could not resolve host, etc.).
+			ResponseInvalidError,  // The response from the server could not be parsed as a valid Http response.
+			RemoteHostClosedError, // The remote server has closed the connection before sending a full reply.
+			AbortedError           // The request was aborted before a pending response was completed.
 		};
 
 	public:
@@ -196,14 +203,18 @@ namespace Pillow
 		// Request members.
 		void get(const QUrl& url, const Pillow::HttpHeaderCollection& headers = Pillow::HttpHeaderCollection());
 		void head(const QUrl& url, const Pillow::HttpHeaderCollection& headers = Pillow::HttpHeaderCollection());
-		void post(const QUrl& url, const Pillow::HttpHeaderCollection& headers = Pillow::HttpHeaderCollection(), const QByteArray& data = QByteArray());
-		void put(const QUrl& url, const Pillow::HttpHeaderCollection& headers = Pillow::HttpHeaderCollection(), const QByteArray& data = QByteArray());
+		void post(const QUrl& url, const Pillow::HttpHeaderCollection& headers = Pillow::HttpHeaderCollection(),
+		          const QByteArray& data = QByteArray());
+		void put(const QUrl& url, const Pillow::HttpHeaderCollection& headers = Pillow::HttpHeaderCollection(),
+		         const QByteArray& data = QByteArray());
 		void deleteResource(const QUrl& url, const Pillow::HttpHeaderCollection& headers = Pillow::HttpHeaderCollection());
 
-		void request(const QByteArray& method, const QUrl& url, const Pillow::HttpHeaderCollection& headers = Pillow::HttpHeaderCollection(), const QByteArray& data = QByteArray());
+		void request(const QByteArray& method, const QUrl& url,
+		             const Pillow::HttpHeaderCollection& headers = Pillow::HttpHeaderCollection(), const QByteArray& data = QByteArray());
 		void request(const Pillow::HttpClientRequest& request);
 
-		void abort(); // Stop any active request and break current server connection. If there was an active request, finished() will be emitted and the error will be set to AbortedError.
+		void abort(); // Stop any active request and break current server connection. If there was an active request, finished() will be
+		              // emitted and the error will be set to AbortedError.
 
 		void followRedirection(); // Follow previous request's redirection. Only effective if redirected() is true.
 
@@ -237,7 +248,7 @@ namespace Pillow
 	protected:
 		void messageBegin();
 		void headersComplete();
-		void messageContent(const char *data, int length);
+		void messageContent(const char* data, int length);
 		void messageComplete();
 
 	private:
@@ -269,11 +280,11 @@ namespace Pillow
 		Q_OBJECT
 
 	public:
-		NetworkAccessManager(QObject *parent = 0);
+		NetworkAccessManager(QObject* parent = 0);
 		~NetworkAccessManager();
 
 	protected:
-		QNetworkReply *createRequest(Operation op, const QNetworkRequest &request, QIODevice *outgoingData = 0);
+		QNetworkReply* createRequest(Operation op, const QNetworkRequest& request, QIODevice* outgoingData = 0);
 
 	private slots:
 		void client_finished();
@@ -286,5 +297,3 @@ namespace Pillow
 	};
 
 } // namespace Pillow
-
-#endif // PILLOW_HTTPCLIENT_H

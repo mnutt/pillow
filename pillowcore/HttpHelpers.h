@@ -1,5 +1,4 @@
-#ifndef _PILLOW_HTTPHELPERS_H_
-#define _PILLOW_HTTPHELPERS_H_
+#pragma once
 
 #ifndef QSTRING_H
 #include <QString>
@@ -24,13 +23,11 @@ namespace Pillow
 		{
 			const char* getStatusCodeAndMessage(int statusCode);
 			const char* getStatusMessage(int statusCode);
-		}
+		} // namespace StatusCodes
 
 		namespace Dates
 		{
 			QByteArray getHttpDate(const QDateTime& dateTime = QDateTime::currentDateTime());
 		}
-	}
-}
-
-#endif // _PILLOW_HTTPHELPERS_H_
+	} // namespace HttpProtocol
+} // namespace Pillow

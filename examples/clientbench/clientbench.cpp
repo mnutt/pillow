@@ -8,15 +8,23 @@ class Bench : public QObject
 	Q_OBJECT
 
 public:
-	Bench(QObject *parent = 0)
-		: QObject(parent), m_requestCount(1), m_concurrency(1)
-	{}
+	Bench(QObject* parent = 0) : QObject(parent), m_requestCount(1), m_concurrency(1) {}
 
 	int requestCount() const { return m_requestCount; }
-	void setRequestCount(int arg) { if (arg < 1) arg = 1; m_requestCount = arg; }
+	void setRequestCount(int arg)
+	{
+		if (arg < 1)
+			arg = 1;
+		m_requestCount = arg;
+	}
 
 	int concurrency() const { return m_concurrency; }
-	void setConcurrency(int arg) { if (arg < 1) arg = 1; m_concurrency = arg; }
+	void setConcurrency(int arg)
+	{
+		if (arg < 1)
+			arg = 1;
+		m_concurrency = arg;
+	}
 
 	QUrl url() const { return m_url; }
 	void setUrl(QUrl arg) { m_url = arg; }
@@ -58,9 +66,7 @@ class ClientBench : public Bench
 	Q_OBJECT
 
 public:
-	ClientBench(QObject *parent = 0)
-		: Bench(parent)
-	{}
+	ClientBench(QObject* parent = 0) : Bench(parent) {}
 
 	void start()
 	{
@@ -73,7 +79,7 @@ public:
 
 		for (int i = 0; i < clientCount; ++i)
 		{
-			Pillow::HttpClient *client = new Pillow::HttpClient(this);
+			Pillow::HttpClient* client = new Pillow::HttpClient(this);
 			connect(client, SIGNAL(finished()), this, SLOT(client_finished()));
 			client->get(url());
 		}
@@ -82,7 +88,7 @@ public:
 private slots:
 	void client_finished()
 	{
-		Pillow::HttpClient *client = static_cast<Pillow::HttpClient*>(sender());
+		Pillow::HttpClient* client = static_cast<Pillow::HttpClient*>(sender());
 
 		if (client->error() != Pillow::HttpClient::NoError)
 			fail();
@@ -101,11 +107,7 @@ class NamBench : public Bench
 	Q_OBJECT
 
 public:
-	NamBench(QObject *parent = 0)
-		: Bench(parent)
-	{
-		m_nam = new QNetworkAccessManager(this);
-	}
+	NamBench(QObject* parent = 0) : Bench(parent) { m_nam = new QNetworkAccessManager(this); }
 
 	void start()
 	{
@@ -118,7 +120,7 @@ public:
 
 		for (int i = 0; i < clientCount; ++i)
 		{
-			QNetworkReply *reply = m_nam->get(QNetworkRequest(url()));
+			QNetworkReply* reply = m_nam->get(QNetworkRequest(url()));
 			connect(reply, SIGNAL(finished()), this, SLOT(client_finished()));
 		}
 	}
@@ -126,7 +128,7 @@ public:
 private slots:
 	void client_finished()
 	{
-		QNetworkReply *reply = static_cast<QNetworkReply*>(sender());
+		QNetworkReply* reply = static_cast<QNetworkReply*>(sender());
 
 		if (reply->error() != QNetworkReply::NoError)
 			fail();
@@ -144,7 +146,7 @@ private slots:
 	}
 
 private:
-	QNetworkAccessManager * m_nam;
+	QNetworkAccessManager* m_nam;
 };
 
 class PillowNamBench : public Bench
@@ -152,11 +154,7 @@ class PillowNamBench : public Bench
 	Q_OBJECT
 
 public:
-	PillowNamBench(QObject *parent = 0)
-		: Bench(parent)
-	{
-		m_nam = new Pillow::NetworkAccessManager(this);
-	}
+	PillowNamBench(QObject* parent = 0) : Bench(parent) { m_nam = new Pillow::NetworkAccessManager(this); }
 
 	void start()
 	{
@@ -169,7 +167,7 @@ public:
 
 		for (int i = 0; i < clientCount; ++i)
 		{
-			QNetworkReply *reply = m_nam->get(QNetworkRequest(url()));
+			QNetworkReply* reply = m_nam->get(QNetworkRequest(url()));
 			connect(reply, SIGNAL(finished()), this, SLOT(client_finished()));
 		}
 	}
@@ -177,7 +175,7 @@ public:
 private slots:
 	void client_finished()
 	{
-		QNetworkReply *reply = static_cast<QNetworkReply*>(sender());
+		QNetworkReply* reply = static_cast<QNetworkReply*>(sender());
 
 		if (reply->error() != QNetworkReply::NoError)
 			fail();
@@ -195,11 +193,10 @@ private slots:
 	}
 
 private:
-	QNetworkAccessManager * m_nam;
+	QNetworkAccessManager* m_nam;
 };
 
-
-int main(int argc, char *argv[])
+int main(int argc, char* argv[])
 {
 	QCoreApplication a(argc, argv);
 
@@ -207,8 +204,8 @@ int main(int argc, char *argv[])
 	// clientbench -n <number of requests> -c <concurency> <url>
 
 	ClientBench bench;
-	//NamBench bench;
-	//PillowNamBench bench;
+	// NamBench bench;
+	// PillowNamBench bench;
 
 	for (int i = 0, iE = a.arguments().size(); i < iE; ++i)
 	{

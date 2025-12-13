@@ -8,17 +8,19 @@
 #include <QtCore/QCoreApplication>
 using namespace Pillow;
 
-Pillow::HttpConnection * HttpHandlerTestBase::createGetRequest(const QByteArray &path, const QByteArray& httpVersion)
+Pillow::HttpConnection* HttpHandlerTestBase::createGetRequest(const QByteArray& path, const QByteArray& httpVersion)
 {
 	return createRequest("GET", path, QByteArray(), httpVersion);
 }
 
-Pillow::HttpConnection * HttpHandlerTestBase::createPostRequest(const QByteArray &path, const QByteArray &content, const QByteArray &httpVersion)
+Pillow::HttpConnection* HttpHandlerTestBase::createPostRequest(const QByteArray& path, const QByteArray& content,
+                                                               const QByteArray& httpVersion)
 {
 	return createRequest("POST", path, content, httpVersion);
 }
 
-Pillow::HttpConnection * HttpHandlerTestBase::createRequest(const QByteArray &method, const QByteArray &path, const QByteArray &content, const QByteArray &httpVersion)
+Pillow::HttpConnection* HttpHandlerTestBase::createRequest(const QByteArray& method, const QByteArray& path, const QByteArray& content,
+                                                           const QByteArray& httpVersion)
 {
 	QByteArray data = QByteArray().append(method).append(" ").append(path).append(" HTTP/").append(httpVersion).append("\r\n");
 	if (content.size() > 0)
@@ -28,8 +30,10 @@ Pillow::HttpConnection * HttpHandlerTestBase::createRequest(const QByteArray &me
 	}
 	data.append("\r\n").append(content);
 
-	QBuffer* inputBuffer = new QBuffer(); inputBuffer->open(QIODevice::ReadWrite);
-	QBuffer* outputBuffer = new QBuffer(); outputBuffer->open(QIODevice::ReadWrite);
+	QBuffer* inputBuffer = new QBuffer();
+	inputBuffer->open(QIODevice::ReadWrite);
+	QBuffer* outputBuffer = new QBuffer();
+	outputBuffer->open(QIODevice::ReadWrite);
 	connect(outputBuffer, SIGNAL(bytesWritten(qint64)), this, SLOT(outputBuffer_bytesWritten()));
 
 	Pillow::HttpConnection* connection = new Pillow::HttpConnection(this);
@@ -59,21 +63,22 @@ void HttpHandlerTestBase::outputBuffer_bytesWritten()
 {
 	QBuffer* buffer = static_cast<QBuffer*>(sender());
 	responseBuffer.append(buffer->data());
-	if (buffer->isOpen()) buffer->seek(0);
+	if (buffer->isOpen())
+		buffer->seek(0);
 }
 
 class MockHandler : public Pillow::HttpHandler
 {
 public:
 	MockHandler(const QByteArray& acceptPath, int statusCode, QObject* parent)
-		: Pillow::HttpHandler(parent), acceptPath(acceptPath), statusCode(statusCode), handleRequestCount(0)
+	    : Pillow::HttpHandler(parent), acceptPath(acceptPath), statusCode(statusCode), handleRequestCount(0)
 	{}
 
 	QByteArray acceptPath;
 	int statusCode;
 	int handleRequestCount;
 
-	bool handleRequest(Pillow::HttpConnection *connection)
+	bool handleRequest(Pillow::HttpConnection* connection)
 	{
 		++handleRequestCount;
 
@@ -134,10 +139,8 @@ void HttpHandlerTest::testHandler404()
 void HttpHandlerTest::testHandlerFunction()
 {
 #ifdef Q_COMPILER_LAMBDA
-	HttpHandlerFunction handler([](Pillow::HttpConnection* request)
-	{
-		request->writeResponse(200, Pillow::HttpHeaderCollection(), "hello from lambda");
-	});
+	HttpHandlerFunction handler(
+	    [](Pillow::HttpConnection* request) { request->writeResponse(200, Pillow::HttpHeaderCollection(), "hello from lambda"); });
 
 	QVERIFY(handler.handleRequest(createGetRequest("/some/random/path")));
 	QVERIFY(response.startsWith("HTTP/1.0 200 OK"));
@@ -149,7 +152,8 @@ void HttpHandlerTest::testHandlerFunction()
 
 void HttpHandlerTest::testHandlerLog()
 {
-	QBuffer buffer; buffer.open(QIODevice::ReadWrite);
+	QBuffer buffer;
+	buffer.open(QIODevice::ReadWrite);
 	Pillow::HttpConnection* request1 = createGetRequest("/first");
 	Pillow::HttpConnection* request2 = createGetRequest("/second");
 	Pillow::HttpConnection* request3 = createGetRequest("/third");
@@ -173,7 +177,8 @@ void HttpHandlerTest::testHandlerLog()
 
 void HttpHandlerTest::testHandlerLogTrace()
 {
-	QBuffer buffer; buffer.open(QIODevice::ReadWrite);
+	QBuffer buffer;
+	buffer.open(QIODevice::ReadWrite);
 	Pillow::HttpConnection* request1 = createGetRequest("/first", "1.1");
 	Pillow::HttpConnection* request2 = createGetRequest("/second", "1.1");
 	Pillow::HttpConnection* request3 = createGetRequest("/third", "1.1");
@@ -199,10 +204,10 @@ void HttpHandlerTest::testHandlerLogTrace()
 	QVERIFY(buffer.readLine().contains("GET /first"));
 	QVERIFY(buffer.readLine().contains("GET /second"));
 	QVERIFY(buffer.readLine().contains("GET /third"));
-	QVERIFY(buffer.readLine().contains("GET /third")); // END
-	QVERIFY(buffer.readLine().contains("GET /first")); // END
+	QVERIFY(buffer.readLine().contains("GET /third"));  // END
+	QVERIFY(buffer.readLine().contains("GET /first"));  // END
 	QVERIFY(buffer.readLine().contains("GET /second")); // END
-	QVERIFY(buffer.readLine().contains("GET /first")); // CLOSE
+	QVERIFY(buffer.readLine().contains("GET /first"));  // CLOSE
 	QVERIFY(buffer.readLine().isEmpty());
 }
 
@@ -214,12 +219,42 @@ void HttpHandlerFileTest::initTestCase()
 
 	QByteArray bigData(16 * 1024 * 1024, '-');
 
-	{ QFile f(testPath + "/first"); f.open(QIODevice::WriteOnly); f.write("first content"); f.flush(); f.close(); }
-	{ QFile f(testPath + "/second"); f.open(QIODevice::WriteOnly); f.write("second content"); f.flush(); f.close(); }
-	{ QFile f(testPath + "/large"); f.open(QIODevice::WriteOnly); f.write(bigData); f.flush(); f.close(); }
-	{ QFile f(testPath + "/first"); f.open(QIODevice::ReadOnly); QCOMPARE(f.readAll(), QByteArray("first content")); }
-	{ QFile f(testPath + "/second"); f.open(QIODevice::ReadOnly); QCOMPARE(f.readAll(), QByteArray("second content")); }
-	{ QFile f(testPath + "/large"); f.open(QIODevice::ReadOnly); QCOMPARE(f.readAll(), bigData); }
+	{
+		QFile f(testPath + "/first");
+		f.open(QIODevice::WriteOnly);
+		f.write("first content");
+		f.flush();
+		f.close();
+	}
+	{
+		QFile f(testPath + "/second");
+		f.open(QIODevice::WriteOnly);
+		f.write("second content");
+		f.flush();
+		f.close();
+	}
+	{
+		QFile f(testPath + "/large");
+		f.open(QIODevice::WriteOnly);
+		f.write(bigData);
+		f.flush();
+		f.close();
+	}
+	{
+		QFile f(testPath + "/first");
+		f.open(QIODevice::ReadOnly);
+		QCOMPARE(f.readAll(), QByteArray("first content"));
+	}
+	{
+		QFile f(testPath + "/second");
+		f.open(QIODevice::ReadOnly);
+		QCOMPARE(f.readAll(), QByteArray("second content"));
+	}
+	{
+		QFile f(testPath + "/large");
+		f.open(QIODevice::ReadOnly);
+		QCOMPARE(f.readAll(), bigData);
+	}
 }
 
 void HttpHandlerFileTest::testServesFiles()
@@ -328,8 +363,12 @@ void HttpHandlerSimpleRouterTest::testFuncRoute()
 {
 #ifdef Q_COMPILER_LAMBDA
 	HttpHandlerSimpleRouter handler;
-	handler.addRoute("/a_route", [](Pillow::HttpConnection* request) { request->writeResponse(200, Pillow::HttpHeaderCollection(), "Amazing First Route"); });
-	handler.addRoute("/a_route/and_another", [](Pillow::HttpConnection* request) { request->writeResponse(400, Pillow::HttpHeaderCollection(), "Delicious Second Route"); });
+	handler.addRoute("/a_route", [](Pillow::HttpConnection* request) {
+		request->writeResponse(200, Pillow::HttpHeaderCollection(), "Amazing First Route");
+	});
+	handler.addRoute("/a_route/and_another", [](Pillow::HttpConnection* request) {
+		request->writeResponse(400, Pillow::HttpHeaderCollection(), "Delicious Second Route");
+	});
 
 	QVERIFY(!handler.handleRequest(createGetRequest("/should_not_match")));
 	QVERIFY(!handler.handleRequest(createGetRequest("/should/not/match/either")));
@@ -350,12 +389,12 @@ void HttpHandlerSimpleRouterTest::testFuncRoute()
 #endif
 }
 
-void HttpHandlerSimpleRouterTest::handleRequest1(Pillow::HttpConnection *request)
+void HttpHandlerSimpleRouterTest::handleRequest1(Pillow::HttpConnection* request)
 {
 	request->writeResponse(403, Pillow::HttpHeaderCollection(), "Hello");
 }
 
-void HttpHandlerSimpleRouterTest::handleRequest2(Pillow::HttpConnection *request)
+void HttpHandlerSimpleRouterTest::handleRequest2(Pillow::HttpConnection* request)
 {
 	request->writeResponse(200, Pillow::HttpHeaderCollection(), "World");
 }
@@ -385,7 +424,8 @@ void HttpHandlerSimpleRouterTest::testPathParams()
 	QCOMPARE(requestParams.at(1).second, QString("another_value"));
 	response.clear();
 
-	QVERIFY(handler.handleRequest(createGetRequest("/third/some_param-value/another_value/and_a_last_one?with=overriden&extra=bonus_query_param#and_fragment")));
+	QVERIFY(handler.handleRequest(
+	    createGetRequest("/third/some_param-value/another_value/and_a_last_one?with=overriden&extra=bonus_query_param#and_fragment")));
 	QVERIFY(response.startsWith("HTTP/1.0 200"));
 	QVERIFY(response.endsWith("Third Route"));
 	QCOMPARE(requestParams.size(), 4);
@@ -437,7 +477,8 @@ void HttpHandlerSimpleRouterTest::testPathSplats()
 	QCOMPARE(requestParams.at(1).second, QString(""));
 	response.clear();
 
-	QVERIFY(handler.handleRequest(createGetRequest("/second/some-param-value/and/extra/stuff/splatted.at/the.end?with=bonus_query_param#and_fragment")));
+	QVERIFY(handler.handleRequest(
+	    createGetRequest("/second/some-param-value/and/extra/stuff/splatted.at/the.end?with=bonus_query_param#and_fragment")));
 	QVERIFY(response.startsWith("HTTP/1.0 200"));
 	QVERIFY(response.endsWith("Second Route"));
 	QCOMPARE(requestParams.size(), 3);
@@ -538,4 +579,3 @@ void HttpHandlerSimpleRouterTest::testSupportsMethodParam()
 	QVERIFY(handler.handleRequest(createGetRequest("/b?_method=delete")));
 	QVERIFY(handler.handleRequest(createPostRequest("/b?_method=delete")));
 }
-

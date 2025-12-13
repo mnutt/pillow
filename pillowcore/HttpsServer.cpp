@@ -9,22 +9,19 @@ using namespace Pillow;
 // HttpsServer
 //
 
-HttpsServer::HttpsServer(QObject *parent)
-	: HttpServer(parent)
-{
-}
+HttpsServer::HttpsServer(QObject* parent) : HttpServer(parent) {}
 
-HttpsServer::HttpsServer(const QSslCertificate& certificate, const QSslKey& privateKey, const QHostAddress &serverAddress, quint16 serverPort, QObject *parent)
-	: HttpServer(serverAddress, serverPort, parent), _certificate(certificate), _privateKey(privateKey)
-{
-}
+HttpsServer::HttpsServer(const QSslCertificate& certificate, const QSslKey& privateKey, const QHostAddress& serverAddress,
+                         quint16 serverPort, QObject* parent)
+    : HttpServer(serverAddress, serverPort, parent), _certificate(certificate), _privateKey(privateKey)
+{}
 
-void HttpsServer::setCertificate(const QSslCertificate &certificate)
+void HttpsServer::setCertificate(const QSslCertificate& certificate)
 {
 	_certificate = certificate;
 }
 
-void HttpsServer::setPrivateKey(const QSslKey &privateKey)
+void HttpsServer::setPrivateKey(const QSslKey& privateKey)
 {
 	_privateKey = privateKey;
 }
@@ -48,9 +45,7 @@ void HttpsServer::incomingConnection(qintptr socketDescriptor)
 	}
 }
 
-void HttpsServer::sslSocket_sslErrors(const QList<QSslError>&)
-{
-}
+void HttpsServer::sslSocket_sslErrors(const QList<QSslError>&) {}
 
 void HttpsServer::sslSocket_encrypted()
 {

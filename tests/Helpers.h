@@ -1,5 +1,4 @@
-#ifndef HELPERS_H
-#define HELPERS_H
+#pragma once
 
 #include <QtCore/qdebug.h>
 #include <QtCore/qelapsedtimer.h>
@@ -9,14 +8,16 @@
 #include <HttpConnection.h>
 #include <HttpServer.h>
 
-#define PILLOW_TEST_DECLARE(TestClass) \
-	int exec_##TestClass() \
-	{ \
-		TestClass t; return QTest::qExec(&t, QCoreApplication::arguments()); \
+#define PILLOW_TEST_DECLARE(TestClass)                          \
+	int exec_##TestClass()                                      \
+	{                                                           \
+		TestClass t;                                            \
+		return QTest::qExec(&t, QCoreApplication::arguments()); \
 	}
 
 #define PILLOW_TEST_RUN(TestClass, resultVar) \
-	extern int exec_##TestClass(); resultVar += exec_##TestClass();
+	extern int exec_##TestClass();            \
+	resultVar += exec_##TestClass();
 
 struct HttpRequestData
 {
@@ -31,14 +32,46 @@ struct HttpRequestData
 
 	inline HttpRequestData() {}
 
-	HttpRequestData& withMethod(const QByteArray& arg) { _method = arg; return *this; }
-	HttpRequestData& withUri(const QByteArray& arg) { _uri = arg; return *this; }
-	HttpRequestData& withPath(const QByteArray& arg) { _path = arg; return *this; }
-	HttpRequestData& withQueryString(const QByteArray& arg) { _queryString = arg; return *this; }
-	HttpRequestData& withFragment(const QByteArray& arg) { _fragment = arg; return *this; }
-	HttpRequestData& withHttpVersion(const QByteArray& arg) { _httpVersion = arg; return *this; }
-	HttpRequestData& withContent(const QByteArray& arg) { _content = arg; return *this; }
-	HttpRequestData& withHeaders(const Pillow::HttpHeaderCollection& arg) { _headers = arg; return *this; }
+	HttpRequestData& withMethod(const QByteArray& arg)
+	{
+		_method = arg;
+		return *this;
+	}
+	HttpRequestData& withUri(const QByteArray& arg)
+	{
+		_uri = arg;
+		return *this;
+	}
+	HttpRequestData& withPath(const QByteArray& arg)
+	{
+		_path = arg;
+		return *this;
+	}
+	HttpRequestData& withQueryString(const QByteArray& arg)
+	{
+		_queryString = arg;
+		return *this;
+	}
+	HttpRequestData& withFragment(const QByteArray& arg)
+	{
+		_fragment = arg;
+		return *this;
+	}
+	HttpRequestData& withHttpVersion(const QByteArray& arg)
+	{
+		_httpVersion = arg;
+		return *this;
+	}
+	HttpRequestData& withContent(const QByteArray& arg)
+	{
+		_content = arg;
+		return *this;
+	}
+	HttpRequestData& withHeaders(const Pillow::HttpHeaderCollection& arg)
+	{
+		_headers = arg;
+		return *this;
+	}
 
 	static HttpRequestData fromHttpConnection(Pillow::HttpConnection* c)
 	{
@@ -78,9 +111,11 @@ public:
 
 	inline bool waitForRequest(int maxTime = 500)
 	{
-		QElapsedTimer t; t.start();
+		QElapsedTimer t;
+		t.start();
 		int initialRequests = receivedRequests.size();
-		while (receivedRequests.size() == initialRequests && t.elapsed() < maxTime) QCoreApplication::processEvents();
+		while (receivedRequests.size() == initialRequests && t.elapsed() < maxTime)
+			QCoreApplication::processEvents();
 		if (receivedRequests.size() == initialRequests)
 		{
 			qWarning() << "Timed out waiting for request";
@@ -100,20 +135,20 @@ private slots:
 
 namespace PillowTest
 {
-	template <typename T1, typename T2>
-	bool pCompare(T1 const & t1, T2 const & t2, const char * actual, const char * expected, const char * file, int line)
+	template<typename T1, typename T2>
+	bool pCompare(T1 const& t1, T2 const& t2, const char* actual, const char* expected, const char* file, int line)
 	{
 		return QTest::qCompare(t1, t2, actual, expected, file, line);
 	}
 
-	template <>
-	inline bool pCompare(unsigned short const &t1, int const &t2, const char *actual, const char *expected, const char *file, int line)
+	template<>
+	inline bool pCompare(unsigned short const& t1, int const& t2, const char* actual, const char* expected, const char* file, int line)
 	{
 		return QTest::qCompare(int(t1), t2, actual, expected, file, line);
 	}
 
-	template <>
-	inline bool pCompare(QByteArray const &t1, QByteArray const &t2, const char *actual, const char *expected, const char *file, int line)
+	template<>
+	inline bool pCompare(QByteArray const& t1, QByteArray const& t2, const char* actual, const char* expected, const char* file, int line)
 	{
 		if (!QTest::qCompare(t1, t2, actual, expected, file, line))
 		{
@@ -139,8 +174,9 @@ namespace PillowTest
 		else
 			return true;
 	}
-	template <>
-	inline bool pCompare(Pillow::HttpHeaderCollection const &t1, Pillow::HttpHeaderCollection const &t2, const char *actual, const char *expected, const char *file, int line)
+	template<>
+	inline bool pCompare(Pillow::HttpHeaderCollection const& t1, Pillow::HttpHeaderCollection const& t2, const char* actual,
+	                     const char* expected, const char* file, int line)
 	{
 		if (t1 != t2)
 		{
@@ -157,24 +193,33 @@ namespace PillowTest
 		return true;
 	}
 
-	inline bool pCompare(QList<QPair<QByteArray, QByteArray> > const &t1, Pillow::HttpHeaderCollection const &t2, const char *actual, const char *expected, const char *file, int line)
+	inline bool pCompare(QList<QPair<QByteArray, QByteArray>> const& t1, Pillow::HttpHeaderCollection const& t2, const char* actual,
+	                     const char* expected, const char* file, int line)
 	{
 		Pillow::HttpHeaderCollection _t1;
-		for (int i = 0; i < t1.size(); ++i) _t1.append(t1.at(i));
+		for (int i = 0; i < t1.size(); ++i)
+			_t1.append(t1.at(i));
 		return pCompare(const_cast<const Pillow::HttpHeaderCollection&>(_t1), t2, actual, expected, file, line);
 	}
 
-
-	template <>
-	inline bool pCompare(HttpRequestData const &t1, HttpRequestData const &t2, const char *actual, const char *expected, const char *file, int line)
+	template<>
+	inline bool pCompare(HttpRequestData const& t1, HttpRequestData const& t2, const char* actual, const char* expected, const char* file,
+	                     int line)
 	{
-		if (!PillowTest::pCompare(t1._method, t2._method, actual, expected, file, line)) return false;
-		if (!PillowTest::pCompare(t1._uri, t2._uri, actual, expected, file, line)) return false;
-		if (!PillowTest::pCompare(t1._path, t2._path, actual, expected, file, line)) return false;
-		if (!PillowTest::pCompare(t1._queryString, t2._queryString, actual, expected, file, line)) return false;
-		if (!PillowTest::pCompare(t1._fragment, t2._fragment, actual, expected, file, line)) return false;
-		if (!PillowTest::pCompare(t1._httpVersion, t2._httpVersion, actual, expected, file, line)) return false;
-		if (!PillowTest::pCompare(t1._content, t2._content, actual, expected, file, line)) return false;
+		if (!PillowTest::pCompare(t1._method, t2._method, actual, expected, file, line))
+			return false;
+		if (!PillowTest::pCompare(t1._uri, t2._uri, actual, expected, file, line))
+			return false;
+		if (!PillowTest::pCompare(t1._path, t2._path, actual, expected, file, line))
+			return false;
+		if (!PillowTest::pCompare(t1._queryString, t2._queryString, actual, expected, file, line))
+			return false;
+		if (!PillowTest::pCompare(t1._fragment, t2._fragment, actual, expected, file, line))
+			return false;
+		if (!PillowTest::pCompare(t1._httpVersion, t2._httpVersion, actual, expected, file, line))
+			return false;
+		if (!PillowTest::pCompare(t1._content, t2._content, actual, expected, file, line))
+			return false;
 
 		if (t1._headers != t2._headers)
 		{
@@ -192,28 +237,30 @@ namespace PillowTest
 		return true;
 	}
 
-}
+} // namespace PillowTest
 
 #undef QCOMPARE
-#define QCOMPARE(actual, expected) \
-do {\
-	if (!PillowTest::pCompare(actual, expected, #actual, #expected, __FILE__, __LINE__))\
-		return;\
-} while (0)
+#define QCOMPARE(actual, expected)                                                           \
+	do                                                                                       \
+	{                                                                                        \
+		if (!PillowTest::pCompare(actual, expected, #actual, #expected, __FILE__, __LINE__)) \
+			return;                                                                          \
+	}                                                                                        \
+	while (0)
 
-template <typename Pred> bool waitFor(const Pred& predicate, int maxTime = 500)
+template<typename Pred>
+bool waitFor(const Pred& predicate, int maxTime = 500)
 {
-	QElapsedTimer t; t.start();
+	QElapsedTimer t;
+	t.start();
 	bool result = false;
 	while (!(result = predicate()) && !t.hasExpired(maxTime))
 		QCoreApplication::processEvents(QEventLoop::AllEvents, 10);
 	return result;
 }
 
-inline bool waitForSignal(QObject *obj, const char* signal, int maxTime = 500)
+inline bool waitForSignal(QObject* obj, const char* signal, int maxTime = 500)
 {
 	QSignalSpy spy(obj, signal);
-	return waitFor([&]{ return spy.size() > 0; }, maxTime);
+	return waitFor([&] { return spy.size() > 0; }, maxTime);
 }
-
-#endif // HELPERS_H

@@ -1,11 +1,14 @@
-#ifndef HTTPHANDLERPROXYTEST_H
-#define HTTPHANDLERPROXYTEST_H
+#pragma once
 
 #include "HttpHandlerTest.h"
 #include <QObject>
 #include <QUrl>
 
-namespace Pillow { class HttpServer; class HttpHandlerSimpleRouter; }
+namespace Pillow
+{
+	class HttpServer;
+	class HttpHandlerSimpleRouter;
+} // namespace Pillow
 class CapturingHandler;
 class HoldingHandler;
 
@@ -16,10 +19,10 @@ class HttpHandlerProxyTest : public HttpHandlerTestBase
 	Pillow::HttpHandlerSimpleRouter* router;
 	CapturingHandler* capturingHandler;
 	HoldingHandler* holdingHandler;
-	
+
 public:
 	HttpHandlerProxyTest();
-	
+
 protected:
 	QUrl serverUrl() const;
 
@@ -38,5 +41,3 @@ private slots:
 	void testHandlesMultipleConcurrentRequests();
 	void testCustomProxyPipe();
 };
-
-#endif // HTTPHANDLERPROXYTEST_H

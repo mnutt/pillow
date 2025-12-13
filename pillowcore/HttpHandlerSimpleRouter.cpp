@@ -25,9 +25,10 @@ namespace Pillow
 	{
 		QPointer<Pillow::HttpHandler> handler;
 
-		virtual bool invoke(Pillow::HttpConnection *request)
+		virtual bool invoke(Pillow::HttpConnection* request)
 		{
-			if (!handler) return false;
+			if (!handler)
+				return false;
 			return handler->handleRequest(request);
 		}
 	};
@@ -37,9 +38,10 @@ namespace Pillow
 		QPointer<QObject> object;
 		QByteArray member;
 
-		virtual bool invoke(Pillow::HttpConnection *request)
+		virtual bool invoke(Pillow::HttpConnection* request)
 		{
-			if (!object) return false;
+			if (!object)
+				return false;
 			return QMetaObject::invokeMethod(object, member.constData(), Q_ARG(Pillow::HttpConnection*, request));
 		}
 	};
@@ -49,9 +51,10 @@ namespace Pillow
 		QPointer<QObject> object;
 		QMetaMethod metaMethod;
 
-		virtual bool invoke(Pillow::HttpConnection *request)
+		virtual bool invoke(Pillow::HttpConnection* request)
 		{
-			if (!object) return false;
+			if (!object)
+				return false;
 			return metaMethod.invoke(object, Q_ARG(Pillow::HttpConnection*, request));
 		}
 	};
@@ -61,7 +64,7 @@ namespace Pillow
 	{
 		std::function<void(Pillow::HttpConnection*)> func;
 
-		virtual bool invoke(Pillow::HttpConnection *request)
+		virtual bool invoke(Pillow::HttpConnection* request)
 		{
 			func(request);
 			return true;
@@ -75,7 +78,7 @@ namespace Pillow
 		Pillow::HttpHeaderCollection headers;
 		QByteArray content;
 
-		virtual bool invoke(Pillow::HttpConnection *request)
+		virtual bool invoke(Pillow::HttpConnection* request)
 		{
 			request->writeResponse(statusCode, headers, content);
 			return true;
@@ -94,14 +97,14 @@ namespace Pillow
 		HttpHandlerSimpleRouter::RoutingErrorAction unmatchedRequestAction;
 		bool acceptMethodParam;
 	};
-}
+} // namespace Pillow
 
 //
 // HttpHandlerSimpleRouter
 //
 
 HttpHandlerSimpleRouter::HttpHandlerSimpleRouter(QObject* parent /* = 0 */)
-	: Pillow::HttpHandler(parent), d_ptr(new HttpHandlerSimpleRouterPrivate)
+    : Pillow::HttpHandler(parent), d_ptr(new HttpHandlerSimpleRouterPrivate)
 {
 	d_ptr->methodMismatchAction = Passthrough;
 	d_ptr->unmatchedRequestAction = Passthrough;
@@ -115,7 +118,7 @@ HttpHandlerSimpleRouter::~HttpHandlerSimpleRouter()
 	delete d_ptr;
 }
 
-void HttpHandlerSimpleRouter::addRoute(const QByteArray& method, const QString &path, Pillow::HttpHandler *handler)
+void HttpHandlerSimpleRouter::addRoute(const QByteArray& method, const QString& path, Pillow::HttpHandler* handler)
 {
 	HandlerRoute* route = new HandlerRoute();
 	route->method = method;
@@ -128,12 +131,14 @@ void HttpHandlerSimpleRouter::addRoute(const QByteArray& method, const QString& 
 {
 	if (object == nullptr)
 	{
-		qWarning() << "HttpHandlerSimpleRouter::addRoute: null target object specified while adding route for" << path << "- not adding route";
+		qWarning() << "HttpHandlerSimpleRouter::addRoute: null target object specified while adding route for" << path
+		           << "- not adding route";
 		return;
 	}
 	else if (member == nullptr || member[0] == 0)
 	{
-		qWarning() << "HttpHandlerSimpleRouter::addRoute: null or empty member specified while adding route for" << path << "- not adding route";
+		qWarning() << "HttpHandlerSimpleRouter::addRoute: null or empty member specified while adding route for" << path
+		           << "- not adding route";
 		return;
 	}
 
@@ -143,7 +148,8 @@ void HttpHandlerSimpleRouter::addRoute(const QByteArray& method, const QString& 
 		member++;
 	}
 	int methodIndex = object->metaObject()->indexOfSlot(member);
-	if (methodIndex == -1) object->metaObject()->indexOfMethod(member);
+	if (methodIndex == -1)
+		object->metaObject()->indexOfMethod(member);
 
 	if (methodIndex == -1)
 	{
@@ -166,7 +172,8 @@ void HttpHandlerSimpleRouter::addRoute(const QByteArray& method, const QString& 
 	}
 }
 
-void HttpHandlerSimpleRouter::addRoute(const QByteArray& method, const QString& path, int statusCode, const Pillow::HttpHeaderCollection& headers, const QByteArray& content /*= QByteArray()*/)
+void HttpHandlerSimpleRouter::addRoute(const QByteArray& method, const QString& path, int statusCode,
+                                       const Pillow::HttpHeaderCollection& headers, const QByteArray& content /*= QByteArray()*/)
 {
 	StaticRoute* route = new StaticRoute();
 	route->method = method;
@@ -178,7 +185,7 @@ void HttpHandlerSimpleRouter::addRoute(const QByteArray& method, const QString& 
 }
 
 #ifdef Q_COMPILER_LAMBDA
-void HttpHandlerSimpleRouter::addRoute(const QByteArray &method, const QString &path, const std::function<void(HttpConnection *)> &func)
+void HttpHandlerSimpleRouter::addRoute(const QByteArray& method, const QString& path, const std::function<void(HttpConnection*)>& func)
 {
 	FunctorCallRoute* route = new FunctorCallRoute();
 	route->method = method;
@@ -188,27 +195,31 @@ void HttpHandlerSimpleRouter::addRoute(const QByteArray &method, const QString &
 }
 #endif // Q_COMPILER_LAMBDA
 
-QRegularExpression Pillow::HttpHandlerSimpleRouter::pathToRegExp(const QString &p, QStringList* outParamNames)
+QRegularExpression Pillow::HttpHandlerSimpleRouter::pathToRegExp(const QString& p, QStringList* outParamNames)
 {
 	QString path = p;
 
-	QRegularExpression paramRegex(":(\\w+)"); QString paramReplacement("([\\w_-]+)");
+	QRegularExpression paramRegex(":(\\w+)");
+	QString paramReplacement("([\\w_-]+)");
 	QStringList paramNames;
-	
+
 	// Find all parameter matches using globalMatch
 	QRegularExpressionMatchIterator paramIterator = paramRegex.globalMatch(path);
-	while (paramIterator.hasNext()) {
+	while (paramIterator.hasNext())
+	{
 		QRegularExpressionMatch paramMatch = paramIterator.next();
 		paramNames.append(paramMatch.captured(1));
 	}
 
 	path.replace(paramRegex, paramReplacement);
 
-	QRegularExpression splatRegex("\\*(\\w+)"); QString splatReplacement("(.*)");
-	
+	QRegularExpression splatRegex("\\*(\\w+)");
+	QString splatReplacement("(.*)");
+
 	// Find all splat matches using globalMatch
 	QRegularExpressionMatchIterator splatIterator = splatRegex.globalMatch(path);
-	while (splatIterator.hasNext()) {
+	while (splatIterator.hasNext())
+	{
 		QRegularExpressionMatch splatMatch = splatIterator.next();
 		paramNames.append(splatMatch.captured(1));
 	}
@@ -222,7 +233,7 @@ QRegularExpression Pillow::HttpHandlerSimpleRouter::pathToRegExp(const QString &
 	return QRegularExpression(path);
 }
 
-bool HttpHandlerSimpleRouter::handleRequest(Pillow::HttpConnection *request)
+bool HttpHandlerSimpleRouter::handleRequest(Pillow::HttpConnection* request)
 {
 	QVarLengthArray<Route*, 16> matchedRoutes;
 
@@ -242,8 +253,7 @@ bool HttpHandlerSimpleRouter::handleRequest(Pillow::HttpConnection *request)
 		if (match.hasMatch())
 		{
 			matchedRoutes.append(route);
-			if (route->method.isEmpty() ||
-				(route->method.size() == requestMethod.size() && qstricmp(route->method, requestMethod) == 0))
+			if (route->method.isEmpty() || (route->method.size() == requestMethod.size() && qstricmp(route->method, requestMethod) == 0))
 			{
 				for (int i = 0, iE = route->paramNames.size(); i < iE; ++i)
 					request->setRequestParam(route->paramNames.at(i), match.captured(i + 1));
@@ -268,7 +278,8 @@ bool HttpHandlerSimpleRouter::handleRequest(Pillow::HttpConnection *request)
 			QByteArray allowedMethods;
 			for (int i = 0, iE = matchedRoutes.size(); i < iE; ++i)
 			{
-				if (i > 0) allowedMethods.append(", ");
+				if (i > 0)
+					allowedMethods.append(", ");
 				allowedMethods.append(matchedRoutes.at(i)->method);
 			}
 			request->writeResponse(405, HttpHeaderCollection() << HttpHeader("Allow", allowedMethods));

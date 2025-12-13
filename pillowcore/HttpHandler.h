@@ -1,12 +1,11 @@
-#ifndef _PILLOW_HTTPHANDLER_H_
-#define _PILLOW_HTTPHANDLER_H_
+#pragma once
 
 #ifndef QOBJECT_H
 #include <QtCore/QObject>
 #endif // QOBJECT_H
 #ifndef QPOINTER_H
 #include <QtCore/QPointer>
-#endif //QPOINTER_H
+#endif // QPOINTER_H
 #ifndef QHASH_H
 #include <QtCore/QHash>
 #endif // QHASH_H
@@ -32,7 +31,7 @@ namespace Pillow
 		Q_OBJECT
 
 	public:
-		HttpHandler(QObject *parent = 0);
+		HttpHandler(QObject* parent = 0);
 
 	public slots:
 		virtual bool handleRequest(Pillow::HttpConnection* connection) = 0;
@@ -50,7 +49,7 @@ namespace Pillow
 		HttpHandlerStack(QObject* parent = 0);
 
 	public:
-		virtual bool handleRequest(Pillow::HttpConnection *connection);
+		virtual bool handleRequest(Pillow::HttpConnection* connection);
 	};
 
 	//
@@ -84,7 +83,6 @@ namespace Pillow
 		void changed();
 	};
 
-
 	//
 	// HttpHandler404: a handler that always respond "404 Not Found". Great as the last handler in your chain!
 	//
@@ -99,7 +97,6 @@ namespace Pillow
 	public:
 		virtual bool handleRequest(Pillow::HttpConnection* connection);
 	};
-
 
 	//
 	// HttpHandlerFunction: a handler that invokes a functor, function or lambda.
@@ -195,7 +192,10 @@ namespace Pillow
 		const QString& publicPath() const { return _publicPath; }
 		int bufferSize() const { return _bufferSize; }
 
-		enum { DefaultBufferSize = 512 * 1024 };
+		enum
+		{
+			DefaultBufferSize = 512 * 1024
+		};
 
 	public:
 		void setPublicPath(const QString& publicPath);
@@ -215,7 +215,8 @@ namespace Pillow
 		int _bufferSize;
 
 	public:
-		HttpHandlerFileTransfer(QIODevice* sourceDevice, Pillow::HttpConnection* connection, int bufferSize = HttpHandlerFile::DefaultBufferSize);
+		HttpHandlerFileTransfer(QIODevice* sourceDevice, Pillow::HttpConnection* connection,
+		                        int bufferSize = HttpHandlerFile::DefaultBufferSize);
 
 	public slots:
 		void writeNextPayload();
@@ -223,5 +224,4 @@ namespace Pillow
 	signals:
 		void finished();
 	};
-}
-#endif // _PILLOW_HTTPHANDLER_H_
+} // namespace Pillow

@@ -1,5 +1,4 @@
-#ifndef PILLOW_HTTPCONNECTION_H
-#define PILLOW_HTTPCONNECTION_H
+#pragma once
 
 #ifndef QOBJECT_H
 #include <QObject>
@@ -38,9 +37,25 @@ namespace Pillow
 		Q_PROPERTY(QByteArray requestContent READ requestContent NOTIFY requestReady)
 
 	public:
-		enum State { Uninitialized, ReceivingHeaders, ReceivingContent, SendingHeaders, SendingContent, Completed, Flushing, Closed };
-		enum { MaximumRequestHeaderLength = 32 * 1024 };
-		enum { MaximumRequestContentLength = 128 * 1024 * 1024 };
+		enum State
+		{
+			Uninitialized,
+			ReceivingHeaders,
+			ReceivingContent,
+			SendingHeaders,
+			SendingContent,
+			Completed,
+			Flushing,
+			Closed
+		};
+		enum
+		{
+			MaximumRequestHeaderLength = 32 * 1024
+		};
+		enum
+		{
+			MaximumRequestContentLength = 128 * 1024 * 1024
+		};
 		Q_ENUMS(State);
 
 	public:
@@ -75,7 +90,7 @@ namespace Pillow
 		// Request headers. As for field above, the underlying shared QByteArray data remains valid until either the requestCompleted()
 		// or closed() signals are emitted.
 		const Pillow::HttpHeaderCollection& requestHeaders() const;
-		const QByteArray & requestHeaderValue(const QByteArray& field);
+		const QByteArray& requestHeaderValue(const QByteArray& field);
 
 		// Request params.
 		const Pillow::HttpParamCollection& requestParams();
@@ -84,8 +99,10 @@ namespace Pillow
 
 	public slots:
 		// Response members.
-		void writeResponse(int statusCode = 200, const Pillow::HttpHeaderCollection& headers = Pillow::HttpHeaderCollection(), const QByteArray& content = QByteArray());
-		void writeResponseString(int statusCode = 200, const Pillow::HttpHeaderCollection& headers = Pillow::HttpHeaderCollection(), const QString& content = QString());
+		void writeResponse(int statusCode = 200, const Pillow::HttpHeaderCollection& headers = Pillow::HttpHeaderCollection(),
+		                   const QByteArray& content = QByteArray());
+		void writeResponseString(int statusCode = 200, const Pillow::HttpHeaderCollection& headers = Pillow::HttpHeaderCollection(),
+		                         const QString& content = QString());
 		void writeHeaders(int statusCode = 200, const Pillow::HttpHeaderCollection& headers = Pillow::HttpHeaderCollection());
 		void writeContent(const QByteArray& content);
 		void endContent();
@@ -99,9 +116,10 @@ namespace Pillow
 		qint64 responseContentLength() const;
 
 	signals:
-		void requestReady(Pillow::HttpConnection* self);     // The request is ready to be processed, all request headers and content have been received.
+		void requestReady(
+		    Pillow::HttpConnection* self); // The request is ready to be processed, all request headers and content have been received.
 		void requestCompleted(Pillow::HttpConnection* self); // The response is completed, all response headers and content have been sent.
-		void closed(Pillow::HttpConnection* self);			 // The connection is closing, no further requests will arrive on this object.
+		void closed(Pillow::HttpConnection* self);           // The connection is closing, no further requests will arrive on this object.
 
 	private slots:
 		void processInput();
@@ -111,6 +129,4 @@ namespace Pillow
 		Q_DECLARE_PRIVATE(HttpConnection)
 		Pillow::HttpConnectionPrivate* d_ptr;
 	};
-}
-
-#endif // PILLOW_HTTPCONNECTION_H
+} // namespace Pillow

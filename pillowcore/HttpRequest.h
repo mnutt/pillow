@@ -1,5 +1,4 @@
-#ifndef _PILLOW_HTTPREQUEST_H_
-#define _PILLOW_HTTPREQUEST_H_
+#pragma once
 
 #include <QObject>
 #include "parser/parser.h"
@@ -21,20 +20,38 @@ namespace Pillow
 	{
 		int fieldPos, fieldLength, valuePos, valueLength;
 		HttpHeaderRef(int fieldPos, int fieldLength, int valuePos, int valueLength)
-			: fieldPos(fieldPos), fieldLength(fieldLength), valuePos(valuePos), valueLength(valueLength) {}
+		    : fieldPos(fieldPos), fieldLength(fieldLength), valuePos(valuePos), valueLength(valueLength)
+		{}
 		HttpHeaderRef() {}
 	};
 
 	class HttpRequest : public QObject
 	{
 		Q_OBJECT
-		QIODevice* _inputDevice,* _outputDevice;
+		QIODevice *_inputDevice, *_outputDevice;
 		http_parser _parser;
 
 	public:
-		enum State { Uninitialized, ReceivingHeaders, ReceivingContent, SendingHeaders, SendingContent, StreamingContent, Completed, Flushing, Closed };
-		enum { MaximumRequestHeaderLength = 32 * 1024 };
-		enum { MaximumRequestContentLength = 128 * 1024 * 1024 };
+		enum State
+		{
+			Uninitialized,
+			ReceivingHeaders,
+			ReceivingContent,
+			SendingHeaders,
+			SendingContent,
+			StreamingContent,
+			Completed,
+			Flushing,
+			Closed
+		};
+		enum
+		{
+			MaximumRequestHeaderLength = 32 * 1024
+		};
+		enum
+		{
+			MaximumRequestContentLength = 128 * 1024 * 1024
+		};
 		Q_ENUMS(State);
 
 	private:
@@ -63,8 +80,9 @@ namespace Pillow
 		void transitionToCompleted();
 		void transitionToFlushing();
 		void transitionToClosed();
-		void writeRequestErrorResponse(int statusCode = 400); // Used internally when an error happens while receiving a request. It sends an error response to the client and closes the connection right away.
-		static void parser_http_field(void *data, const char *field, size_t flen, const char *value, size_t vlen);
+		void writeRequestErrorResponse(int statusCode = 400); // Used internally when an error happens while receiving a request. It sends
+		                                                      // an error response to the client and closes the connection right away.
+		static void parser_http_field(void* data, const char* field, size_t flen, const char* value, size_t vlen);
 
 	private slots:
 		void processInput();
@@ -106,9 +124,11 @@ namespace Pillow
 		qint64 responseContentLength() const { return _responseContentLength; }
 
 	public slots:
-		void writeResponse(int statusCode = 200, const Pillow::HttpHeaderCollection& headers = Pillow::HttpHeaderCollection(), const QByteArray& content = QByteArray());
+		void writeResponse(int statusCode = 200, const Pillow::HttpHeaderCollection& headers = Pillow::HttpHeaderCollection(),
+		                   const QByteArray& content = QByteArray());
 		void writeStreamingResponse(int statusCode = 200, const Pillow::HttpHeaderCollection& headers = Pillow::HttpHeaderCollection());
-		void writeResponseString(int statusCode = 200, const Pillow::HttpHeaderCollection& headers = Pillow::HttpHeaderCollection(), const QString& content = QString());
+		void writeResponseString(int statusCode = 200, const Pillow::HttpHeaderCollection& headers = Pillow::HttpHeaderCollection(),
+		                         const QString& content = QString());
 		void writeHeaders(int statusCode = 200, const Pillow::HttpHeaderCollection& headers = Pillow::HttpHeaderCollection());
 		void writeStreamingHeaders(const Pillow::HttpHeaderCollection& headers = Pillow::HttpHeaderCollection());
 		void writeContent(const QByteArray& content);
@@ -116,10 +136,8 @@ namespace Pillow
 		void close(); // Close communication channels right away, no matter if a response was sent or not.
 
 	signals:
-		void ready(Pillow::HttpRequest* self);     // The request is ready to be processed, all request headers and content have been received.
+		void ready(Pillow::HttpRequest* self); // The request is ready to be processed, all request headers and content have been received.
 		void completed(Pillow::HttpRequest* self); // The response is completed, all response headers and content have been sent.
 		void closed(Pillow::HttpRequest* self);    // The connection is closing, no further requests will arrive on this object.
 	};
-}
-
-#endif // _PILLOW_HTTPREQUEST_H_
+} // namespace Pillow

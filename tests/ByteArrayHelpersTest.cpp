@@ -15,7 +15,6 @@ inline QByteArray& appendHttpHeader(QByteArray& ba, const Pillow::HttpHeader& he
 #define IS_SHARED(ba) (!ba.isDetached())
 #define IS_NOT_SHARED(ba) (ba.isDetached())
 
-
 class ByteArrayHelpersTest : public QObject
 {
 	Q_OBJECT
@@ -46,7 +45,8 @@ private slots:
 
 		// Set it again from a brand new byte array data block that came from another QByteArray.
 		QByteArray temp("New Value");
-		ba = temp; temp = QByteArray();
+		ba = temp;
+		temp = QByteArray();
 		ba = QByteArray("New Value");
 		QVERIFY(IS_NOT_SHARED(ba));
 		QVERIFY(ba.constData() != oldData);
@@ -104,15 +104,20 @@ private slots:
 	{
 		QByteArray ba;
 
-		ba = QByteArray(); Pillow::ByteArrayHelpers::appendNumber<int, 10>(ba, 0);
+		ba = QByteArray();
+		Pillow::ByteArrayHelpers::appendNumber<int, 10>(ba, 0);
 		QCOMPARE(ba, QByteArray("0"));
-		ba = QByteArray(); Pillow::ByteArrayHelpers::appendNumber<int, 10>(ba, Q_UINT64_C(9876));
+		ba = QByteArray();
+		Pillow::ByteArrayHelpers::appendNumber<int, 10>(ba, Q_UINT64_C(9876));
 		QCOMPARE(ba, QByteArray("9876"));
-		ba = QByteArray(); Pillow::ByteArrayHelpers::appendNumber<quint64, 10>(ba, Q_UINT64_C(12345678901234));
+		ba = QByteArray();
+		Pillow::ByteArrayHelpers::appendNumber<quint64, 10>(ba, Q_UINT64_C(12345678901234));
 		QCOMPARE(ba, QByteArray("12345678901234"));
-		ba = QByteArray(); Pillow::ByteArrayHelpers::appendNumber<int, 10>(ba, -23456);
+		ba = QByteArray();
+		Pillow::ByteArrayHelpers::appendNumber<int, 10>(ba, -23456);
 		QCOMPARE(ba, QByteArray("-23456"));
-		ba = QByteArray(); Pillow::ByteArrayHelpers::appendNumber<qint64, 10>(ba, Q_INT64_C(-12345678901234));
+		ba = QByteArray();
+		Pillow::ByteArrayHelpers::appendNumber<qint64, 10>(ba, Q_INT64_C(-12345678901234));
 		QCOMPARE(ba, QByteArray("-12345678901234"));
 
 		ba = QByteArray();
@@ -183,7 +188,8 @@ private slots:
 
 	void test_byteArray_equals_latin1Literal()
 	{
-		QByteArray ba; ba = QByteArray("Some-string");
+		QByteArray ba;
+		ba = QByteArray("Some-string");
 		QVERIFY(ba == QLatin1String("Some-string"));
 		QVERIFY(!(ba == QLatin1String("Some-other-string")));
 		QVERIFY(ba != QLatin1String("Some-other-string"));
@@ -192,7 +198,8 @@ private slots:
 
 	void test_byteArray_equals_pillowToken()
 	{
-		QByteArray ba; ba = QByteArray("Some-string");
+		QByteArray ba;
+		ba = QByteArray("Some-string");
 		QVERIFY(ba == Pillow::Token("Some-string"));
 		QVERIFY(!(ba == Pillow::Token("Some-other-string")));
 		QVERIFY(ba != Pillow::Token("Some-other-string"));
@@ -201,7 +208,8 @@ private slots:
 
 	void test_byteArray_equals_pillowLowerCaseToken()
 	{
-		QByteArray ba; ba = QByteArray("some-string");
+		QByteArray ba;
+		ba = QByteArray("some-string");
 		QVERIFY(ba == Pillow::LowerCaseToken("some-string"));
 		QVERIFY(!(ba == Pillow::LowerCaseToken("some-other-string")));
 		QVERIFY(ba != Pillow::LowerCaseToken("some-other-string"));
@@ -219,7 +227,8 @@ private slots:
 		QVERIFY(ba.constData() != d);
 
 		// When there is enough reserved space
-		ba.clear(); ba.reserve(128);
+		ba.clear();
+		ba.reserve(128);
 		d = ba.constData();
 		appendHttpHeader(ba, Pillow::HttpHeader("Some", "Test"));
 		QCOMPARE(static_cast<QByteArray&>(ba), QByteArray("Some: Test\r\n"));
@@ -237,7 +246,9 @@ private slots:
 		QVERIFY(ba.constData() != d);
 
 		// When there is enough reserved space
-		ba.clear(); ba.reserve(10); QVERIFY(ba.capacity() == 10);
+		ba.clear();
+		ba.reserve(10);
+		QVERIFY(ba.capacity() == 10);
 		d = ba.constData();
 		ba.append(QLatin1String("abcdefgh"));
 		QCOMPARE(static_cast<QByteArray&>(ba), QByteArray("abcdefgh"));
@@ -260,7 +271,9 @@ private slots:
 		QVERIFY(ba.constData() != d);
 
 		// When there is enough reserved space
-		ba.clear(); ba.reserve(10); QVERIFY(ba.capacity() == 10);
+		ba.clear();
+		ba.reserve(10);
+		QVERIFY(ba.capacity() == 10);
 		d = ba.constData();
 		ba.append(Pillow::Token("abcdefgh"));
 		QCOMPARE(static_cast<QByteArray&>(ba), QByteArray("abcdefgh"));
@@ -283,7 +296,9 @@ private slots:
 		QVERIFY(ba.constData() != d);
 
 		// When there is enough reserved space
-		ba.clear(); ba.reserve(10); QVERIFY(ba.capacity() == 10);
+		ba.clear();
+		ba.reserve(10);
+		QVERIFY(ba.capacity() == 10);
 		d = ba.constData();
 		ba.append(Pillow::LowerCaseToken("abcdefgh"));
 		QCOMPARE(static_cast<QByteArray&>(ba), QByteArray("abcdefgh"));
@@ -306,7 +321,9 @@ private slots:
 		QVERIFY(ba.constData() != d);
 
 		// When there is enough reserved space
-		ba.clear(); ba.reserve(10); QVERIFY(ba.capacity() == 10);
+		ba.clear();
+		ba.reserve(10);
+		QVERIFY(ba.capacity() == 10);
 		d = ba.constData();
 		ba.append("abcdefgh");
 		QCOMPARE(static_cast<QByteArray&>(ba), QByteArray("abcdefgh"));
@@ -329,7 +346,9 @@ private slots:
 		QVERIFY(ba.constData() != d);
 
 		// When there is enough reserved space
-		ba.clear(); ba.reserve(10); QVERIFY(ba.capacity() == 10);
+		ba.clear();
+		ba.reserve(10);
+		QVERIFY(ba.capacity() == 10);
 		d = ba.constData();
 		ba.append("abcdefgh", 3);
 		QCOMPARE(static_cast<QByteArray&>(ba), QByteArray("abc"));
@@ -352,7 +371,9 @@ private slots:
 		QVERIFY(ba.constData() != d);
 
 		// When there is enough reserved space
-		ba.clear(); ba.reserve(2); QVERIFY(ba.capacity() == 2);
+		ba.clear();
+		ba.reserve(2);
+		QVERIFY(ba.capacity() == 2);
 		d = ba.constData();
 		ba.append('1');
 		QCOMPARE(static_cast<QByteArray&>(ba), QByteArray("1"));
@@ -366,7 +387,6 @@ private slots:
 		QVERIFY(ba.capacity() > 2);
 		QCOMPARE(static_cast<QByteArray&>(ba), QByteArray("123"));
 	}
-
 };
 PILLOW_TEST_DECLARE(ByteArrayHelpersTest)
 

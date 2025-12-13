@@ -15,10 +15,7 @@ protected:
 	}
 
 protected slots:
-	void handleRequest2(Pillow::HttpConnection* request)
-	{
-		request->writeResponse(200, Pillow::HttpHeaderCollection(), "World");
-	}
+	void handleRequest2(Pillow::HttpConnection* request) { request->writeResponse(200, Pillow::HttpHeaderCollection(), "World"); }
 
 private slots:
 	void testHandlerRoute()
@@ -103,8 +100,12 @@ private slots:
 	{
 #ifdef Q_COMPILER_LAMBDA
 		HttpHandlerSimpleRouter handler;
-		handler.addRoute("/a_route", [](Pillow::HttpConnection* request) { request->writeResponse(200, Pillow::HttpHeaderCollection(), "Amazing First Route"); });
-		handler.addRoute("/a_route/and_another", [](Pillow::HttpConnection* request) { request->writeResponse(400, Pillow::HttpHeaderCollection(), "Delicious Second Route"); });
+		handler.addRoute("/a_route", [](Pillow::HttpConnection* request) {
+			request->writeResponse(200, Pillow::HttpHeaderCollection(), "Amazing First Route");
+		});
+		handler.addRoute("/a_route/and_another", [](Pillow::HttpConnection* request) {
+			request->writeResponse(400, Pillow::HttpHeaderCollection(), "Delicious Second Route");
+		});
 
 		QVERIFY(!handler.handleRequest(createGetRequest("/should_not_match")));
 		QVERIFY(!handler.handleRequest(createGetRequest("/should/not/match/either")));
@@ -150,7 +151,8 @@ private slots:
 		QCOMPARE(requestParams.at(1).second, QString("another_value"));
 		response.clear();
 
-		QVERIFY(handler.handleRequest(createGetRequest("/third/some_param-value/another_value/and_a_last_one?with=overriden&extra=bonus_query_param#and_fragment")));
+		QVERIFY(handler.handleRequest(
+		    createGetRequest("/third/some_param-value/another_value/and_a_last_one?with=overriden&extra=bonus_query_param#and_fragment")));
 		QVERIFY(response.startsWith("HTTP/1.0 200"));
 		QVERIFY(response.endsWith("Third Route"));
 		QCOMPARE(requestParams.size(), 4);
@@ -202,7 +204,8 @@ private slots:
 		QCOMPARE(requestParams.at(1).second, QString(""));
 		response.clear();
 
-		QVERIFY(handler.handleRequest(createGetRequest("/second/some-param-value/and/extra/stuff/splatted.at/the.end?with=bonus_query_param#and_fragment")));
+		QVERIFY(handler.handleRequest(
+		    createGetRequest("/second/some-param-value/and/extra/stuff/splatted.at/the.end?with=bonus_query_param#and_fragment")));
 		QVERIFY(response.startsWith("HTTP/1.0 200"));
 		QVERIFY(response.endsWith("Second Route"));
 		QCOMPARE(requestParams.size(), 3);

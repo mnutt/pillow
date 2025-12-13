@@ -9,7 +9,7 @@
 
 class ClosingHandler : public Pillow::HttpHandler
 {
-	virtual bool handleRequest(Pillow::HttpConnection *connection)
+	virtual bool handleRequest(Pillow::HttpConnection* connection)
 	{
 		connection->writeResponse(200);
 		connection->close();
@@ -19,7 +19,7 @@ class ClosingHandler : public Pillow::HttpHandler
 
 class PrematureClosingHandler : public Pillow::HttpHandler
 {
-	virtual bool handleRequest(Pillow::HttpConnection *connection)
+	virtual bool handleRequest(Pillow::HttpConnection* connection)
 	{
 		connection->close();
 		return true;
@@ -28,21 +28,22 @@ class PrematureClosingHandler : public Pillow::HttpHandler
 
 class InvalidHandler : public Pillow::HttpHandler
 {
-	virtual bool handleRequest(Pillow::HttpConnection *connection)
+	virtual bool handleRequest(Pillow::HttpConnection* connection)
 	{
-		connection->outputDevice()->write("FDSPIFUDSAFIUDUSAF DSFIASDUF DIFUSADIFU ASDFDSIF DUSAFDSA FDSOFIDSOFIDSOIFDSOIFDSOIFODSIFDISOI fDSIFDSIFIDFIIFIFIFIFIFI");
+		connection->outputDevice()->write(
+		    "FDSPIFUDSAFIUDUSAF DSFIASDUF DIFUSADIFU ASDFDSIF DUSAFDSA FDSOFIDSOFIDSOIFDSOIFDSOIFODSIFDISOI fDSIFDSIFIDFIIFIFIFIFIFI");
 		return true;
-	}	
+	}
 };
 
 class ContentLengthMismatchedHandler : public Pillow::HttpHandler
 {
-	virtual bool handleRequest(Pillow::HttpConnection *connection)
+	virtual bool handleRequest(Pillow::HttpConnection* connection)
 	{
 		connection->writeHeaders(200, Pillow::HttpHeaderCollection() << Pillow::HttpHeader("Content-Length", "10"));
 		connection->outputDevice()->write("12345678901234567890123456789012345678901234567890123456789012345678901234567890");
 		return true;
-	}	
+	}
 };
 
 class CapturingHandler : public Pillow::HttpHandler
@@ -53,8 +54,8 @@ public:
 	QByteArray requestFragment;
 	Pillow::HttpHeaderCollection requestHeaders;
 	QByteArray requestContent;
-	
-	virtual bool handleRequest(Pillow::HttpConnection *connection)
+
+	virtual bool handleRequest(Pillow::HttpConnection* connection)
 	{
 		(requestMethod = connection->requestMethod()).detach();
 		(requestUri = connection->requestUri()).detach();
@@ -68,15 +69,15 @@ public:
 		}
 		connection->writeResponse(200, Pillow::HttpHeaderCollection(), requestMethod + " captured!");
 		return true;
-	}	
+	}
 };
 
 class HoldingHandler : public Pillow::HttpHandler
 {
 public:
 	QList<Pillow::HttpConnection*> connections;
-	
-	virtual bool handleRequest(Pillow::HttpConnection *connection)
+
+	virtual bool handleRequest(Pillow::HttpConnection* connection)
 	{
 		connections.append(connection);
 		return true;
@@ -87,10 +88,10 @@ bool waitForResponse(Pillow::HttpConnection* connection)
 {
 	QSignalSpy completedSpy(connection, SIGNAL(requestCompleted(Pillow::HttpConnection*)));
 	QSignalSpy closedSpy(connection, SIGNAL(closed(Pillow::HttpConnection*)));
-	
+
 	while (completedSpy.isEmpty() && closedSpy.isEmpty())
 		QCoreApplication::processEvents();
-	
+
 	return completedSpy.size() > 0;
 }
 
@@ -101,18 +102,12 @@ class tst_HttpHandlerProxy : public HttpHandlerTestBase
 	Pillow::HttpHandlerSimpleRouter* router;
 	CapturingHandler* capturingHandler;
 	HoldingHandler* holdingHandler;
-	
+
 public:
-	tst_HttpHandlerProxy() : HttpHandlerTestBase(), router(NULL)
-	{
-		qRegisterMetaType<Pillow::HttpConnection*>("Pillow::HttpConnection*");
-	}
-	
+	tst_HttpHandlerProxy() : HttpHandlerTestBase(), router(NULL) { qRegisterMetaType<Pillow::HttpConnection*>("Pillow::HttpConnection*"); }
+
 protected:
-	QUrl serverUrl() const
-	{
-		return QUrl(QString("http://127.0.0.1:%1").arg(server->serverPort()));
-	}
+	QUrl serverUrl() const { return QUrl(QString("http://127.0.0.1:%1").arg(server->serverPort())); }
 
 private slots:
 	void init()
@@ -131,7 +126,7 @@ private slots:
 		router->addRoute("GET", "/bad_length", new ContentLengthMismatchedHandler());
 		router->addRoute("", "/capturing", capturingHandler = new CapturingHandler());
 		router->addRoute("GET", "/holding", holdingHandler = new HoldingHandler());
-		
+
 		connect(server, SIGNAL(requestReady(Pillow::HttpConnection*)), router, SLOT(handleRequest(Pillow::HttpConnection*)));
 	}
 
@@ -152,7 +147,8 @@ private slots:
 		QVERIFY(response.endsWith("\r\n\r\nGET captured!"));
 		QVERIFY(capturingHandler->requestMethod == "GET");
 		QVERIFY(capturingHandler->requestUri == "/capturing?key1=value1&key2=value2%20with%20escaped");
-		//QVERIFY(capturingHandler->requestFragment == "and_fragment"); // QNetworkAccessManager seems not to pass fragments in the requests it sends.
+		// QVERIFY(capturingHandler->requestFragment == "and_fragment"); // QNetworkAccessManager seems not to pass fragments in the
+		// requests it sends.
 		QVERIFY(capturingHandler->requestContent.isEmpty());
 	}
 
@@ -194,19 +190,19 @@ private slots:
 		QVERIFY(handler.handleRequest(request));
 		// The proxy should handle the content length mismatch gracefully; it's up to the proxy to decide what to do.
 		// For now, let's just check that the request completes.
-		waitForResponse(request); 
+		waitForResponse(request);
 	}
 
 	void testProxyChain()
 	{
 		// Proxy 1 -> Proxy 2 -> Server.
 		Pillow::HttpHandlerProxy proxy2(serverUrl());
-		
+
 		// Create a second HTTP server for the first proxy to connect to.
 		Pillow::HttpServer proxyServer;
 		proxyServer.listen();
 		connect(&proxyServer, SIGNAL(requestReady(Pillow::HttpConnection*)), &proxy2, SLOT(handleRequest(Pillow::HttpConnection*)));
-		
+
 		Pillow::HttpHandlerProxy proxy1(QUrl(QString("http://127.0.0.1:%1").arg(proxyServer.serverPort())));
 		Pillow::HttpConnection* request = createGetRequest("/capturing", "1.1");
 
@@ -281,8 +277,7 @@ private slots:
 		class CustomProxyPipe : public Pillow::HttpHandlerProxyPipe
 		{
 		public:
-			CustomProxyPipe(Pillow::HttpConnection* request, QNetworkReply* proxiedReply)
-				: HttpHandlerProxyPipe(request, proxiedReply) {}
+			CustomProxyPipe(Pillow::HttpConnection* request, QNetworkReply* proxiedReply) : HttpHandlerProxyPipe(request, proxiedReply) {}
 
 		protected:
 			virtual void pump(const QByteArray& data) override
@@ -291,7 +286,8 @@ private slots:
 				// Replace with same-length string to preserve content-length
 				// "captured!" is 9 chars, "MODIFIED!" is also 9 chars
 				processedData.replace("captured!", "MODIFIED!");
-				if (_request) _request->writeContent(processedData);
+				if (_request)
+					_request->writeContent(processedData);
 			}
 		};
 
@@ -337,7 +333,7 @@ private slots:
 		class SlowHandler : public Pillow::HttpHandler
 		{
 		public:
-			virtual bool handleRequest(Pillow::HttpConnection *connection)
+			virtual bool handleRequest(Pillow::HttpConnection* connection)
 			{
 				Q_UNUSED(connection);
 				// Just hold the connection, never respond
@@ -369,7 +365,7 @@ private slots:
 		class LargeResponseHandler : public Pillow::HttpHandler
 		{
 		public:
-			virtual bool handleRequest(Pillow::HttpConnection *connection)
+			virtual bool handleRequest(Pillow::HttpConnection* connection)
 			{
 				QByteArray largeContent(1024 * 1024, 'X'); // 1MB
 				connection->writeResponse(200, Pillow::HttpHeaderCollection(), largeContent);

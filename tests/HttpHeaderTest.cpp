@@ -18,26 +18,25 @@ private slots:
 	void should_be_constructible_from_key_value_literals()
 	{
 		{
-			Pillow::HttpHeader h("Accept",  "some/stuff");
+			Pillow::HttpHeader h("Accept", "some/stuff");
 			QCOMPARE(h.first, QByteArray("Accept"));
 			QCOMPARE(h.second, QByteArray("some/stuff"));
 		}
 		{
-			Pillow::HttpHeader h("Accept-More",  "");
+			Pillow::HttpHeader h("Accept-More", "");
 			QCOMPARE(h.first, QByteArray("Accept-More"));
 			QCOMPARE(h.second, QByteArray());
 		}
 		{
-			Pillow::HttpHeader h("",  "");
+			Pillow::HttpHeader h("", "");
 			QCOMPARE(h.first, QByteArray());
 			QCOMPARE(h.second, QByteArray());
 		}
 		{
-			Pillow::HttpHeader h("   ",  " 1234 ");
+			Pillow::HttpHeader h("   ", " 1234 ");
 			QCOMPARE(h.first, QByteArray("   "));
 			QCOMPARE(h.second, QByteArray(" 1234 "));
 		}
-
 	}
 
 	void should_be_constructible_from_raw_header_literal_including_colon()
@@ -88,7 +87,6 @@ private slots:
 		Pillow::HttpHeader h2(h);
 		QCOMPARE(h2.first, QByteArray("Hello"));
 		QCOMPARE(h2.second, QByteArray("World"));
-
 	}
 
 	void should_be_convertible_to_qpair_of_bytearrays()
@@ -106,7 +104,7 @@ private slots:
 		Pillow::HttpHeader h;
 		h.first = "a";
 		h.second = "b";
-		const QPair<QByteArray, QByteArray> &pair = h;
+		const QPair<QByteArray, QByteArray>& pair = h;
 		QCOMPARE(pair.first, QByteArray("a"));
 		QCOMPARE(pair.second, QByteArray("b"));
 
@@ -133,8 +131,8 @@ private slots:
 	{
 		Pillow::HttpHeaderCollection c;
 		c.append(Pillow::HttpHeader("Hello", "World"));
-		Pillow::HttpHeaderCollection &c2 = c;
-		QVector<Pillow::HttpHeader> &c3 = c2;
+		Pillow::HttpHeaderCollection& c2 = c;
+		QVector<Pillow::HttpHeader>& c3 = c2;
 		QCOMPARE(c3.size(), 1);
 		QCOMPARE(c3.at(0).first, QByteArray("Hello"));
 		QCOMPARE(c3.at(0).second, QByteArray("World"));
@@ -189,13 +187,13 @@ private slots:
 
 	void should_be_a_vector_of_bytearray_pairs()
 	{
-		QVector<QPair<QByteArray, QByteArray> > c3;
+		QVector<QPair<QByteArray, QByteArray>> c3;
 
 		{
 			Pillow::HttpHeaderCollection c;
 			c << "A: 1" << "B: 2";
 
-			const QVector<QPair<QByteArray, QByteArray> > &c2 = c;
+			const QVector<QPair<QByteArray, QByteArray>>& c2 = c;
 			QCOMPARE(c2.size(), 2);
 			QCOMPARE(c2.at(0).first, QByteArray("A"));
 			QCOMPARE(c2.at(0).second, QByteArray("1"));
@@ -210,7 +208,6 @@ private slots:
 		QCOMPARE(c3.at(0).second, QByteArray("1"));
 		QCOMPARE(c3.at(1).first, QByteArray("B"));
 		QCOMPARE(c3.at(1).second, QByteArray("2"));
-
 	}
 
 	void should_allow_finding_field_value_case_insensitively()
@@ -264,12 +261,12 @@ private slots:
 		{
 			for (int i = 0; i < 1000000; ++i)
 			{
-				//dummy += c.getFieldValue("and more").size();
-				//dummy += c.getFieldValue(am).size();
-				//dummy += c.getFieldValue(am2).size();
+				// dummy += c.getFieldValue("and more").size();
+				// dummy += c.getFieldValue(am).size();
+				// dummy += c.getFieldValue(am2).size();
 				dummy += c.getFieldValue(am3).size();
-				//dummy += c.getFieldValue(and_more, strlen(and_more)).size();
-				//dummy += c.getFieldValue(Pillow::LowerCaseToken("and more")).size();
+				// dummy += c.getFieldValue(and_more, strlen(and_more)).size();
+				// dummy += c.getFieldValue(Pillow::LowerCaseToken("and more")).size();
 			}
 		}
 
@@ -323,22 +320,20 @@ private slots:
 		{
 			for (int i = 0; i < 1000000; ++i)
 			{
-				//dummy += c.getFieldValue("and more").size();
-				//dummy += c.testFieldValue("and more", "world!");
+				// dummy += c.getFieldValue("and more").size();
+				// dummy += c.testFieldValue("and more", "world!");
 				dummy += c.testFieldValue(am, "world!");
-				//dummy += c.testFieldValue(am, world);
-				//dummy += c.getFieldValue(am2).size();
-				//dummy += c.getFieldValue(am3).size();
-				//dummy += c.getFieldValue(and_more, strlen(and_more)).size();
-				//dummy += c.getFieldValue(Pillow::LowerCaseToken("and more")).size();
+				// dummy += c.testFieldValue(am, world);
+				// dummy += c.getFieldValue(am2).size();
+				// dummy += c.getFieldValue(am3).size();
+				// dummy += c.getFieldValue(and_more, strlen(and_more)).size();
+				// dummy += c.getFieldValue(Pillow::LowerCaseToken("and more")).size();
 			}
 		}
 
 		QVERIFY(dummy > 0);
 	}
-
 };
 PILLOW_TEST_DECLARE(HttpHeaderCollectionTest)
 
 #include "HttpHeaderTest.moc"
-

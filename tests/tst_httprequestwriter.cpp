@@ -11,7 +11,7 @@
 class tst_HttpRequestWriter : public QObject
 {
 	Q_OBJECT
-	QBuffer *buffer;
+	QBuffer* buffer;
 
 private slots:
 	void init()
@@ -22,7 +22,8 @@ private slots:
 
 	void cleanup()
 	{
-		delete buffer; buffer = 0;
+		delete buffer;
+		buffer = 0;
 	}
 
 	QByteArray readAll()
@@ -43,33 +44,34 @@ private slots:
 
 	void test_write_get()
 	{
-		Pillow::HttpRequestWriter w; w.setDevice(buffer);
+		Pillow::HttpRequestWriter w;
+		w.setDevice(buffer);
 
 		w.get("/some/path", Pillow::HttpHeaderCollection());
 		QCOMPARE(readAll(), QByteArray("GET /some/path HTTP/1.1\r\n\r\n"));
 
-		w.get("/other/cool%20path", Pillow::HttpHeaderCollection() <<
-			  Pillow::HttpHeader("My-Header", "Is-Cool") <<
-			  Pillow::HttpHeader("X-And-Another", "Is-Better"));
+		w.get("/other/cool%20path", Pillow::HttpHeaderCollection()
+		                                << Pillow::HttpHeader("My-Header", "Is-Cool") << Pillow::HttpHeader("X-And-Another", "Is-Better"));
 		QCOMPARE(readAll(), QByteArray("GET /other/cool%20path HTTP/1.1\r\nMy-Header: Is-Cool\r\nX-And-Another: Is-Better\r\n\r\n"));
 	}
 
 	void test_write_head()
 	{
-		Pillow::HttpRequestWriter w; w.setDevice(buffer);
+		Pillow::HttpRequestWriter w;
+		w.setDevice(buffer);
 
 		w.head("/some/path", Pillow::HttpHeaderCollection());
 		QCOMPARE(readAll(), QByteArray("HEAD /some/path HTTP/1.1\r\n\r\n"));
 
-		w.head("/other/cool%20path", Pillow::HttpHeaderCollection() <<
-			  Pillow::HttpHeader("My-Header", "Is-Cool") <<
-			  Pillow::HttpHeader("X-And-Another", "Is-Better"));
+		w.head("/other/cool%20path", Pillow::HttpHeaderCollection()
+		                                 << Pillow::HttpHeader("My-Header", "Is-Cool") << Pillow::HttpHeader("X-And-Another", "Is-Better"));
 		QCOMPARE(readAll(), QByteArray("HEAD /other/cool%20path HTTP/1.1\r\nMy-Header: Is-Cool\r\nX-And-Another: Is-Better\r\n\r\n"));
 	}
 
 	void test_write_post()
 	{
-		Pillow::HttpRequestWriter w; w.setDevice(buffer);
+		Pillow::HttpRequestWriter w;
+		w.setDevice(buffer);
 
 		w.post("/some/path.txt", Pillow::HttpHeaderCollection(), QByteArray());
 		QCOMPARE(readAll(), QByteArray("POST /some/path.txt HTTP/1.1\r\n\r\n"));
@@ -79,7 +81,8 @@ private slots:
 	}
 	void test_write_put()
 	{
-		Pillow::HttpRequestWriter w; w.setDevice(buffer);
+		Pillow::HttpRequestWriter w;
+		w.setDevice(buffer);
 
 		w.put("/some/path.txt", Pillow::HttpHeaderCollection(), QByteArray());
 		QCOMPARE(readAll(), QByteArray("PUT /some/path.txt HTTP/1.1\r\n\r\n"));
@@ -90,14 +93,14 @@ private slots:
 
 	void test_write_deleteResource()
 	{
-		Pillow::HttpRequestWriter w; w.setDevice(buffer);
+		Pillow::HttpRequestWriter w;
+		w.setDevice(buffer);
 
 		w.deleteResource("/some/path", Pillow::HttpHeaderCollection());
 		QCOMPARE(readAll(), QByteArray("DELETE /some/path HTTP/1.1\r\n\r\n"));
 
-		w.deleteResource("/other/cool%20path", Pillow::HttpHeaderCollection() <<
-			  Pillow::HttpHeader("My-Header", "Is-Cool") <<
-			  Pillow::HttpHeader("X-And-Another", "Is-Better"));
+		w.deleteResource("/other/cool%20path", Pillow::HttpHeaderCollection() << Pillow::HttpHeader("My-Header", "Is-Cool")
+		                                                                      << Pillow::HttpHeader("X-And-Another", "Is-Better"));
 		QCOMPARE(readAll(), QByteArray("DELETE /other/cool%20path HTTP/1.1\r\nMy-Header: Is-Cool\r\nX-And-Another: Is-Better\r\n\r\n"));
 	}
 };

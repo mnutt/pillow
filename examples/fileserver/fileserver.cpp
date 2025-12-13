@@ -14,25 +14,31 @@ public:
 	{
 		HttpServer* server = NULL;
 		HttpHandler* handler = NULL;
-		
+
 		for (QObject* h = parent(); h != NULL; h = h->parent())
 		{
-			if (qobject_cast<HttpHandler*>(h)) handler = static_cast<HttpHandler*>(h);
-			else if (qobject_cast<HttpServer*>(h)) server = static_cast<HttpServer*>(h);
+			if (qobject_cast<HttpHandler*>(h))
+				handler = static_cast<HttpHandler*>(h);
+			else if (qobject_cast<HttpServer*>(h))
+				server = static_cast<HttpServer*>(h);
 		}
-		
+
 		if (rq->requestPath() == "/_stats")
 		{
 			QByteArray result;
 			if (server != NULL)
 			{
-				result.append("Alive connections: ").append(QByteArray::number(server->findChildren<Pillow::HttpConnection*>().size())).append("\n");
+				result.append("Alive connections: ")
+				    .append(QByteArray::number(server->findChildren<Pillow::HttpConnection*>().size()))
+				    .append("\n");
 			}
 			if (handler != NULL)
 			{
-				result.append("Alive big file transfers: ").append(QByteArray::number(handler->findChildren<Pillow::HttpHandlerFileTransfer*>().size())).append("\n");
+				result.append("Alive big file transfers: ")
+				    .append(QByteArray::number(handler->findChildren<Pillow::HttpHandlerFileTransfer*>().size()))
+				    .append("\n");
 			}
-			
+
 			rq->writeResponse(200, HttpHeaderCollection(), result);
 			return true;
 		}
@@ -40,7 +46,7 @@ public:
 	}
 };
 
-int main(int argc, char *argv[])
+int main(int argc, char* argv[])
 {
 	QCoreApplication a(argc, argv);
 
@@ -54,10 +60,10 @@ int main(int argc, char *argv[])
 	qDebug() << "Serving" << servePath << "on port 4567";
 
 	HttpHandlerStack* handler = new HttpHandlerStack(&server);
-		new HttpHandlerLog(handler);
-		new HttpHandlerStats(handler);
-		new HttpHandlerFile(servePath, handler);
-		new HttpHandler404(handler);
+	new HttpHandlerLog(handler);
+	new HttpHandlerStats(handler);
+	new HttpHandlerFile(servePath, handler);
+	new HttpHandler404(handler);
 	QObject::connect(&server, &HttpServer::requestReady, handler, &HttpHandler::handleRequest);
 
 	return a.exec();

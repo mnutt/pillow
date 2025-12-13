@@ -23,7 +23,7 @@ class tst_HttpClient : public QObject
 {
 	Q_OBJECT
 
-	Pillow::HttpClient *client;
+	Pillow::HttpClient* client;
 	TestServer server;
 	TestServer server2;
 
@@ -50,7 +50,8 @@ private slots:
 
 	void cleanup()
 	{
-		delete client; client = 0;
+		delete client;
+		client = 0;
 		server.receivedRequests.clear();
 		server.receivedConnections.clear();
 		server.receivedSockets.clear();
@@ -62,8 +63,10 @@ private slots:
 private:
 	bool waitForResponse(int maxTime = 500)
 	{
-		QElapsedTimer t; t.start();
-		while (client->responsePending() && t.elapsed() < maxTime) QCoreApplication::processEvents(QEventLoop::AllEvents, 10);
+		QElapsedTimer t;
+		t.start();
+		while (client->responsePending() && t.elapsed() < maxTime)
+			QCoreApplication::processEvents(QEventLoop::AllEvents, 10);
 		if (client->responsePending())
 		{
 			qWarning() << "Timed out waiting for response";
@@ -72,12 +75,9 @@ private:
 		return true;
 	}
 
-	bool waitForContentReadyRead(int maxTime = 500)
-	{
-		return waitForSignal(client, SIGNAL(contentReadyRead()), maxTime);
-	}
+	bool waitForContentReadyRead(int maxTime = 500) { return waitForSignal(client, SIGNAL(contentReadyRead()), maxTime); }
 
-	QUrl testUrl() { return QUrl("http://127.0.0.1:4569/test");	}
+	QUrl testUrl() { return QUrl("http://127.0.0.1:4569/test"); }
 
 protected slots:
 	void abortSender() { static_cast<Pillow::HttpClient*>(sender())->abort(); }
@@ -104,65 +104,68 @@ private slots:
 		Pillow::HttpHeaderCollection baseExpectedHeaders;
 		baseExpectedHeaders << Pillow::HttpHeader("Host", "127.0.0.1:4569");
 
-		QTest::newRow("Simple GET") << QByteArray("GET")
-									<< QUrl("http://127.0.0.1:4569/")
-									<< Pillow::HttpHeaderCollection()
-									<< QByteArray()
-									<< HttpRequestData()
-									   .withMethod("GET")
-									   .withUri("/").withPath("/").withQueryString("").withFragment("")
-									   .withHttpVersion("HTTP/1.1")
-									   .withContent("")
-									   .withHeaders(baseExpectedHeaders);
+		QTest::newRow("Simple GET") << QByteArray("GET") << QUrl("http://127.0.0.1:4569/") << Pillow::HttpHeaderCollection() << QByteArray()
+		                            << HttpRequestData()
+		                                   .withMethod("GET")
+		                                   .withUri("/")
+		                                   .withPath("/")
+		                                   .withQueryString("")
+		                                   .withFragment("")
+		                                   .withHttpVersion("HTTP/1.1")
+		                                   .withContent("")
+		                                   .withHeaders(baseExpectedHeaders);
 
-		QTest::newRow("GET with headers") << QByteArray("GET")
-									<< QUrl("http://127.0.0.1:4569/some/path?and=query")
-									<< (Pillow::HttpHeaderCollection()
-										<< Pillow::HttpHeader("X-Some", "Header")
-										<< Pillow::HttpHeader("X-And-Another", "even-better; header"))
-									<< QByteArray()
-									<< HttpRequestData()
-									   .withMethod("GET")
-									   .withUri("/some/path?and=query").withPath("/some/path").withQueryString("and=query").withFragment("")
-									   .withHttpVersion("HTTP/1.1")
-									   .withContent("")
-									   .withHeaders(Pillow::HttpHeaderCollection(baseExpectedHeaders)
-													<< Pillow::HttpHeader("X-Some", "Header")
-													<< Pillow::HttpHeader("X-And-Another", "even-better; header"));
-		QTest::newRow("GET with connection: close") << QByteArray("GET")
-									<< QUrl("http://127.0.0.1:4569/")
-									<< (Pillow::HttpHeaderCollection()
-										<< Pillow::HttpHeader("Connection", "close"))
-									<< QByteArray()
-									<< HttpRequestData()
-									   .withMethod("GET")
-									   .withUri("/").withPath("/").withQueryString("").withFragment("")
-									   .withHttpVersion("HTTP/1.1")
-									   .withContent("")
-									   .withHeaders(Pillow::HttpHeaderCollection(baseExpectedHeaders)
-													<< Pillow::HttpHeader("Connection", "close"));
-		QTest::newRow("Simple PUT") << QByteArray("PUT")
-									<< QUrl("http://127.0.0.1:4569/some/path")
-									<< (Pillow::HttpHeaderCollection())
-									<< QByteArray("Some sent data")
-									<< HttpRequestData()
-									   .withMethod("PUT")
-									   .withUri("/some/path").withPath("/some/path").withQueryString("").withFragment("")
-									   .withHttpVersion("HTTP/1.1")
-									   .withContent("Some sent data")
-									   .withHeaders(Pillow::HttpHeaderCollection(baseExpectedHeaders)
-													<< Pillow::HttpHeader("Content-Length", "14"));
-		QTest::newRow("Large POST") << QByteArray("POST")
-									<< QUrl("http://127.0.0.1:4569/some/large/path")
-									<< (Pillow::HttpHeaderCollection())
-									<< QByteArray(128 * 1024, '*')
-									<< HttpRequestData()
-									   .withMethod("POST")
-									   .withUri("/some/large/path").withPath("/some/large/path").withQueryString("").withFragment("")
-									   .withHttpVersion("HTTP/1.1")
-									   .withContent(QByteArray(128 * 1024, '*'))
-									   .withHeaders(Pillow::HttpHeaderCollection(baseExpectedHeaders)
-													<< Pillow::HttpHeader("Content-Length", "131072"));
+		QTest::newRow("GET with headers") << QByteArray("GET") << QUrl("http://127.0.0.1:4569/some/path?and=query")
+		                                  << (Pillow::HttpHeaderCollection() << Pillow::HttpHeader("X-Some", "Header")
+		                                                                     << Pillow::HttpHeader("X-And-Another", "even-better; header"))
+		                                  << QByteArray()
+		                                  << HttpRequestData()
+		                                         .withMethod("GET")
+		                                         .withUri("/some/path?and=query")
+		                                         .withPath("/some/path")
+		                                         .withQueryString("and=query")
+		                                         .withFragment("")
+		                                         .withHttpVersion("HTTP/1.1")
+		                                         .withContent("")
+		                                         .withHeaders(Pillow::HttpHeaderCollection(baseExpectedHeaders)
+		                                                      << Pillow::HttpHeader("X-Some", "Header")
+		                                                      << Pillow::HttpHeader("X-And-Another", "even-better; header"));
+		QTest::newRow("GET with connection: close")
+		    << QByteArray("GET") << QUrl("http://127.0.0.1:4569/")
+		    << (Pillow::HttpHeaderCollection() << Pillow::HttpHeader("Connection", "close")) << QByteArray()
+		    << HttpRequestData()
+		           .withMethod("GET")
+		           .withUri("/")
+		           .withPath("/")
+		           .withQueryString("")
+		           .withFragment("")
+		           .withHttpVersion("HTTP/1.1")
+		           .withContent("")
+		           .withHeaders(Pillow::HttpHeaderCollection(baseExpectedHeaders) << Pillow::HttpHeader("Connection", "close"));
+		QTest::newRow("Simple PUT") << QByteArray("PUT") << QUrl("http://127.0.0.1:4569/some/path") << (Pillow::HttpHeaderCollection())
+		                            << QByteArray("Some sent data")
+		                            << HttpRequestData()
+		                                   .withMethod("PUT")
+		                                   .withUri("/some/path")
+		                                   .withPath("/some/path")
+		                                   .withQueryString("")
+		                                   .withFragment("")
+		                                   .withHttpVersion("HTTP/1.1")
+		                                   .withContent("Some sent data")
+		                                   .withHeaders(Pillow::HttpHeaderCollection(baseExpectedHeaders)
+		                                                << Pillow::HttpHeader("Content-Length", "14"));
+		QTest::newRow("Large POST") << QByteArray("POST") << QUrl("http://127.0.0.1:4569/some/large/path")
+		                            << (Pillow::HttpHeaderCollection()) << QByteArray(128 * 1024, '*')
+		                            << HttpRequestData()
+		                                   .withMethod("POST")
+		                                   .withUri("/some/large/path")
+		                                   .withPath("/some/large/path")
+		                                   .withQueryString("")
+		                                   .withFragment("")
+		                                   .withHttpVersion("HTTP/1.1")
+		                                   .withContent(QByteArray(128 * 1024, '*'))
+		                                   .withHeaders(Pillow::HttpHeaderCollection(baseExpectedHeaders)
+		                                                << Pillow::HttpHeader("Content-Length", "131072"));
 	}
 
 	void should_send_valid_requests()
@@ -224,27 +227,32 @@ private slots:
 		QTest::addColumn<Chunks>("contentChunks");
 		QTest::addColumn<Pillow::HttpHeaderCollection>("expectedHeaders");
 
-		QTest::newRow("Simple 200") << 200
-									<< (Pillow::HttpHeaderCollection())
-									<< (Chunks() << "Hello World")
-									<< (Pillow::HttpHeaderCollection() << Pillow::HttpHeader("Content-Length", "11") << Pillow::HttpHeader("Content-Type", "text/plain"));
+		QTest::newRow("Simple 200") << 200 << (Pillow::HttpHeaderCollection()) << (Chunks() << "Hello World")
+		                            << (Pillow::HttpHeaderCollection()
+		                                << Pillow::HttpHeader("Content-Length", "11") << Pillow::HttpHeader("Content-Type", "text/plain"));
 		QTest::newRow("Many headers") << 200
-									  << (Pillow::HttpHeaderCollection() << Pillow::HttpHeader("a", "b") << Pillow::HttpHeader("c", "d") << Pillow::HttpHeader("e", "f") << Pillow::HttpHeader("g", "hhhhhhhhhhhhhhhh"))
-									  << (Chunks() << "Hello World")
-									  << (Pillow::HttpHeaderCollection() << Pillow::HttpHeader("a", "b") << Pillow::HttpHeader("c", "d") << Pillow::HttpHeader("e", "f") << Pillow::HttpHeader("g", "hhhhhhhhhhhhhhhh") << Pillow::HttpHeader("Content-Length", "11") << Pillow::HttpHeader("Content-Type", "text/plain"));
-		QTest::newRow("No Content") << 304
-									<< (Pillow::HttpHeaderCollection())
-									<< (Chunks())
-									<< (Pillow::HttpHeaderCollection() << Pillow::HttpHeader("Content-Length", "0"));
+		                              << (Pillow::HttpHeaderCollection()
+		                                  << Pillow::HttpHeader("a", "b") << Pillow::HttpHeader("c", "d") << Pillow::HttpHeader("e", "f")
+		                                  << Pillow::HttpHeader("g", "hhhhhhhhhhhhhhhh"))
+		                              << (Chunks() << "Hello World")
+		                              << (Pillow::HttpHeaderCollection()
+		                                  << Pillow::HttpHeader("a", "b") << Pillow::HttpHeader("c", "d") << Pillow::HttpHeader("e", "f")
+		                                  << Pillow::HttpHeader("g", "hhhhhhhhhhhhhhhh") << Pillow::HttpHeader("Content-Length", "11")
+		                                  << Pillow::HttpHeader("Content-Type", "text/plain"));
+		QTest::newRow("No Content") << 304 << (Pillow::HttpHeaderCollection()) << (Chunks())
+		                            << (Pillow::HttpHeaderCollection() << Pillow::HttpHeader("Content-Length", "0"));
 		QTest::newRow("Chunked Response") << 404
-										  << (Pillow::HttpHeaderCollection() << Pillow::HttpHeader("Transfer-Encoding", "Chunked") << Pillow::HttpHeader("Content-Type", "chunky/bacon"))
-										  << (Chunks() << "Hello" << "the" << "world!")
-										  << (Pillow::HttpHeaderCollection() << Pillow::HttpHeader("Content-Type", "chunky/bacon") << Pillow::HttpHeader("Transfer-Encoding", "Chunked"));
+		                                  << (Pillow::HttpHeaderCollection() << Pillow::HttpHeader("Transfer-Encoding", "Chunked")
+		                                                                     << Pillow::HttpHeader("Content-Type", "chunky/bacon"))
+		                                  << (Chunks() << "Hello" << "the" << "world!")
+		                                  << (Pillow::HttpHeaderCollection() << Pillow::HttpHeader("Content-Type", "chunky/bacon")
+		                                                                     << Pillow::HttpHeader("Transfer-Encoding", "Chunked"));
 
 		QTest::newRow("Delicious Stuff") << 400
-											<< (Pillow::HttpHeaderCollection() << Pillow::HttpHeader("Content-Type", "delicious-chocolate"))
-											<< (Chunks() << "I like chocolate!")
-											<< (Pillow::HttpHeaderCollection() << Pillow::HttpHeader("Content-Length", "17") << Pillow::HttpHeader("Content-Type", "delicious-chocolate"));
+		                                 << (Pillow::HttpHeaderCollection() << Pillow::HttpHeader("Content-Type", "delicious-chocolate"))
+		                                 << (Chunks() << "I like chocolate!")
+		                                 << (Pillow::HttpHeaderCollection() << Pillow::HttpHeader("Content-Length", "17")
+		                                                                    << Pillow::HttpHeader("Content-Type", "delicious-chocolate"));
 	}
 
 	void should_parse_received_response()
@@ -312,7 +320,8 @@ private slots:
 		client->get(testUrl());
 		QVERIFY(server.waitForRequest());
 		QCOMPARE(server.receivedRequests.size(), 1);
-		server.receivedConnections.last()->writeResponse(404, Pillow::HttpHeaderCollection() << Pillow::HttpHeader("Hello", "World"), "Hello World!");
+		server.receivedConnections.last()->writeResponse(404, Pillow::HttpHeaderCollection() << Pillow::HttpHeader("Hello", "World"),
+		                                                 "Hello World!");
 		QVERIFY(waitForResponse());
 		QCOMPARE(client->statusCode(), 404);
 		QVERIFY(!client->headers().isEmpty());
@@ -331,7 +340,9 @@ private slots:
 		QCOMPARE(server.receivedRequests.size(), 1);
 		QVERIFY(client->responsePending());
 
-		QTest::ignoreMessage(QtWarningMsg, "Pillow::HttpClient::request: cannot send new request while another one is under way. Request pipelining is not supported.");
+		QTest::ignoreMessage(
+		    QtWarningMsg,
+		    "Pillow::HttpClient::request: cannot send new request while another one is under way. Request pipelining is not supported.");
 		client->get(testUrl());
 		QCOMPARE(server.receivedRequests.size(), 1);
 
@@ -404,7 +415,7 @@ private slots:
 		QVERIFY(waitForResponse());
 		QCOMPARE(client->error(), Pillow::HttpClient::ResponseInvalidError);
 
-		QVERIFY(waitFor([&]{ return serverSideSocket == 0; }));
+		QVERIFY(waitFor([&] { return serverSideSocket == 0; }));
 		QVERIFY(serverSideSocket == 0);
 		QVERIFY(!serverSocketStateSpy.isEmpty());
 		QCOMPARE(serverSocketStateSpy.last().first().value<QAbstractSocket::SocketState>(), QAbstractSocket::UnconnectedState);
@@ -461,7 +472,8 @@ private slots:
 
 		client->get(testUrl());
 		QVERIFY(server.waitForRequest());
-		server.receivedSockets.last()->write("HTTP/1.1 200 OK\r\nContent-Length: 12\r\n\r\nhello world"); // Missing one byte in the content!
+		server.receivedSockets.last()->write(
+		    "HTTP/1.1 200 OK\r\nContent-Length: 12\r\n\r\nhello world"); // Missing one byte in the content!
 		server.receivedSockets.last()->flush();
 		QTest::qWait(50);
 		server.receivedConnections.last()->close();
@@ -484,29 +496,32 @@ private slots:
 	{
 		// Example where server returns an extra, valid HTTP response, such as a
 		// server indicating a timeout on a keep-alive connection.
-		client->get(testUrl()); QVERIFY(server.waitForRequest());
-		server.receivedConnections.last()->writeResponse(202); QVERIFY(waitForResponse());
+		client->get(testUrl());
+		QVERIFY(server.waitForRequest());
+		server.receivedConnections.last()->writeResponse(202);
+		QVERIFY(waitForResponse());
 		QCOMPARE(client->statusCode(), 202);
 
 		QPointer<QTcpSocket> socket = server.receivedSockets.last();
 		socket->write("HTTP/1.0 400 Bad Request\r\nConnection: close\r\n\r\nThis connection was inactive for too long!");
 
-		waitFor([&]{ return socket == 0; }); // The client should close the socket, which will close and delete it on the server.
+		waitFor([&] { return socket == 0; }); // The client should close the socket, which will close and delete it on the server.
 		QCOMPARE(client->error(), Pillow::HttpClient::NoError);
 		QCOMPARE(client->statusCode(), 202);
 
 		// Example where server returns extra junk.
-		client->get(testUrl()); QVERIFY(server.waitForRequest());
-		server.receivedConnections.last()->writeResponse(202); QVERIFY(waitForResponse());
+		client->get(testUrl());
+		QVERIFY(server.waitForRequest());
+		server.receivedConnections.last()->writeResponse(202);
+		QVERIFY(waitForResponse());
 		QCOMPARE(client->statusCode(), 202);
 
 		socket = server.receivedSockets.last();
 		socket->write("=-=-=-=-=-FFFFFFFUUUUUUUUUUUU!");
 
-		waitFor([&]{ return socket == 0; }); // The client should close the socket, which will close and delete it on the server.
+		waitFor([&] { return socket == 0; }); // The client should close the socket, which will close and delete it on the server.
 		QCOMPARE(client->error(), Pillow::HttpClient::NoError);
 		QCOMPARE(client->statusCode(), 202);
-
 	}
 
 	void should_emit_finished_after_receiving_response()
@@ -579,7 +594,7 @@ private slots:
 		QVERIFY(socket != 0);
 		client->abort();
 		QVERIFY(waitForResponse());
-		QVERIFY(waitFor([=]{ return socket == 0; })); // The socket should get closed and deleted.
+		QVERIFY(waitFor([=] { return socket == 0; })); // The socket should get closed and deleted.
 	}
 
 	void should_close_connection_and_not_discard_previous_response_if_aborted_while_not_waiting_for_response()
@@ -599,7 +614,7 @@ private slots:
 		QVERIFY(!client->responsePending());
 
 		client->abort();
-		QVERIFY(waitFor([=]{ return socket == 0; })); // The socket should get closed and deleted.
+		QVERIFY(waitFor([=] { return socket == 0; })); // The socket should get closed and deleted.
 
 		// Should not have modified the results from the previous response, nor emitted finished() again.
 		QCOMPARE(client->statusCode(), 200);
@@ -609,17 +624,24 @@ private slots:
 
 	void should_reuse_existing_connection_to_same_host_and_port()
 	{
-		client->get(testUrl()); QVERIFY(server.waitForRequest());
-		server.receivedConnections.last()->writeResponse(200); QVERIFY(waitForResponse());
+		client->get(testUrl());
+		QVERIFY(server.waitForRequest());
+		server.receivedConnections.last()->writeResponse(200);
+		QVERIFY(waitForResponse());
 
-		client->get(testUrl()); QVERIFY(server.waitForRequest());
-		server.receivedConnections.last()->writeResponse(201); QVERIFY(waitForResponse());
+		client->get(testUrl());
+		QVERIFY(server.waitForRequest());
+		server.receivedConnections.last()->writeResponse(201);
+		QVERIFY(waitForResponse());
 
-		client->get(testUrl()); QVERIFY(server.waitForRequest());
-		server.receivedConnections.last()->writeResponse(202); QVERIFY(waitForResponse());
+		client->get(testUrl());
+		QVERIFY(server.waitForRequest());
+		server.receivedConnections.last()->writeResponse(202);
+		QVERIFY(waitForResponse());
 
 		QCOMPARE(server.receivedSockets.size(), 3);
-		QVERIFY(server.receivedSockets.at(0) == server.receivedSockets.at(1) && server.receivedSockets.at(1) == server.receivedSockets.at(2));
+		QVERIFY(server.receivedSockets.at(0) == server.receivedSockets.at(1) &&
+		        server.receivedSockets.at(1) == server.receivedSockets.at(2));
 	}
 
 	void should_allow_consuming_partial_responses_to_support_streaming()
@@ -627,7 +649,8 @@ private slots:
 		// With chunked transfer encoding.
 		client->get(testUrl());
 		QVERIFY(server.waitForRequest());
-		server.receivedConnections.last()->writeHeaders(201, Pillow::HttpHeaderCollection() << Pillow::HttpHeader("Transfer-Encoding", "chunked"));
+		server.receivedConnections.last()->writeHeaders(201, Pillow::HttpHeaderCollection()
+		                                                         << Pillow::HttpHeader("Transfer-Encoding", "chunked"));
 		server.receivedConnections.last()->writeContent("hello");
 		QVERIFY(waitForContentReadyRead());
 		QCOMPARE(client->statusCode(), 201);
@@ -692,7 +715,9 @@ private slots:
 	{
 		client->post(testUrl(), Pillow::HttpHeaderCollection() << Pillow::HttpHeader("Expect", "100-continue"), "post data");
 		QVERIFY(server.waitForRequest());
-		server.receivedConnections.last()->writeHeaders(200, Pillow::HttpHeaderCollection() << Pillow::HttpHeader("First", "FirstValue") << Pillow::HttpHeader("Second", "SecondValue") << Pillow::HttpHeader("Content-Length", "12"));
+		server.receivedConnections.last()->writeHeaders(200, Pillow::HttpHeaderCollection() << Pillow::HttpHeader("First", "FirstValue")
+		                                                                                    << Pillow::HttpHeader("Second", "SecondValue")
+		                                                                                    << Pillow::HttpHeader("Content-Length", "12"));
 
 		QCOMPARE(client->statusCode(), 0);
 		QCOMPARE(client->headers(), Pillow::HttpHeaderCollection());
@@ -702,7 +727,9 @@ private slots:
 		QVERIFY(finishedSpy.isEmpty()); // Should not have finished the request yet.
 
 		QCOMPARE(client->statusCode(), 200);
-		QCOMPARE(client->headers(), Pillow::HttpHeaderCollection() << Pillow::HttpHeader("First", "FirstValue") << Pillow::HttpHeader("Second", "SecondValue") << Pillow::HttpHeader("Content-Length", "12") << Pillow::HttpHeader("Content-Type", "text/plain"));
+		QCOMPARE(client->headers(), Pillow::HttpHeaderCollection()
+		                                << Pillow::HttpHeader("First", "FirstValue") << Pillow::HttpHeader("Second", "SecondValue")
+		                                << Pillow::HttpHeader("Content-Length", "12") << Pillow::HttpHeader("Content-Type", "text/plain"));
 		QCOMPARE(client->content(), QByteArray());
 
 		server.receivedConnections.last()->writeContent("Some content");
@@ -712,10 +739,7 @@ private slots:
 		QCOMPARE(client->content(), QByteArray("Some content"));
 	}
 
-	void should_report_error_given_an_unsupported_request()
-	{
-		QSKIP("Not implemented", SkipAll);
-	}
+	void should_report_error_given_an_unsupported_request() { QSKIP("Not implemented", SkipAll); }
 
 	void should_support_head_requests()
 	{
@@ -753,8 +777,7 @@ private slots:
 
 		QByteArray read;
 		int readCount = 0;
-		QVERIFY(waitFor([&]() -> bool
-		{
+		QVERIFY(waitFor([&]() -> bool {
 			readCount++;
 			read.append(client->consumeContent());
 			return read.size() == 1024 * 1024;
@@ -775,26 +798,32 @@ private slots:
 		// Warning: timing-sensitive test.
 		client->setKeepAliveTimeout(50);
 
-		client->get(testUrl()); QVERIFY(server.waitForRequest());
+		client->get(testUrl());
+		QVERIFY(server.waitForRequest());
 		QPointer<QObject> socket = server.receivedSockets.last();
 		server.receivedConnections.last()->writeResponse(200);
-		QVERIFY(waitForResponse()); QCOMPARE(client->error(), Pillow::HttpClient::NoError);
+		QVERIFY(waitForResponse());
+		QCOMPARE(client->error(), Pillow::HttpClient::NoError);
 
 		QTest::qWait(60); // Wait more than the keep alive timeout.
 
-		client->get(testUrl()); QVERIFY(server.waitForRequest());
+		client->get(testUrl());
+		QVERIFY(server.waitForRequest());
 		QPointer<QObject> socket2 = server.receivedSockets.last();
 		server.receivedConnections.last()->writeResponse(200);
-		QVERIFY(waitForResponse()); QCOMPARE(client->error(), Pillow::HttpClient::NoError);
+		QVERIFY(waitForResponse());
+		QCOMPARE(client->error(), Pillow::HttpClient::NoError);
 
 		QVERIFY(socket == 0); // It will have closed the initial socket and used a new one.
 		QVERIFY(socket2 != 0);
 
 		QTest::qWait(1); // Wait less than the keep alive timeout.
 
-		client->get(testUrl()); QVERIFY(server.waitForRequest());
+		client->get(testUrl());
+		QVERIFY(server.waitForRequest());
 		server.receivedConnections.last()->writeResponse(200);
-		QVERIFY(waitForResponse()); QCOMPARE(client->error(), Pillow::HttpClient::NoError);
+		QVERIFY(waitForResponse());
+		QCOMPARE(client->error(), Pillow::HttpClient::NoError);
 
 		QVERIFY(socket2 != 0); // It will have reused the still-good connection.
 	}
@@ -803,18 +832,22 @@ private slots:
 	{
 		client->setKeepAliveTimeout(0);
 
-		client->get(testUrl()); QVERIFY(server.waitForRequest());
+		client->get(testUrl());
+		QVERIFY(server.waitForRequest());
 
 		QSignalSpy connectionClosedSpy(server.receivedConnections.last(), SIGNAL(closed(Pillow::HttpConnection*)));
 		QPointer<QObject> socket = server.receivedSockets.last();
 
 		server.receivedConnections.last()->writeResponse(200);
-		QVERIFY(waitForResponse()); QCOMPARE(client->error(), Pillow::HttpClient::NoError);
-		QVERIFY(waitFor([&]{ return connectionClosedSpy.size() == 1; }));
+		QVERIFY(waitForResponse());
+		QCOMPARE(client->error(), Pillow::HttpClient::NoError);
+		QVERIFY(waitFor([&] { return connectionClosedSpy.size() == 1; }));
 
-		client->get(testUrl()); QVERIFY(server.waitForRequest());
+		client->get(testUrl());
+		QVERIFY(server.waitForRequest());
 		server.receivedConnections.last()->writeResponse(200);
-		QVERIFY(waitForResponse()); QCOMPARE(client->error(), Pillow::HttpClient::NoError);
+		QVERIFY(waitForResponse());
+		QCOMPARE(client->error(), Pillow::HttpClient::NoError);
 
 		QVERIFY(socket == 0);
 	}
@@ -823,24 +856,30 @@ private slots:
 	{
 		// Warning: timing-sensitive test.
 
-		client->get(testUrl()); QVERIFY(server.waitForRequest());
+		client->get(testUrl());
+		QVERIFY(server.waitForRequest());
 		QPointer<QObject> socket = server.receivedSockets.last();
 		server.receivedConnections.last()->writeResponse(200);
-		QVERIFY(waitForResponse()); QCOMPARE(client->error(), Pillow::HttpClient::NoError);
+		QVERIFY(waitForResponse());
+		QCOMPARE(client->error(), Pillow::HttpClient::NoError);
 
-		client->get(testUrl()); QVERIFY(server.waitForRequest());
+		client->get(testUrl());
+		QVERIFY(server.waitForRequest());
 		server.receivedConnections.last()->writeResponse(200);
-		QVERIFY(waitForResponse()); QCOMPARE(client->error(), Pillow::HttpClient::NoError);
+		QVERIFY(waitForResponse());
+		QCOMPARE(client->error(), Pillow::HttpClient::NoError);
 
 		QVERIFY(socket != 0);
 		QVERIFY(server.receivedSockets.at(0) == server.receivedSockets.at(1)); // Still good.
 
-		QTest::qWait(15); // But wait, there's more!
+		QTest::qWait(15);                // But wait, there's more!
 		client->setKeepAliveTimeout(10); // Un-oh, we're already past that!
 
-		client->get(testUrl()); QVERIFY(server.waitForRequest());
+		client->get(testUrl());
+		QVERIFY(server.waitForRequest());
 		server.receivedConnections.last()->writeResponse(200);
-		QVERIFY(waitForResponse()); QCOMPARE(client->error(), Pillow::HttpClient::NoError);
+		QVERIFY(waitForResponse());
+		QCOMPARE(client->error(), Pillow::HttpClient::NoError);
 
 		QVERIFY(socket == 0); // It will have broken the initial connection.
 	}
@@ -882,7 +921,8 @@ private slots:
 		QSignalSpy contentReadyReadSpy(client, SIGNAL(contentReadyRead()));
 		connect(client, SIGNAL(headersCompleted()), this, SLOT(abortSender()));
 
-		client->get(testUrl()); QVERIFY(server.waitForRequest());
+		client->get(testUrl());
+		QVERIFY(server.waitForRequest());
 		server.receivedConnections.last()->writeHeaders(201);
 		server.receivedConnections.last()->writeContent("Hello");
 		QVERIFY(waitForResponse());
@@ -892,7 +932,8 @@ private slots:
 
 		// Recover
 		disconnect(client, SIGNAL(headersCompleted()), this, SLOT(abortSender()));
-		client->get(testUrl()); QVERIFY(server.waitForRequest());
+		client->get(testUrl());
+		QVERIFY(server.waitForRequest());
 		server.receivedConnections.last()->writeResponse(404, Pillow::HttpHeaderCollection(), "Test");
 		QVERIFY(waitForResponse());
 		QCOMPARE(client->statusCode(), 404);
@@ -916,7 +957,8 @@ private slots:
 		// Recover
 		disconnect(client, SIGNAL(headersCompleted()), this, SLOT(abortSender()));
 		disconnect(client, SIGNAL(headersCompleted()), this, SLOT(sendRequest()));
-		QVERIFY(waitFor([&]{ return server.receivedConnections.size() == 4; })); // At this point, we will or have already received the new request.
+		QVERIFY(waitFor(
+		    [&] { return server.receivedConnections.size() == 4; })); // At this point, we will or have already received the new request.
 		server.receivedConnections.last()->writeResponse(201, Pillow::HttpHeaderCollection(), "Testing 123");
 		QVERIFY(waitForResponse());
 		QCOMPARE(client->error(), Pillow::HttpClient::NoError);
@@ -929,7 +971,8 @@ private slots:
 	{
 		connect(client, SIGNAL(contentReadyRead()), this, SLOT(abortSender()));
 
-		client->get(testUrl()); QVERIFY(server.waitForRequest());
+		client->get(testUrl());
+		QVERIFY(server.waitForRequest());
 		server.receivedConnections.last()->writeHeaders(201);
 		server.receivedConnections.last()->writeContent("Hello");
 		server.receivedConnections.last()->writeContent("World");
@@ -938,7 +981,8 @@ private slots:
 
 		// Recover
 		disconnect(client, SIGNAL(contentReadyRead()), this, SLOT(abortSender()));
-		client->get(testUrl()); QVERIFY(server.waitForRequest());
+		client->get(testUrl());
+		QVERIFY(server.waitForRequest());
 		server.receivedConnections.last()->writeResponse(404, Pillow::HttpHeaderCollection(), "Test");
 		QVERIFY(waitForResponse());
 		QCOMPARE(client->statusCode(), 404);
@@ -960,7 +1004,8 @@ private slots:
 		// Recover
 		disconnect(client, SIGNAL(contentReadyRead()), this, SLOT(abortSender()));
 		disconnect(client, SIGNAL(contentReadyRead()), this, SLOT(sendRequest()));
-		QVERIFY(waitFor([&]{ return server.receivedConnections.size() == 4; })); // At this point, we will or have already received the new request.
+		QVERIFY(waitFor(
+		    [&] { return server.receivedConnections.size() == 4; })); // At this point, we will or have already received the new request.
 		server.receivedConnections.last()->writeResponse(201, Pillow::HttpHeaderCollection(), "Testing 123");
 		QVERIFY(waitForResponse());
 		QCOMPARE(client->error(), Pillow::HttpClient::NoError);
@@ -984,7 +1029,8 @@ private slots:
 		QCOMPARE(client->content(), QByteArray());
 		QVERIFY(client->responsePending());
 
-		QVERIFY(waitFor([&]{ return server.receivedConnections.size() == 2; })); // At this point, we will or have already received the new request.
+		QVERIFY(waitFor(
+		    [&] { return server.receivedConnections.size() == 2; })); // At this point, we will or have already received the new request.
 
 		disconnect(client, SIGNAL(finished()), this, SLOT(sendRequest()));
 
@@ -999,21 +1045,21 @@ private slots:
 		connect(client, SIGNAL(finished()), this, SLOT(sendRequest()));
 
 		client->get(testUrl());
-		QVERIFY(waitFor([&]{ return server.receivedConnections.size() == 3; }));
+		QVERIFY(waitFor([&] { return server.receivedConnections.size() == 3; }));
 		server.receivedConnections.last()->writeResponse(200, Pillow::HttpHeaderCollection(), "123");
 		waitForSignal(client, SIGNAL(finished()));
-		QVERIFY(waitFor([&]{ return server.receivedConnections.size() == 4; }));
+		QVERIFY(waitFor([&] { return server.receivedConnections.size() == 4; }));
 		server.receivedConnections.last()->writeResponse(201, Pillow::HttpHeaderCollection(), QByteArray(256 * 1024 - 13, '*'));
 		waitForSignal(client, SIGNAL(finished()));
-		QVERIFY(waitFor([&]{ return server.receivedConnections.size() == 5; }));
+		QVERIFY(waitFor([&] { return server.receivedConnections.size() == 5; }));
 		server.receivedConnections.last()->writeResponse(400, Pillow::HttpHeaderCollection(), QByteArray(4 * 1024 + 17, '*'));
 		waitForSignal(client, SIGNAL(finished()));
-		QVERIFY(waitFor([&]{ return server.receivedConnections.size() == 6; }));
+		QVERIFY(waitFor([&] { return server.receivedConnections.size() == 6; }));
 		server.receivedConnections.last()->writeResponse(404, Pillow::HttpHeaderCollection(), "7");
 		waitForSignal(client, SIGNAL(finished()));
 		disconnect(client, SIGNAL(finished()), this, SLOT(sendRequest()));
 
-		QVERIFY(waitFor([&]{ return server.receivedConnections.size() == 7; }));
+		QVERIFY(waitFor([&] { return server.receivedConnections.size() == 7; }));
 		server.receivedConnections.last()->writeResponse(500, Pillow::HttpHeaderCollection(), "hello");
 		QVERIFY(waitForResponse());
 		QCOMPARE(client->error(), Pillow::HttpClient::NoError);
@@ -1039,7 +1085,8 @@ private slots:
 
 		client->get(testUrl());
 		QVERIFY(server.waitForRequest());
-		server.receivedConnections.last()->writeResponse(301, Pillow::HttpHeaderCollection() << Pillow::HttpHeader("Location", "http://new-location.example.org/"));
+		server.receivedConnections.last()->writeResponse(301, Pillow::HttpHeaderCollection()
+		                                                          << Pillow::HttpHeader("Location", "http://new-location.example.org/"));
 		QVERIFY(waitForResponse());
 		QCOMPARE(client->statusCode(), 301);
 		QVERIFY(client->redirected());
@@ -1055,7 +1102,8 @@ private slots:
 
 		client->get(testUrl());
 		QVERIFY(server.waitForRequest());
-		server.receivedConnections.last()->writeResponse(302, Pillow::HttpHeaderCollection() << Pillow::HttpHeader("Location", "http://another-location.example.org/and/path"));
+		server.receivedConnections.last()->writeResponse(
+		    302, Pillow::HttpHeaderCollection() << Pillow::HttpHeader("Location", "http://another-location.example.org/and/path"));
 		QVERIFY(waitForResponse());
 		QCOMPARE(client->statusCode(), 302);
 		QVERIFY(client->redirected());
@@ -1066,7 +1114,8 @@ private slots:
 	{
 		client->get(testUrl());
 		QVERIFY(server.waitForRequest());
-		server.receivedConnections.last()->writeResponse(301, Pillow::HttpHeaderCollection() << Pillow::HttpHeader("Location", "http://127.0.0.1:4569/other/path"));
+		server.receivedConnections.last()->writeResponse(301, Pillow::HttpHeaderCollection()
+		                                                          << Pillow::HttpHeader("Location", "http://127.0.0.1:4569/other/path"));
 		QVERIFY(waitForResponse());
 		QCOMPARE(client->statusCode(), 301);
 		QVERIFY(client->redirected());
@@ -1099,7 +1148,8 @@ private slots:
 
 		client->get(testUrl());
 		QVERIFY(server.waitForRequest());
-		server.receivedConnections.last()->writeResponse(200, Pillow::HttpHeaderCollection() << Pillow::HttpHeader("Content-Encoding", "gzip"), gzippedData);
+		server.receivedConnections.last()->writeResponse(
+		    200, Pillow::HttpHeaderCollection() << Pillow::HttpHeader("Content-Encoding", "gzip"), gzippedData);
 		QVERIFY(waitForResponse());
 		QCOMPARE(client->statusCode(), 200);
 		QCOMPARE(client->content(), QByteArray("1234567890123456789012345678901234567890"));
@@ -1107,7 +1157,8 @@ private slots:
 		// GZip content-encoding with empty content.
 		client->get(testUrl());
 		QVERIFY(server.waitForRequest());
-		server.receivedConnections.last()->writeResponse(200, Pillow::HttpHeaderCollection() << Pillow::HttpHeader("Content-Encoding", "gzip"), "");
+		server.receivedConnections.last()->writeResponse(
+		    200, Pillow::HttpHeaderCollection() << Pillow::HttpHeader("Content-Encoding", "gzip"), "");
 		QVERIFY(waitForResponse());
 		QCOMPARE(client->statusCode(), 200);
 		QCOMPARE(client->content(), QByteArray());
@@ -1123,7 +1174,9 @@ private slots:
 		// Gzip content sent in multiple chunks
 		client->get(testUrl());
 		QVERIFY(server.waitForRequest());
-		server.receivedConnections.last()->writeHeaders(200, Pillow::HttpHeaderCollection() << Pillow::HttpHeader("Content-Encoding", "gzip") << Pillow::HttpHeader("Transfer-Encoding", "Chunked"));
+		server.receivedConnections.last()->writeHeaders(200, Pillow::HttpHeaderCollection()
+		                                                         << Pillow::HttpHeader("Content-Encoding", "gzip")
+		                                                         << Pillow::HttpHeader("Transfer-Encoding", "Chunked"));
 		server.receivedConnections.last()->writeContent(gzippedData.left(15));
 		QTest::qWait(1);
 		server.receivedConnections.last()->writeContent(gzippedData.mid(15, 15));
@@ -1137,10 +1190,12 @@ private slots:
 
 	void should_pass_bad_gzipped_content_through()
 	{
-		QTest::ignoreMessage(QtWarningMsg, "Pillow::GunzipContentTransformer::transform: error inflating input stream passing original content through.");
+		QTest::ignoreMessage(QtWarningMsg,
+		                     "Pillow::GunzipContentTransformer::transform: error inflating input stream passing original content through.");
 		client->get(testUrl());
 		QVERIFY(server.waitForRequest());
-		server.receivedConnections.last()->writeResponse(200, Pillow::HttpHeaderCollection() << Pillow::HttpHeader("Content-Encoding", "gzip"), "Definitely not gzipped data");
+		server.receivedConnections.last()->writeResponse(
+		    200, Pillow::HttpHeaderCollection() << Pillow::HttpHeader("Content-Encoding", "gzip"), "Definitely not gzipped data");
 		QVERIFY(waitForResponse());
 		QCOMPARE(client->statusCode(), 200);
 		QCOMPARE(client->content(), QByteArray("Definitely not gzipped data"));
@@ -1155,7 +1210,7 @@ private slots:
 		QVERIFY(waitForResponse());
 		QCOMPARE(client->statusCode(), 200);
 		QCOMPARE(client->content(), QByteArray("1234"));
-		QVERIFY(waitFor([&]{ return s == 0; }));
+		QVERIFY(waitFor([&] { return s == 0; }));
 	}
 
 	void should_handle_empty_response_body()
@@ -1174,9 +1229,8 @@ private slots:
 		client->get(testUrl());
 		QVERIFY(server.waitForRequest());
 		QByteArray longValue(4096, 'x');
-		server.receivedConnections.last()->writeResponse(200,
-			Pillow::HttpHeaderCollection() << Pillow::HttpHeader("X-Long-Header", longValue),
-			"content");
+		server.receivedConnections.last()->writeResponse(
+		    200, Pillow::HttpHeaderCollection() << Pillow::HttpHeader("X-Long-Header", longValue), "content");
 		QVERIFY(waitForResponse());
 		QCOMPARE(client->statusCode(), 200);
 		QCOMPARE(client->content(), QByteArray("content"));
@@ -1286,4 +1340,4 @@ private slots:
 
 QTEST_MAIN(tst_HttpClient)
 #include "tst_httpclient.moc"
-#include "moc_Helpers.cpp"  // Include moc for TestServer from Helpers.h
+#include "moc_Helpers.cpp" // Include moc for TestServer from Helpers.h

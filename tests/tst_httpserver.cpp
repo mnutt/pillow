@@ -15,7 +15,10 @@ private slots: // Test slots.
 	void testInit() { HttpServerTestBase::testInit(); }
 	void testHandlesConnectionsAsRequests() { HttpServerTestBase::testHandlesConnectionsAsRequests(); }
 	void testHandlesConcurrentConnections() { HttpServerTestBase::testHandlesConcurrentConnections(); }
-	void testHandlesConcurrentConnectionsSimultaneousResponses() { HttpServerTestBase::testHandlesConcurrentConnectionsSimultaneousResponses(); }
+	void testHandlesConcurrentConnectionsSimultaneousResponses()
+	{
+		HttpServerTestBase::testHandlesConcurrentConnectionsSimultaneousResponses();
+	}
 	void testReusesRequests() { HttpServerTestBase::testReusesRequests(); }
 	void testDestroysRequests() { HttpServerTestBase::testDestroysRequests(); }
 
@@ -172,7 +175,7 @@ QObject* HttpServerTest::createServer()
 	return new Pillow::HttpServer(QHostAddress::Any, 4577);
 }
 
-QIODevice * HttpServerTest::createClientConnection()
+QIODevice* HttpServerTest::createClientConnection()
 {
 	QTcpSocket* socket = new QTcpSocket(server);
 	socket->connectToHost(QHostAddress::LocalHost, 4577);
