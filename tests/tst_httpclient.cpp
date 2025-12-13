@@ -1157,6 +1157,131 @@ private slots:
 		QCOMPARE(client->content(), QByteArray("1234"));
 		QVERIFY(waitFor([&]{ return s == 0; }));
 	}
+
+	void should_handle_empty_response_body()
+	{
+		client->get(testUrl());
+		QVERIFY(server.waitForRequest());
+		server.receivedConnections.last()->writeResponse(204); // No Content
+		QVERIFY(waitForResponse());
+		QCOMPARE(client->statusCode(), 204);
+		QCOMPARE(client->content(), QByteArray());
+		QCOMPARE(client->error(), Pillow::HttpClient::NoError);
+	}
+
+	void should_handle_very_long_headers()
+	{
+		client->get(testUrl());
+		QVERIFY(server.waitForRequest());
+		QByteArray longValue(4096, 'x');
+		server.receivedConnections.last()->writeResponse(200,
+			Pillow::HttpHeaderCollection() << Pillow::HttpHeader("X-Long-Header", longValue),
+			"content");
+		QVERIFY(waitForResponse());
+		QCOMPARE(client->statusCode(), 200);
+		QCOMPARE(client->content(), QByteArray("content"));
+
+		// Verify the long header was received
+		bool foundLongHeader = false;
+		for (const auto& header : client->headers())
+		{
+			if (header.first == "X-Long-Header")
+			{
+				QCOMPARE(header.second, longValue);
+				foundLongHeader = true;
+				break;
+			}
+		}
+		QVERIFY(foundLongHeader);
+	}
+
+	void should_handle_multiple_headers_with_same_name()
+	{
+		client->get(testUrl());
+		QVERIFY(server.waitForRequest());
+		server.receivedSockets.last()->write("HTTP/1.1 200 OK\r\n");
+		server.receivedSockets.last()->write("Set-Cookie: cookie1=value1\r\n");
+		server.receivedSockets.last()->write("Set-Cookie: cookie2=value2\r\n");
+		server.receivedSockets.last()->write("Content-Length: 5\r\n");
+		server.receivedSockets.last()->write("\r\n");
+		server.receivedSockets.last()->write("hello");
+		server.receivedSockets.last()->flush();
+		QVERIFY(waitForResponse());
+		QCOMPARE(client->statusCode(), 200);
+		QCOMPARE(client->content(), QByteArray("hello"));
+
+		// Count Set-Cookie headers
+		int cookieCount = 0;
+		for (const auto& header : client->headers())
+		{
+			if (header.first == "Set-Cookie")
+				cookieCount++;
+		}
+		QCOMPARE(cookieCount, 2);
+	}
+
+	void should_handle_response_with_no_content_length_and_close()
+	{
+		client->get(testUrl());
+		QVERIFY(server.waitForRequest());
+		// HTTP/1.0 style response with no content-length, connection closed to indicate end
+		server.receivedSockets.last()->write("HTTP/1.0 200 OK\r\n\r\n");
+		server.receivedSockets.last()->write("response without content length");
+		server.receivedSockets.last()->flush();
+		server.receivedSockets.last()->close();
+		QVERIFY(waitForResponse());
+		QCOMPARE(client->statusCode(), 200);
+		QCOMPARE(client->content(), QByteArray("response without content length"));
+	}
+
+	void should_handle_delete_and_patch_methods()
+	{
+		// DELETE request
+		client->deleteResource(testUrl());
+		QVERIFY(server.waitForRequest());
+		QCOMPARE(server.receivedConnections.last()->requestMethod(), QByteArray("DELETE"));
+		server.receivedConnections.last()->writeResponse(204);
+		QVERIFY(waitForResponse());
+		QCOMPARE(client->statusCode(), 204);
+		QCOMPARE(client->error(), Pillow::HttpClient::NoError);
+
+		// PATCH request
+		client->request("PATCH", testUrl(), Pillow::HttpHeaderCollection(), "patch data");
+		QVERIFY(server.waitForRequest());
+		QCOMPARE(server.receivedConnections.last()->requestMethod(), QByteArray("PATCH"));
+		QCOMPARE(server.receivedConnections.last()->requestContent(), QByteArray("patch data"));
+		server.receivedConnections.last()->writeResponse(200, Pillow::HttpHeaderCollection(), "patched");
+		QVERIFY(waitForResponse());
+		QCOMPARE(client->statusCode(), 200);
+		QCOMPARE(client->content(), QByteArray("patched"));
+	}
+
+	void should_handle_read_buffer_size_zero()
+	{
+		// A read buffer size of 0 should mean unlimited
+		client->setReadBufferSize(0);
+
+		client->get(testUrl());
+		QVERIFY(server.waitForRequest());
+		QByteArray largeContent(512 * 1024, 'A');
+		server.receivedConnections.last()->writeResponse(200, Pillow::HttpHeaderCollection(), largeContent);
+		QVERIFY(waitForResponse(2000));
+		QCOMPARE(client->statusCode(), 200);
+		QCOMPARE(client->content().size(), largeContent.size());
+		QCOMPARE(client->error(), Pillow::HttpClient::NoError);
+	}
+
+	void should_handle_url_with_userinfo()
+	{
+		// URLs with username/password should work (userinfo is stripped before sending)
+		client->get(QUrl("http://user:pass@127.0.0.1:4569/test"));
+		QVERIFY(server.waitForRequest());
+		// The request should still reach the server
+		QCOMPARE(server.receivedConnections.last()->requestPath(), QByteArray("/test"));
+		server.receivedConnections.last()->writeResponse(200);
+		QVERIFY(waitForResponse());
+		QCOMPARE(client->statusCode(), 200);
+	}
 };
 
 QTEST_MAIN(tst_HttpClient)

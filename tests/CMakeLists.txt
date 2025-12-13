@@ -41,11 +41,12 @@ add_pillow_test(test_httpconnection_buffer tst_httpconnection_buffer.cpp httpcon
 add_pillow_test(test_httpserver tst_httpserver.cpp httpserverbase.cpp httpserverbase.h)
 add_pillow_test(test_httplocalserver tst_httplocalserver.cpp httpserverbase.cpp httpserverbase.h)
 add_pillow_test(test_httpsserver tst_httpsserver.cpp httpserverbase.cpp httpserverbase.h tests.qrc)
+add_pillow_test(test_httphelpers tst_httphelpers.cpp)
 
 # Optional: Create a custom target to run all tests
 add_custom_target(test_all
     COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure
-    DEPENDS test_httpclient test_httprequestwriter test_httpresponseparser test_networkaccessmanager test_bytearrayhelpers test_httpheader test_httphandler test_httphandlerfile test_httphandlersimplerouter test_httphandlerproxy test_httpconnection_tcp test_httpconnection_ssl test_httpconnection_local test_httpconnection_buffer test_httpserver test_httplocalserver test_httpsserver
+    DEPENDS test_httpclient test_httprequestwriter test_httpresponseparser test_networkaccessmanager test_bytearrayhelpers test_httpheader test_httphandler test_httphandlerfile test_httphandlersimplerouter test_httphandlerproxy test_httpconnection_tcp test_httpconnection_ssl test_httpconnection_local test_httpconnection_buffer test_httpserver test_httplocalserver test_httpsserver test_httphelpers
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 )
 
@@ -86,11 +87,11 @@ endif()
 # Create a single test runner executable that runs all tests
 add_executable(tests tests_main.cpp)
 target_link_libraries(tests Qt6::Core)
-add_dependencies(tests 
-    test_httpclient test_httprequestwriter test_httpresponseparser 
-    test_networkaccessmanager test_bytearrayhelpers test_httpheader 
-    test_httphandler test_httphandlerfile test_httphandlersimplerouter 
-    test_httphandlerproxy test_httpconnection_tcp test_httpconnection_ssl 
-    test_httpconnection_local test_httpconnection_buffer test_httpserver 
-    test_httplocalserver test_httpsserver
+add_dependencies(tests
+    test_httpclient test_httprequestwriter test_httpresponseparser
+    test_networkaccessmanager test_bytearrayhelpers test_httpheader
+    test_httphandler test_httphandlerfile test_httphandlersimplerouter
+    test_httphandlerproxy test_httpconnection_tcp test_httpconnection_ssl
+    test_httpconnection_local test_httpconnection_buffer test_httpserver
+    test_httplocalserver test_httpsserver test_httphelpers
 )

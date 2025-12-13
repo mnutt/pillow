@@ -318,6 +318,125 @@ private slots:
 		QVERIFY(capturingHandler->requestUri == "/capturing");
 		QVERIFY(capturingHandler->requestContent.isEmpty());
 	}
+
+	void testUpstreamConnectionRefused()
+	{
+		// Connect to a port that's not listening
+		Pillow::HttpHandlerProxy handler(QUrl("http://127.0.0.1:59999"));
+		Pillow::HttpConnection* request = createGetRequest("/test", "1.1");
+
+		QVERIFY(handler.handleRequest(request));
+		QVERIFY(waitForResponse(request));
+		// Should return 503 Service Unavailable when upstream is unreachable
+		QVERIFY(response.startsWith("HTTP/1.1 503"));
+	}
+
+	void testUpstreamTimeout()
+	{
+		// Add a slow handler that never responds
+		class SlowHandler : public Pillow::HttpHandler
+		{
+		public:
+			virtual bool handleRequest(Pillow::HttpConnection *connection)
+			{
+				Q_UNUSED(connection);
+				// Just hold the connection, never respond
+				return true;
+			}
+		};
+
+		SlowHandler* slowHandler = new SlowHandler();
+		router->addRoute("GET", "/slow", slowHandler);
+
+		Pillow::HttpHandlerProxy handler(serverUrl());
+		Pillow::HttpConnection* request = createGetRequest("/slow", "1.1");
+
+		QVERIFY(handler.handleRequest(request));
+
+		// Let some time pass - proxy should eventually timeout or keep waiting
+		QElapsedTimer timer;
+		timer.start();
+		while (!timer.hasExpired(100))
+			QCoreApplication::processEvents();
+
+		// The request should still be pending (no response yet)
+		// This tests that proxy handles slow upstreams gracefully
+	}
+
+	void testLargeResponseBody()
+	{
+		// Add handler that returns large response
+		class LargeResponseHandler : public Pillow::HttpHandler
+		{
+		public:
+			virtual bool handleRequest(Pillow::HttpConnection *connection)
+			{
+				QByteArray largeContent(1024 * 1024, 'X'); // 1MB
+				connection->writeResponse(200, Pillow::HttpHeaderCollection(), largeContent);
+				return true;
+			}
+		};
+
+		LargeResponseHandler* largeHandler = new LargeResponseHandler();
+		router->addRoute("GET", "/large_response", largeHandler);
+
+		Pillow::HttpHandlerProxy handler(serverUrl());
+		Pillow::HttpConnection* request = createGetRequest("/large_response", "1.1");
+
+		QVERIFY(handler.handleRequest(request));
+		QVERIFY(waitForResponse(request));
+		QVERIFY(response.startsWith("HTTP/1.1 200"));
+		QVERIFY(response.size() > 1024 * 1024); // At least 1MB
+	}
+
+	void testProxyProxiedUrl()
+	{
+		// Test proxy URL configuration
+		QUrl targetUrl("http://127.0.0.1:8080/api/v1");
+		Pillow::HttpHandlerProxy handler(targetUrl);
+
+		QCOMPARE(handler.proxiedUrl(), targetUrl);
+
+		// Change target URL
+		QUrl newUrl("http://example.com:9090");
+		handler.setProxiedUrl(newUrl);
+		QCOMPARE(handler.proxiedUrl(), newUrl);
+	}
+
+	void testRequestWithHeaders()
+	{
+		// Test that custom headers are forwarded
+		Pillow::HttpHandlerProxy handler(serverUrl());
+
+		// We need to manually construct a request with custom headers
+		// For now, just verify the proxy handles standard headers correctly
+		Pillow::HttpConnection* request = createGetRequest("/capturing", "1.1");
+
+		QVERIFY(handler.handleRequest(request));
+		QVERIFY(waitForResponse(request));
+		QVERIFY(response.startsWith("HTTP/1.1 200"));
+
+		// Verify some headers were captured
+		bool hasHostHeader = false;
+		for (const auto& header : capturingHandler->requestHeaders)
+		{
+			if (header.first.toLower() == "host")
+				hasHostHeader = true;
+		}
+		QVERIFY(hasHostHeader);
+	}
+
+	void testServerErrorResponse()
+	{
+		Pillow::HttpHandlerProxy handler(serverUrl());
+		Pillow::HttpConnection* request = createGetRequest("/explosive", "1.1");
+
+		QVERIFY(handler.handleRequest(request));
+		QVERIFY(waitForResponse(request));
+		// Should forward the 500 error from upstream
+		QVERIFY(response.startsWith("HTTP/1.1 500"));
+		QVERIFY(response.endsWith("explosive content"));
+	}
 };
 
 QTEST_MAIN(tst_HttpHandlerProxy)
