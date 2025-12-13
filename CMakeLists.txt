@@ -5,3 +5,4 @@ project(pillow LANGUAGES C CXX)
 
 add_subdirectory(pillowcore)
 add_subdirectory(tests)
+add_subdirectory(benchmark)
