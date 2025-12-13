@@ -29,19 +29,17 @@ void HttpsServer::setPrivateKey(const QSslKey &privateKey)
 	_privateKey = privateKey;
 }
 
-void HttpsServer::incomingConnection(int socketDescriptor)
+void HttpsServer::incomingConnection(qintptr socketDescriptor)
 {
 	QSslSocket* sslSocket = new QSslSocket(this);
 	if (sslSocket->setSocketDescriptor(socketDescriptor))
 	{
 		sslSocket->setPrivateKey(privateKey());
 		sslSocket->setLocalCertificate(certificate());
-		sslSocket->startServerEncryption();
 		connect(sslSocket, SIGNAL(sslErrors(QList<QSslError>)), this, SLOT(sslSocket_sslErrors(QList<QSslError>)));
 		connect(sslSocket, SIGNAL(encrypted()), this, SLOT(sslSocket_encrypted()));
-		addPendingConnection(sslSocket);
-		nextPendingConnection();
-		createHttpConnection()->initialize(sslSocket, sslSocket);
+		sslSocket->startServerEncryption();
+		// Don't initialize the HttpConnection yet - wait for encrypted() signal
 	}
 	else
 	{
@@ -56,6 +54,13 @@ void HttpsServer::sslSocket_sslErrors(const QList<QSslError>&)
 
 void HttpsServer::sslSocket_encrypted()
 {
+	QSslSocket* sslSocket = qobject_cast<QSslSocket*>(sender());
+	if (sslSocket)
+	{
+		addPendingConnection(sslSocket);
+		nextPendingConnection();
+		createHttpConnection()->initialize(sslSocket, sslSocket);
+	}
 }
 
 #endif // !defined(PILLOW_NO_SSL) && !defined(QT_NO_SSL)

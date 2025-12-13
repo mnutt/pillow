@@ -162,7 +162,7 @@ private slots:
 					Pillow::HttpHeaderCollection()
 					<< Pillow::HttpHeader("Location", "http://example.org")
 					<< Pillow::HttpHeader("Content-Type", "some/type")
-					<< Pillow::HttpHeader("Last-Modified", Pillow::HttpProtocol::Dates::getHttpDate(QDateTime(QDate(2012, 4, 30), QTime(8, 9, 0))))
+					<< Pillow::HttpHeader("Last-Modified", Pillow::HttpProtocol::Dates::getHttpDate(QDateTime(QDate(2012, 4, 30), QTime(8, 9, 0), Qt::UTC)))
 					<< Pillow::HttpHeader("Set-Cookie", "ChocolateCookie=Very Delicious")
 					, "Hello!");
 
@@ -170,7 +170,7 @@ private slots:
 		QCOMPARE(r->readAll(), QByteArray("Hello!"));
 		QCOMPARE(r->rawHeaderPairs(), Pillow::HttpHeaderCollection()
 				 << Pillow::HttpHeader("location", "http://example.org")
-				 << Pillow::HttpHeader("last-modified", "Sun, 29 Apr 2012 23:09:00 GMT")
+				 << Pillow::HttpHeader("last-modified", "Mon, 30 Apr 2012 08:09:00 GMT")
 				 << Pillow::HttpHeader("content-length", "6")
 				 << Pillow::HttpHeader("content-type", "some/type")
 				 << Pillow::HttpHeader("set-cookie", "ChocolateCookie=Very Delicious")
@@ -179,7 +179,7 @@ private slots:
 		QCOMPARE(r->attribute(QNetworkRequest::RedirectionTargetAttribute).toUrl(), QUrl("http://example.org"));
 		QCOMPARE(r->header(QNetworkRequest::ContentTypeHeader).toByteArray(), QByteArray("some/type"));
 		QCOMPARE(r->header(QNetworkRequest::ContentLengthHeader).toInt(), 6);
-		QCOMPARE(r->header(QNetworkRequest::LastModifiedHeader).toDateTime(), QDateTime(QDate(2012, 4, 29), QTime(23, 9, 0), Qt::UTC));
+		QCOMPARE(r->header(QNetworkRequest::LastModifiedHeader).toDateTime(), QDateTime(QDate(2012, 4, 30), QTime(8, 9, 0), Qt::UTC));
 
 		QList<QNetworkCookie> cookies;
 		cookies << QNetworkCookie("ChocolateCookie", "Very Delicious");

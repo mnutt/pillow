@@ -55,16 +55,19 @@ public:
 	QSslKey key;
 
 protected:
-	virtual void incomingConnection(int socketDescriptor)
+	virtual void incomingConnection(qintptr socketDescriptor) override
 	{
 		QSslSocket* sslSocket = new QSslSocket(this);
 		if (sslSocket->setSocketDescriptor(socketDescriptor))
 		{
 			sslSocket->setPrivateKey(key);
 			sslSocket->setLocalCertificate(certificate);
-			sslSocket->startServerEncryption();
+			sslSocket->setPeerVerifyMode(QSslSocket::VerifyNone);
 			connect(sslSocket, SIGNAL(encrypted()), test, SLOT(sslSocket_encrypted()));
-			connect(sslSocket, SIGNAL(sslErrors(QList<QSslError>)), test, SLOT(sslSocket_sslErrors(QList<QSslError>)));
+			connect(sslSocket, &QSslSocket::sslErrors, sslSocket, [sslSocket](const QList<QSslError>&) {
+				sslSocket->ignoreSslErrors();
+			});
+			sslSocket->startServerEncryption();
 			addPendingConnection(sslSocket);
 		}
 		else
@@ -90,8 +93,10 @@ void HttpConnectionSslSocketTest::sslSocket_encrypted()
 {
 }
 
-void HttpConnectionSslSocketTest::sslSocket_sslErrors(const QList<QSslError>& )
+void HttpConnectionSslSocketTest::sslSocket_sslErrors(const QList<QSslError>&)
 {
+	// Ignore SSL errors for self-signed test certificates
+	if (client) client->ignoreSslErrors();
 }
 
 void HttpConnectionSslSocketTest::init()
@@ -102,6 +107,8 @@ void HttpConnectionSslSocketTest::init()
 	QFile keyFile(":/test.key"); QVERIFY(keyFile.open(QIODevice::ReadOnly));
 	QSslCertificate certificate(&certificateFile);
 	QSslKey key(&keyFile, QSsl::Rsa);
+	QVERIFY(!certificate.isNull());
+	QVERIFY(!key.isNull());
 
 	server = new SslTestServer();
 	server->test = this;
@@ -114,11 +121,21 @@ void HttpConnectionSslSocketTest::init()
 	client->setLocalCertificate(certificate);
 	client->setPrivateKey(key);
 	client->setPeerVerifyMode(QSslSocket::VerifyNone);
-	client->connectToHostEncrypted("127.0.0.1", server->serverPort());
 	connect(client, SIGNAL(encrypted()), this, SLOT(sslSocket_encrypted()));
 	connect(client, SIGNAL(sslErrors(QList<QSslError>)), this, SLOT(sslSocket_sslErrors(QList<QSslError>)));
+	client->connectToHostEncrypted("127.0.0.1", server->serverPort());
 	QVERIFY(client->waitForConnected());
-	while (!client->isEncrypted()) QCoreApplication::processEvents();
+	QCoreApplication::processEvents();  // Let server process incoming connection
+
+	// Use event loop for SSL handshake since both sides need to process
+	QElapsedTimer timer;
+	timer.start();
+	while (!client->isEncrypted() && !timer.hasExpired(5000)) {
+		QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
+		if (client->state() != QAbstractSocket::ConnectedState) {
+			break;
+		}
+	}
 	QVERIFY(client->isEncrypted());
 
 	while (connection == NULL) QCoreApplication::processEvents();

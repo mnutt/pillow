@@ -26,7 +26,7 @@ namespace Pillow
 		void sslSocket_sslErrors(const QList<QSslError>& sslErrors);
 
 	protected:
-		virtual void incomingConnection(int socketDescriptor);
+		virtual void incomingConnection(qintptr socketDescriptor) override;
 
 	public:
 		HttpsServer(QObject* parent = 0);
