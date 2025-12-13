@@ -143,6 +143,12 @@ namespace Pillow
 		QUrl url;
 		Pillow::HttpHeaderCollection headers;
 		QByteArray data;
+
+		HttpClientRequest() = default;
+		HttpClientRequest(const HttpClientRequest&) = default;
+		HttpClientRequest& operator=(const HttpClientRequest&) = default;
+		HttpClientRequest(HttpClientRequest&&) = default;
+		HttpClientRequest& operator=(HttpClientRequest&&) = default;
 	};
 
 	//

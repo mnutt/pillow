@@ -31,8 +31,10 @@ namespace Pillow
 	{
 		inline HttpHeader() : first(), second() {}
 		inline HttpHeader(const HttpHeader &other) : first(other.first), second(other.second) {}
+		inline HttpHeader(HttpHeader &&other) noexcept : first(std::move(other.first)), second(std::move(other.second)) {}
 		inline HttpHeader(const QPair<QByteArray, QByteArray> &other) : first(other.first), second(other.second) {}
 		inline HttpHeader(const QByteArray &first, const QByteArray &second) : first(first), second(second) {}
+		inline HttpHeader(QByteArray &&first, QByteArray &&second) noexcept : first(std::move(first)), second(std::move(second)) {}
 
 		// Constructors from string literals, such as: HttpHeader("Field", "Value") and HttpHeader("Field: Value").
 		template <int N, int M> inline HttpHeader(const char (&first)[N], const char (&second)[M]) : first(QByteArray(first, N - 1)), second(QByteArray(second, M - 1)) {}
@@ -40,6 +42,7 @@ namespace Pillow
 
 		inline HttpHeader &operator=(const QPair<QByteArray, QByteArray> &other) { first = other.first; second = other.second; return *this; }
 		inline HttpHeader &operator=(const HttpHeader &other) { first = other.first; second = other.second; return *this; }
+		inline HttpHeader &operator=(HttpHeader &&other) noexcept { first = std::move(other.first); second = std::move(other.second); return *this; }
 
 		//inline operator QPair<QByteArray, QByteArray>() const { return QPair<QByteArray, QByteArray>(first, second); }
 		inline operator const QPair<QByteArray, QByteArray>&() const { return *reinterpret_cast<const QPair<QByteArray, QByteArray>*>(this); }
@@ -63,9 +66,13 @@ namespace Pillow
 	class HttpHeaderCollection : public QVector<HttpHeader>
 	{
 	public:
-		//HttpHeaderCollection() : QVector<HttpHeader>() {}
-		//HttpHeaderCollection(const QVector<HttpHeader>& headers) : QVector<HttpHeader>(headers) {}
-		//HttpHeaderCollection(QVector<HttpHeader>&& headers) : QVector<HttpHeader>(std::move(headers)) {}
+		HttpHeaderCollection() = default;
+		HttpHeaderCollection(const HttpHeaderCollection&) = default;
+		HttpHeaderCollection& operator=(const HttpHeaderCollection&) = default;
+		HttpHeaderCollection(HttpHeaderCollection&&) = default;
+		HttpHeaderCollection& operator=(HttpHeaderCollection&&) = default;
+		HttpHeaderCollection(const QVector<HttpHeader>& headers) : QVector<HttpHeader>(headers) {}
+		HttpHeaderCollection(QVector<HttpHeader>&& headers) : QVector<HttpHeader>(std::move(headers)) {}
 
 		// Get the value of the first header with the specified field name.
 		// The field name is case insensitive.

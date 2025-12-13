@@ -407,7 +407,7 @@ QByteArray Pillow::HttpClient::redirectionLocation() const
 
 QByteArray Pillow::HttpClient::consumeContent()
 {
-	QByteArray c = _content;
+	QByteArray c = std::move(_content);
 	_content = QByteArray();
 
 	if (responsePending() && _device->bytesAvailable())
