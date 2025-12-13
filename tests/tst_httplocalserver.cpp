@@ -7,116 +7,116 @@
 
 class HttpLocalServerTest : public HttpServerTestBase
 {
-	Q_OBJECT
-	
+    Q_OBJECT
+
 private slots: // Test slots.
-	void init() { HttpServerTestBase::init(); }
-	void cleanup() { HttpServerTestBase::cleanup(); }
-	
-	void testInit() { HttpServerTestBase::testInit(); }
-	void testHandlesConnectionsAsRequests() { HttpServerTestBase::testHandlesConnectionsAsRequests(); }
-	void testHandlesConcurrentConnections() { HttpServerTestBase::testHandlesConcurrentConnections(); }
-	void testReusesRequests() { HttpServerTestBase::testReusesRequests(); }
-	void testDestroysRequests() { HttpServerTestBase::testDestroysRequests(); }
+    void init() { HttpServerTestBase::init(); }
+    void cleanup() { HttpServerTestBase::cleanup(); }
 
-	// Additional HttpLocalServer-specific tests
-	void testServerProperties()
-	{
-		Pillow::HttpLocalServer* localServer = static_cast<Pillow::HttpLocalServer*>(server);
-		QVERIFY(localServer->isListening());
-		QCOMPARE(localServer->serverName(), QString("Pillow_HttpLocalServerTest"));
-	}
+    void testInit() { HttpServerTestBase::testInit(); }
+    void testHandlesConnectionsAsRequests() { HttpServerTestBase::testHandlesConnectionsAsRequests(); }
+    void testHandlesConcurrentConnections() { HttpServerTestBase::testHandlesConcurrentConnections(); }
+    void testReusesRequests() { HttpServerTestBase::testReusesRequests(); }
+    void testDestroysRequests() { HttpServerTestBase::testDestroysRequests(); }
 
-	void testDefaultConstructor()
-	{
-		Pillow::HttpLocalServer defaultServer;
-		QVERIFY(!defaultServer.isListening());
-		QVERIFY(defaultServer.listen("Pillow_TestDefaultServer"));
-		QVERIFY(defaultServer.isListening());
-		QCOMPARE(defaultServer.serverName(), QString("Pillow_TestDefaultServer"));
-		defaultServer.close();
-		QVERIFY(!defaultServer.isListening());
-	}
+    // Additional HttpLocalServer-specific tests
+    void testServerProperties()
+    {
+        Pillow::HttpLocalServer* localServer = static_cast<Pillow::HttpLocalServer*>(server);
+        QVERIFY(localServer->isListening());
+        QCOMPARE(localServer->serverName(), QString("Pillow_HttpLocalServerTest"));
+    }
 
-	void testMultipleRequestsSameSocket()
-	{
-		QLocalSocket* client = new QLocalSocket();
-		client->connectToServer("Pillow_HttpLocalServerTest");
-		QVERIFY(client->waitForConnected(1000));
+    void testDefaultConstructor()
+    {
+        Pillow::HttpLocalServer defaultServer;
+        QVERIFY(!defaultServer.isListening());
+        QVERIFY(defaultServer.listen("Pillow_TestDefaultServer"));
+        QVERIFY(defaultServer.isListening());
+        QCOMPARE(defaultServer.serverName(), QString("Pillow_TestDefaultServer"));
+        defaultServer.close();
+        QVERIFY(!defaultServer.isListening());
+    }
 
-		// First request
-		client->write("GET /first HTTP/1.1\r\nHost: localhost\r\n\r\n");
-		client->flush();
+    void testMultipleRequestsSameSocket()
+    {
+        QLocalSocket* client = new QLocalSocket();
+        client->connectToServer("Pillow_HttpLocalServerTest");
+        QVERIFY(client->waitForConnected(1000));
 
-		while (handledRequests.isEmpty())
-			QCoreApplication::processEvents();
+        // First request
+        client->write("GET /first HTTP/1.1\r\nHost: localhost\r\n\r\n");
+        client->flush();
 
-		handledRequests.last()->writeResponse(200, Pillow::HttpHeaderCollection(), "first");
+        while (handledRequests.isEmpty())
+            QCoreApplication::processEvents();
 
-		while (client->bytesAvailable() == 0)
-			QCoreApplication::processEvents();
-		QByteArray response1 = client->readAll();
-		QVERIFY(response1.contains("first"));
+        handledRequests.last()->writeResponse(200, Pillow::HttpHeaderCollection(), "first");
 
-		// Second request on same socket
-		client->write("GET /second HTTP/1.1\r\nHost: localhost\r\n\r\n");
-		client->flush();
+        while (client->bytesAvailable() == 0)
+            QCoreApplication::processEvents();
+        QByteArray response1 = client->readAll();
+        QVERIFY(response1.contains("first"));
 
-		while (handledRequests.size() < 2)
-			QCoreApplication::processEvents();
+        // Second request on same socket
+        client->write("GET /second HTTP/1.1\r\nHost: localhost\r\n\r\n");
+        client->flush();
 
-		handledRequests.last()->writeResponse(200, Pillow::HttpHeaderCollection(), "second");
+        while (handledRequests.size() < 2)
+            QCoreApplication::processEvents();
 
-		while (client->bytesAvailable() == 0)
-			QCoreApplication::processEvents();
-		QByteArray response2 = client->readAll();
-		QVERIFY(response2.contains("second"));
+        handledRequests.last()->writeResponse(200, Pillow::HttpHeaderCollection(), "second");
 
-		delete client;
-	}
+        while (client->bytesAvailable() == 0)
+            QCoreApplication::processEvents();
+        QByteArray response2 = client->readAll();
+        QVERIFY(response2.contains("second"));
 
-	void testServerSignals()
-	{
-		QSignalSpy requestReadySpy(server, SIGNAL(requestReady(Pillow::HttpConnection*)));
+        delete client;
+    }
 
-		QLocalSocket* client = new QLocalSocket();
-		client->connectToServer("Pillow_HttpLocalServerTest");
-		QVERIFY(client->waitForConnected(1000));
+    void testServerSignals()
+    {
+        QSignalSpy requestReadySpy(server, SIGNAL(requestReady(Pillow::HttpConnection*)));
 
-		client->write("GET / HTTP/1.0\r\n\r\n");
-		client->flush();
+        QLocalSocket* client = new QLocalSocket();
+        client->connectToServer("Pillow_HttpLocalServerTest");
+        QVERIFY(client->waitForConnected(1000));
 
-		while (requestReadySpy.isEmpty())
-			QCoreApplication::processEvents();
+        client->write("GET / HTTP/1.0\r\n\r\n");
+        client->flush();
 
-		QCOMPARE(requestReadySpy.size(), 1);
-		QVERIFY(requestReadySpy.at(0).at(0).value<Pillow::HttpConnection*>() != nullptr);
+        while (requestReadySpy.isEmpty())
+            QCoreApplication::processEvents();
 
-		delete client;
-	}
+        QCOMPARE(requestReadySpy.size(), 1);
+        QVERIFY(requestReadySpy.at(0).at(0).value<Pillow::HttpConnection*>() != nullptr);
+
+        delete client;
+    }
 
 protected:
-	virtual QObject* createServer();
-	virtual QIODevice* createClientConnection();
+    virtual QObject* createServer();
+    virtual QIODevice* createClientConnection();
 };
 
 QObject* HttpLocalServerTest::createServer()
 {
-	return new Pillow::HttpLocalServer("Pillow_HttpLocalServerTest");
+    return new Pillow::HttpLocalServer("Pillow_HttpLocalServerTest");
 }
 
-QIODevice * HttpLocalServerTest::createClientConnection()
+QIODevice* HttpLocalServerTest::createClientConnection()
 {
-	QSignalSpy spy(server, SIGNAL(newConnection()));
-	QLocalSocket* socket = new QLocalSocket(server);
-	socket->connectToServer("Pillow_HttpLocalServerTest");
-	while (spy.isEmpty() && socket->error() == QLocalSocket::UnknownSocketError)
-		QCoreApplication::processEvents();
+    QSignalSpy spy(server, SIGNAL(newConnection()));
+    QLocalSocket* socket = new QLocalSocket(server);
+    socket->connectToServer("Pillow_HttpLocalServerTest");
+    while (spy.isEmpty() && socket->error() == QLocalSocket::UnknownSocketError)
+        QCoreApplication::processEvents();
 
-	if (socket->error() != QLocalSocket::UnknownSocketError)
-		qDebug() << "Unexpected QLocalSocket error:" << socket->errorString();
+    if (socket->error() != QLocalSocket::UnknownSocketError)
+        qDebug() << "Unexpected QLocalSocket error:" << socket->errorString();
 
-	return socket;
+    return socket;
 }
 
 QTEST_MAIN(HttpLocalServerTest)

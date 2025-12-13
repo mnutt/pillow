@@ -8,151 +8,155 @@
 // Pillow::HttpHandlerProxy
 //
 
-Pillow::HttpHandlerProxy::HttpHandlerProxy(QObject *parent)
-	: Pillow::HttpHandler(parent)
+Pillow::HttpHandlerProxy::HttpHandlerProxy(QObject* parent) : Pillow::HttpHandler(parent)
 {
-	_networkAccessManager = new ElasticNetworkAccessManager(this);
+    _networkAccessManager = new ElasticNetworkAccessManager(this);
 }
 
-Pillow::HttpHandlerProxy::HttpHandlerProxy(const QUrl& proxiedUrl, QObject *parent)
-	: Pillow::HttpHandler(parent), _proxiedUrl(proxiedUrl)
+Pillow::HttpHandlerProxy::HttpHandlerProxy(const QUrl& proxiedUrl, QObject* parent) : Pillow::HttpHandler(parent), _proxiedUrl(proxiedUrl)
 {
-	_networkAccessManager = new ElasticNetworkAccessManager(this);
+    _networkAccessManager = new ElasticNetworkAccessManager(this);
 }
 
-void Pillow::HttpHandlerProxy::setProxiedUrl(const QUrl &proxiedUrl)
+void Pillow::HttpHandlerProxy::setProxiedUrl(const QUrl& proxiedUrl)
 {
-	if (_proxiedUrl == proxiedUrl) return;
-	_proxiedUrl = proxiedUrl;
+    if (_proxiedUrl == proxiedUrl)
+        return;
+    _proxiedUrl = proxiedUrl;
 }
 
-bool Pillow::HttpHandlerProxy::handleRequest(Pillow::HttpConnection *request)
+bool Pillow::HttpHandlerProxy::handleRequest(Pillow::HttpConnection* request)
 {
-	if (_proxiedUrl.isEmpty()) return false;
+    if (_proxiedUrl.isEmpty())
+        return false;
 
-	QUrl targetUrl = _proxiedUrl;
-	targetUrl.setPath(request->requestPath());
-	if (!request->requestQueryString().isEmpty()) targetUrl.setQuery(request->requestQueryString());
-	if (!request->requestFragment().isEmpty()) targetUrl.setFragment(request->requestFragment());
+    QUrl targetUrl = _proxiedUrl;
+    targetUrl.setPath(request->requestPath());
+    if (!request->requestQueryString().isEmpty())
+        targetUrl.setQuery(request->requestQueryString());
+    if (!request->requestFragment().isEmpty())
+        targetUrl.setFragment(request->requestFragment());
 
-	QNetworkRequest proxiedRequest(targetUrl);
-	for (const Pillow::HttpHeader& header : request->requestHeaders())
-		proxiedRequest.setRawHeader(header.first, header.second);
+    QNetworkRequest proxiedRequest(targetUrl);
+    for (const Pillow::HttpHeader& header : request->requestHeaders())
+        proxiedRequest.setRawHeader(header.first, header.second);
 
-	createPipe(request, createProxiedReply(request, proxiedRequest));
+    createPipe(request, createProxiedReply(request, proxiedRequest));
 
-	return true;
+    return true;
 }
 
-QNetworkReply * Pillow::HttpHandlerProxy::createProxiedReply(Pillow::HttpConnection *request, QNetworkRequest proxiedRequest)
+QNetworkReply* Pillow::HttpHandlerProxy::createProxiedReply(Pillow::HttpConnection* request, QNetworkRequest proxiedRequest)
 {
-	QBuffer* requestContentBuffer = nullptr;
-	if (request->requestContent().size() > 0)
-	{
-		requestContentBuffer = new QBuffer(&(const_cast<QByteArray&>(request->requestContent())));
-		requestContentBuffer->open(QIODevice::ReadOnly);
-	}
+    QBuffer* requestContentBuffer = nullptr;
+    if (request->requestContent().size() > 0)
+    {
+        requestContentBuffer = new QBuffer(&(const_cast<QByteArray&>(request->requestContent())));
+        requestContentBuffer->open(QIODevice::ReadOnly);
+    }
 
-	QNetworkReply* proxiedReply = _networkAccessManager->sendCustomRequest(proxiedRequest, request->requestMethod(), requestContentBuffer);
+    QNetworkReply* proxiedReply = _networkAccessManager->sendCustomRequest(proxiedRequest, request->requestMethod(), requestContentBuffer);
 
-	if (requestContentBuffer) requestContentBuffer->setParent(proxiedReply);
+    if (requestContentBuffer)
+        requestContentBuffer->setParent(proxiedReply);
 
-	return proxiedReply;
+    return proxiedReply;
 }
 
-Pillow::HttpHandlerProxyPipe * Pillow::HttpHandlerProxy::createPipe(Pillow::HttpConnection *request, QNetworkReply* proxiedReply)
+Pillow::HttpHandlerProxyPipe* Pillow::HttpHandlerProxy::createPipe(Pillow::HttpConnection* request, QNetworkReply* proxiedReply)
 {
-	return new Pillow::HttpHandlerProxyPipe(request, proxiedReply);
+    return new Pillow::HttpHandlerProxyPipe(request, proxiedReply);
 }
 
 //
 // Pillow::HttpHandlerProxyPipe
 //
 
-Pillow::HttpHandlerProxyPipe::HttpHandlerProxyPipe(Pillow::HttpConnection *request, QNetworkReply *proxiedReply)
-	: _request(request), _proxiedReply(proxiedReply), _headersSent(false), _broken(false)
+Pillow::HttpHandlerProxyPipe::HttpHandlerProxyPipe(Pillow::HttpConnection* request, QNetworkReply* proxiedReply)
+    : _request(request), _proxiedReply(proxiedReply), _headersSent(false), _broken(false)
 {
-	// Make sure we stop piping data if the client request finishes early or the proxied request sends too much.
-	connect(request, &HttpConnection::requestCompleted, this, &HttpHandlerProxyPipe::teardown);
-	connect(request, &HttpConnection::closed, this, &HttpHandlerProxyPipe::teardown);
-	connect(request, &QObject::destroyed, this, &HttpHandlerProxyPipe::teardown);
-	connect(proxiedReply, &QIODevice::readyRead, this, &HttpHandlerProxyPipe::proxiedReply_readyRead);
-	connect(proxiedReply, &QNetworkReply::finished, this, &HttpHandlerProxyPipe::proxiedReply_finished);
-	connect(proxiedReply, &QObject::destroyed, this, &HttpHandlerProxyPipe::teardown);
+    // Make sure we stop piping data if the client request finishes early or the proxied request sends too much.
+    connect(request, &HttpConnection::requestCompleted, this, &HttpHandlerProxyPipe::teardown);
+    connect(request, &HttpConnection::closed, this, &HttpHandlerProxyPipe::teardown);
+    connect(request, &QObject::destroyed, this, &HttpHandlerProxyPipe::teardown);
+    connect(proxiedReply, &QIODevice::readyRead, this, &HttpHandlerProxyPipe::proxiedReply_readyRead);
+    connect(proxiedReply, &QNetworkReply::finished, this, &HttpHandlerProxyPipe::proxiedReply_finished);
+    connect(proxiedReply, &QObject::destroyed, this, &HttpHandlerProxyPipe::teardown);
 }
 
-Pillow::HttpHandlerProxyPipe::~HttpHandlerProxyPipe()
-{
-}
+Pillow::HttpHandlerProxyPipe::~HttpHandlerProxyPipe() {}
 
 void Pillow::HttpHandlerProxyPipe::teardown()
 {
-	_broken = true;
+    _broken = true;
 
-	if (_request)
-	{
-		disconnect(_request, nullptr, this, nullptr);
-		_request = nullptr;
-	}
+    if (_request)
+    {
+        disconnect(_request, nullptr, this, nullptr);
+        _request = nullptr;
+    }
 
-	if (_proxiedReply)
-	{
-		disconnect(_proxiedReply, nullptr, this, nullptr);
-		if (qobject_cast<QNetworkReply*>(_proxiedReply))
-			_proxiedReply->deleteLater();
-		_proxiedReply = nullptr;
-	}
+    if (_proxiedReply)
+    {
+        disconnect(_proxiedReply, nullptr, this, nullptr);
+        if (qobject_cast<QNetworkReply*>(_proxiedReply))
+            _proxiedReply->deleteLater();
+        _proxiedReply = nullptr;
+    }
 
-	deleteLater();
+    deleteLater();
 }
-
 
 void Pillow::HttpHandlerProxyPipe::sendHeaders()
 {
-	if (_headersSent || _broken) return;
-	_headersSent = true;
+    if (_headersSent || _broken)
+        return;
+    _headersSent = true;
 
-	// Headers have not been sent yet. Do so now.
-	int statusCode = _proxiedReply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
-	QList<QPair<QByteArray, QByteArray> > headerList = _proxiedReply->rawHeaderPairs();
-	Pillow::HttpHeaderCollection headers; headers.reserve(headerList.size());
-	for (int i = 0, iE = headerList.size(); i < iE; ++i)
-		headers << headerList.at(i);
-	_request->writeHeaders(statusCode, headers);
+    // Headers have not been sent yet. Do so now.
+    int statusCode = _proxiedReply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+    QList<QPair<QByteArray, QByteArray>> headerList = _proxiedReply->rawHeaderPairs();
+    Pillow::HttpHeaderCollection headers;
+    headers.reserve(headerList.size());
+    for (int i = 0, iE = headerList.size(); i < iE; ++i)
+        headers << headerList.at(i);
+    _request->writeHeaders(statusCode, headers);
 }
 
-void Pillow::HttpHandlerProxyPipe::pump(const QByteArray &data)
+void Pillow::HttpHandlerProxyPipe::pump(const QByteArray& data)
 {
-	if (_request) _request->writeContent(data);
+    if (_request)
+        _request->writeContent(data);
 }
 
 void Pillow::HttpHandlerProxyPipe::proxiedReply_readyRead()
 {
-	sendHeaders();
-	if (!_broken) pump(_proxiedReply->readAll());
+    sendHeaders();
+    if (!_broken)
+        pump(_proxiedReply->readAll());
 }
 
 void Pillow::HttpHandlerProxyPipe::proxiedReply_finished()
 {
-	if (_proxiedReply->error() == QNetworkReply::NoError)
-	{
-		sendHeaders(); // Make sure headers have been sent; can cause the pipe to tear down.
+    if (_proxiedReply->error() == QNetworkReply::NoError)
+    {
+        sendHeaders(); // Make sure headers have been sent; can cause the pipe to tear down.
 
-		if (!_broken && _request->state() == Pillow::HttpConnection::SendingContent)
-		{
-			// The client request will still be in this state if the content-length was not specified. We must
-			// close the connection to indicate the end of the content stream.
-			_request->close();
-		}
-	}
-	else
-	{
-		if (!_broken && _request->state() == Pillow::HttpConnection::SendingHeaders)
-		{
-			// Finishing before sending headers means that we have a network or transport error. Let the client know about this.
-			_request->writeResponse(503);
-		}
-	}
+        if (!_broken && _request->state() == Pillow::HttpConnection::SendingContent)
+        {
+            // The client request will still be in this state if the content-length was not specified. We must
+            // close the connection to indicate the end of the content stream.
+            _request->close();
+        }
+    }
+    else
+    {
+        if (!_broken && _request->state() == Pillow::HttpConnection::SendingHeaders)
+        {
+            // Finishing before sending headers means that we have a network or transport error. Let the client know about this.
+            _request->writeResponse(503);
+        }
+    }
 }
 
 //
@@ -162,48 +166,46 @@ void Pillow::HttpHandlerProxyPipe::proxiedReply_finished()
 class NamOpener : public QNetworkAccessManager
 {
 public:
-	inline QNetworkReply* doCreateRequest(Operation op, const QNetworkRequest &request, QIODevice *outgoingData)
-	{
-		return QNetworkAccessManager::createRequest(op, request, outgoingData);
-	}
+    inline QNetworkReply* doCreateRequest(Operation op, const QNetworkRequest& request, QIODevice* outgoingData)
+    {
+        return QNetworkAccessManager::createRequest(op, request, outgoingData);
+    }
 };
 
-Pillow::ElasticNetworkAccessManager::ElasticNetworkAccessManager(QObject *parent)
-	: QNetworkAccessManager(parent)
-{
-}
+Pillow::ElasticNetworkAccessManager::ElasticNetworkAccessManager(QObject* parent) : QNetworkAccessManager(parent) {}
 
 Pillow::ElasticNetworkAccessManager::~ElasticNetworkAccessManager()
 {
-	if (cookieJar())
-		cookieJar()->setParent(this);
+    if (cookieJar())
+        cookieJar()->setParent(this);
 }
 
-QNetworkReply * Pillow::ElasticNetworkAccessManager::createRequest(QNetworkAccessManager::Operation op, const QNetworkRequest &request, QIODevice *outgoingData)
+QNetworkReply* Pillow::ElasticNetworkAccessManager::createRequest(QNetworkAccessManager::Operation op, const QNetworkRequest& request,
+                                                                  QIODevice* outgoingData)
 {
-	// Find the first available child QNetworkAccessManager.
-	QNetworkAccessManager* nam = nullptr;
-	for (QObject* child : children())
-	{
-		if ((nam = qobject_cast<QNetworkAccessManager*>(child)))
-		{
-			if (nam->children().size() < 6)
-				break; // Found an available one.
-			else
-				nam = nullptr; // This one is not available.
-		}
-	}
+    // Find the first available child QNetworkAccessManager.
+    QNetworkAccessManager* nam = nullptr;
+    for (QObject* child : children())
+    {
+        if ((nam = qobject_cast<QNetworkAccessManager*>(child)))
+        {
+            if (nam->children().size() < 6)
+                break; // Found an available one.
+            else
+                nam = nullptr; // This one is not available.
+        }
+    }
 
-	if (nam == nullptr)
-	{
-		// Did not find an available manager. Spawn a new one.
-		nam = new QNetworkAccessManager(this);
-		if (cookieJar())
-		{
-			nam->setCookieJar(cookieJar());
-			cookieJar()->setParent(0);
-		}
-	}
+    if (nam == nullptr)
+    {
+        // Did not find an available manager. Spawn a new one.
+        nam = new QNetworkAccessManager(this);
+        if (cookieJar())
+        {
+            nam->setCookieJar(cookieJar());
+            cookieJar()->setParent(0);
+        }
+    }
 
-	return static_cast<NamOpener*>(nam)->doCreateRequest(op, request, outgoingData);
+    return static_cast<NamOpener*>(nam)->doCreateRequest(op, request, outgoingData);
 }

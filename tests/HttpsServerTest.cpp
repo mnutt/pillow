@@ -10,48 +10,47 @@
 
 static QSslCertificate sslCertificate()
 {
-	static QSslCertificate certificate;
-	if (certificate.isNull())
-	{
-		QFile file(":/test.crt");
-		if (file.open(QIODevice::ReadOnly))
-			certificate = QSslCertificate(&file);
-		else
-			qWarning() << "Failed to open SSL certificate file 'test.crt'";
-	}
-	return certificate;
+    static QSslCertificate certificate;
+    if (certificate.isNull())
+    {
+        QFile file(":/test.crt");
+        if (file.open(QIODevice::ReadOnly))
+            certificate = QSslCertificate(&file);
+        else
+            qWarning() << "Failed to open SSL certificate file 'test.crt'";
+    }
+    return certificate;
 }
 
 static QSslKey sslPrivateKey()
 {
-	static QSslKey key;
-	if (key.isNull())
-	{
-		QFile file(":/test.key");
-		if (file.open(QIODevice::ReadOnly))
-			key = QSslKey(&file, QSsl::Rsa);
-		else
-			qWarning() << "Failed to open SSL key file 'test.key'";
-	}
-	return key;
+    static QSslKey key;
+    if (key.isNull())
+    {
+        QFile file(":/test.key");
+        if (file.open(QIODevice::ReadOnly))
+            key = QSslKey(&file, QSsl::Rsa);
+        else
+            qWarning() << "Failed to open SSL key file 'test.key'";
+    }
+    return key;
 }
 
 QObject* HttpsServerTest::createServer()
 {
-	return new Pillow::HttpsServer(sslCertificate(), sslPrivateKey(), QHostAddress::Any, 4588);
+    return new Pillow::HttpsServer(sslCertificate(), sslPrivateKey(), QHostAddress::Any, 4588);
 }
 
-QIODevice * HttpsServerTest::createClientConnection()
+QIODevice* HttpsServerTest::createClientConnection()
 {
-	QSslSocket* socket = new QSslSocket(server);
-	socket->setLocalCertificate(sslCertificate());
-	socket->setPrivateKey(sslPrivateKey());
-	socket->setPeerVerifyMode(QSslSocket::VerifyNone);
-	socket->connectToHostEncrypted("127.0.0.1", 4588);
-	while (socket->state() != QAbstractSocket::ConnectedState || !socket->isEncrypted())
-		QCoreApplication::processEvents();
-	return socket;
+    QSslSocket* socket = new QSslSocket(server);
+    socket->setLocalCertificate(sslCertificate());
+    socket->setPrivateKey(sslPrivateKey());
+    socket->setPeerVerifyMode(QSslSocket::VerifyNone);
+    socket->connectToHostEncrypted("127.0.0.1", 4588);
+    while (socket->state() != QAbstractSocket::ConnectedState || !socket->isEncrypted())
+        QCoreApplication::processEvents();
+    return socket;
 }
 
 #endif // !defined(PILLOW_NO_SSL) && !defined(QT_NO_SSL)
-

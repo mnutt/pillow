@@ -1,5 +1,4 @@
-#ifndef _PILLOW_HTTPHELPERS_H_
-#define _PILLOW_HTTPHELPERS_H_
+#pragma once
 
 #ifndef QSTRING_H
 #include <QString>
@@ -13,24 +12,22 @@
 
 namespace Pillow
 {
-	namespace HttpMimeHelper
-	{
-		const char* getMimeTypeForFilename(const QString& filename);
-	}
+    namespace HttpMimeHelper
+    {
+        const char* getMimeTypeForFilename(const QString& filename);
+    }
 
-	namespace HttpProtocol
-	{
-		namespace StatusCodes
-		{
-			const char* getStatusCodeAndMessage(int statusCode);
-			const char* getStatusMessage(int statusCode);
-		}
+    namespace HttpProtocol
+    {
+        namespace StatusCodes
+        {
+            const char* getStatusCodeAndMessage(int statusCode);
+            const char* getStatusMessage(int statusCode);
+        } // namespace StatusCodes
 
-		namespace Dates
-		{
-			QByteArray getHttpDate(const QDateTime& dateTime = QDateTime::currentDateTime());
-		}
-	}
-}
-
-#endif // _PILLOW_HTTPHELPERS_H_
+        namespace Dates
+        {
+            QByteArray getHttpDate(const QDateTime& dateTime = QDateTime::currentDateTime());
+        }
+    } // namespace HttpProtocol
+} // namespace Pillow

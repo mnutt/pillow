@@ -1,5 +1,4 @@
-#ifndef HTTPSSERVERTEST_H
-#define HTTPSSERVERTEST_H
+#pragma once
 
 #include "HttpServerTest.h"
 
@@ -7,21 +6,21 @@
 
 class HttpsServerTest : public HttpServerTestBase
 {
-	Q_OBJECT
+    Q_OBJECT
 
 private slots: // Test slots.
-	void init() { HttpServerTestBase::init(); }
-	void cleanup() { HttpServerTestBase::cleanup(); }
+    void init() { HttpServerTestBase::init(); }
+    void cleanup() { HttpServerTestBase::cleanup(); }
 
-	void testInit() { HttpServerTestBase::testInit(); }
-	void testHandlesConnectionsAsRequests() { HttpServerTestBase::testHandlesConnectionsAsRequests(); }
-	void testHandlesConcurrentConnections() { HttpServerTestBase::testHandlesConcurrentConnections(); }
+    void testInit() { HttpServerTestBase::testInit(); }
+    void testHandlesConnectionsAsRequests() { HttpServerTestBase::testHandlesConnectionsAsRequests(); }
+    void testHandlesConcurrentConnections() { HttpServerTestBase::testHandlesConcurrentConnections(); }
     void testReusesRequests() { HttpServerTestBase::testReusesRequests(); }
-	void testDestroysRequests() { HttpServerTestBase::testDestroysRequests(); }
+    void testDestroysRequests() { HttpServerTestBase::testDestroysRequests(); }
 
 protected:
-	virtual QObject* createServer();
-	virtual QIODevice* createClientConnection();
+    virtual QObject* createServer();
+    virtual QIODevice* createClientConnection();
 };
 
 #else
@@ -30,9 +29,7 @@ protected:
 
 class HttpsServerTest : public QObject
 {
-	Q_OBJECT
+    Q_OBJECT
 };
 
 #endif // !defined(PILLOW_NO_SSL) && !defined(QT_NO_SSL)
-
-#endif // HTTPSSERVERTEST_H

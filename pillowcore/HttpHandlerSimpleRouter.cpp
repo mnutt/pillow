@@ -11,300 +11,311 @@ static const QString methodToken("_method");
 
 namespace Pillow
 {
-	struct Route
-	{
-		QByteArray method;
-		QRegularExpression regExp;
-		QStringList paramNames;
+    struct Route
+    {
+        QByteArray method;
+        QRegularExpression regExp;
+        QStringList paramNames;
 
-		virtual ~Route() {}
-		virtual bool invoke(Pillow::HttpConnection* request) = 0;
-	};
+        virtual ~Route() {}
+        virtual bool invoke(Pillow::HttpConnection* request) = 0;
+    };
 
-	struct HandlerRoute : public Route
-	{
-		QPointer<Pillow::HttpHandler> handler;
+    struct HandlerRoute : public Route
+    {
+        QPointer<Pillow::HttpHandler> handler;
 
-		virtual bool invoke(Pillow::HttpConnection *request)
-		{
-			if (!handler) return false;
-			return handler->handleRequest(request);
-		}
-	};
+        virtual bool invoke(Pillow::HttpConnection* request)
+        {
+            if (!handler)
+                return false;
+            return handler->handleRequest(request);
+        }
+    };
 
-	struct QObjectMetaCallRoute : public Route
-	{
-		QPointer<QObject> object;
-		QByteArray member;
+    struct QObjectMetaCallRoute : public Route
+    {
+        QPointer<QObject> object;
+        QByteArray member;
 
-		virtual bool invoke(Pillow::HttpConnection *request)
-		{
-			if (!object) return false;
-			return QMetaObject::invokeMethod(object, member.constData(), Q_ARG(Pillow::HttpConnection*, request));
-		}
-	};
+        virtual bool invoke(Pillow::HttpConnection* request)
+        {
+            if (!object)
+                return false;
+            return QMetaObject::invokeMethod(object, member.constData(), Q_ARG(Pillow::HttpConnection*, request));
+        }
+    };
 
-	struct QObjectMethodCallRoute : public Route
-	{
-		QPointer<QObject> object;
-		QMetaMethod metaMethod;
+    struct QObjectMethodCallRoute : public Route
+    {
+        QPointer<QObject> object;
+        QMetaMethod metaMethod;
 
-		virtual bool invoke(Pillow::HttpConnection *request)
-		{
-			if (!object) return false;
-			return metaMethod.invoke(object, Q_ARG(Pillow::HttpConnection*, request));
-		}
-	};
+        virtual bool invoke(Pillow::HttpConnection* request)
+        {
+            if (!object)
+                return false;
+            return metaMethod.invoke(object, Q_ARG(Pillow::HttpConnection*, request));
+        }
+    };
 
 #ifdef Q_COMPILER_LAMBDA
-	struct FunctorCallRoute : public Route
-	{
-		std::function<void(Pillow::HttpConnection*)> func;
+    struct FunctorCallRoute : public Route
+    {
+        std::function<void(Pillow::HttpConnection*)> func;
 
-		virtual bool invoke(Pillow::HttpConnection *request)
-		{
-			func(request);
-			return true;
-		}
-	};
+        virtual bool invoke(Pillow::HttpConnection* request)
+        {
+            func(request);
+            return true;
+        }
+    };
 #endif // Q_COMPILER_LAMBDA
 
-	struct StaticRoute : public Route
-	{
-		int statusCode;
-		Pillow::HttpHeaderCollection headers;
-		QByteArray content;
+    struct StaticRoute : public Route
+    {
+        int statusCode;
+        Pillow::HttpHeaderCollection headers;
+        QByteArray content;
 
-		virtual bool invoke(Pillow::HttpConnection *request)
-		{
-			request->writeResponse(statusCode, headers, content);
-			return true;
-		}
-	};
+        virtual bool invoke(Pillow::HttpConnection* request)
+        {
+            request->writeResponse(statusCode, headers, content);
+            return true;
+        }
+    };
 
-	//
-	// HttpHandlerSimpleRouterPrivate
-	//
+    //
+    // HttpHandlerSimpleRouterPrivate
+    //
 
-	class HttpHandlerSimpleRouterPrivate
-	{
-	public:
-		QList<Route*> routes;
-		HttpHandlerSimpleRouter::RoutingErrorAction methodMismatchAction;
-		HttpHandlerSimpleRouter::RoutingErrorAction unmatchedRequestAction;
-		bool acceptMethodParam;
-	};
-}
+    class HttpHandlerSimpleRouterPrivate
+    {
+    public:
+        QList<Route*> routes;
+        HttpHandlerSimpleRouter::RoutingErrorAction methodMismatchAction;
+        HttpHandlerSimpleRouter::RoutingErrorAction unmatchedRequestAction;
+        bool acceptMethodParam;
+    };
+} // namespace Pillow
 
 //
 // HttpHandlerSimpleRouter
 //
 
 HttpHandlerSimpleRouter::HttpHandlerSimpleRouter(QObject* parent /* = 0 */)
-	: Pillow::HttpHandler(parent), d_ptr(new HttpHandlerSimpleRouterPrivate)
+    : Pillow::HttpHandler(parent), d_ptr(new HttpHandlerSimpleRouterPrivate)
 {
-	d_ptr->methodMismatchAction = Passthrough;
-	d_ptr->unmatchedRequestAction = Passthrough;
-	d_ptr->acceptMethodParam = false;
+    d_ptr->methodMismatchAction = Passthrough;
+    d_ptr->unmatchedRequestAction = Passthrough;
+    d_ptr->acceptMethodParam = false;
 }
 
 HttpHandlerSimpleRouter::~HttpHandlerSimpleRouter()
 {
-	for (Route* route : std::as_const(d_ptr->routes))
-		delete route;
-	delete d_ptr;
+    for (Route* route : std::as_const(d_ptr->routes))
+        delete route;
+    delete d_ptr;
 }
 
-void HttpHandlerSimpleRouter::addRoute(const QByteArray& method, const QString &path, Pillow::HttpHandler *handler)
+void HttpHandlerSimpleRouter::addRoute(const QByteArray& method, const QString& path, Pillow::HttpHandler* handler)
 {
-	HandlerRoute* route = new HandlerRoute();
-	route->method = method;
-	route->regExp = pathToRegExp(path, &route->paramNames);
-	route->handler = handler;
-	d_ptr->routes.append(route);
+    HandlerRoute* route = new HandlerRoute();
+    route->method = method;
+    route->regExp = pathToRegExp(path, &route->paramNames);
+    route->handler = handler;
+    d_ptr->routes.append(route);
 }
 
 void HttpHandlerSimpleRouter::addRoute(const QByteArray& method, const QString& path, QObject* object, const char* member)
 {
-	if (object == nullptr)
-	{
-		qWarning() << "HttpHandlerSimpleRouter::addRoute: null target object specified while adding route for" << path << "- not adding route";
-		return;
-	}
-	else if (member == nullptr || member[0] == 0)
-	{
-		qWarning() << "HttpHandlerSimpleRouter::addRoute: null or empty member specified while adding route for" << path << "- not adding route";
-		return;
-	}
+    if (object == nullptr)
+    {
+        qWarning() << "HttpHandlerSimpleRouter::addRoute: null target object specified while adding route for" << path
+                   << "- not adding route";
+        return;
+    }
+    else if (member == nullptr || member[0] == 0)
+    {
+        qWarning() << "HttpHandlerSimpleRouter::addRoute: null or empty member specified while adding route for" << path
+                   << "- not adding route";
+        return;
+    }
 
-	if (member[0] == '1')
-	{
-		// This is a slot name produced with the SLOT() macro, skip the leading id.
-		member++;
-	}
-	int methodIndex = object->metaObject()->indexOfSlot(member);
-	if (methodIndex == -1) object->metaObject()->indexOfMethod(member);
+    if (member[0] == '1')
+    {
+        // This is a slot name produced with the SLOT() macro, skip the leading id.
+        member++;
+    }
+    int methodIndex = object->metaObject()->indexOfSlot(member);
+    if (methodIndex == -1)
+        object->metaObject()->indexOfMethod(member);
 
-	if (methodIndex == -1)
-	{
-		// Not a normalised method name. Still give a chance and invoke the member by name.
-		QObjectMetaCallRoute* route = new QObjectMetaCallRoute();
-		route->method = method;
-		route->regExp = pathToRegExp(path, &route->paramNames);
-		route->object = object;
-		route->member = member;
-		d_ptr->routes.append(route);
-	}
-	else
-	{
-		QObjectMethodCallRoute* route = new QObjectMethodCallRoute();
-		route->method = method;
-		route->regExp = pathToRegExp(path, &route->paramNames);
-		route->object = object;
-		route->metaMethod = object->metaObject()->method(methodIndex);
-		d_ptr->routes.append(route);
-	}
+    if (methodIndex == -1)
+    {
+        // Not a normalised method name. Still give a chance and invoke the member by name.
+        QObjectMetaCallRoute* route = new QObjectMetaCallRoute();
+        route->method = method;
+        route->regExp = pathToRegExp(path, &route->paramNames);
+        route->object = object;
+        route->member = member;
+        d_ptr->routes.append(route);
+    }
+    else
+    {
+        QObjectMethodCallRoute* route = new QObjectMethodCallRoute();
+        route->method = method;
+        route->regExp = pathToRegExp(path, &route->paramNames);
+        route->object = object;
+        route->metaMethod = object->metaObject()->method(methodIndex);
+        d_ptr->routes.append(route);
+    }
 }
 
-void HttpHandlerSimpleRouter::addRoute(const QByteArray& method, const QString& path, int statusCode, const Pillow::HttpHeaderCollection& headers, const QByteArray& content /*= QByteArray()*/)
+void HttpHandlerSimpleRouter::addRoute(const QByteArray& method, const QString& path, int statusCode,
+                                       const Pillow::HttpHeaderCollection& headers, const QByteArray& content /*= QByteArray()*/)
 {
-	StaticRoute* route = new StaticRoute();
-	route->method = method;
-	route->regExp = pathToRegExp(path, &route->paramNames);
-	route->statusCode = statusCode;
-	route->headers = headers;
-	route->content = content;
-	d_ptr->routes.append(route);
+    StaticRoute* route = new StaticRoute();
+    route->method = method;
+    route->regExp = pathToRegExp(path, &route->paramNames);
+    route->statusCode = statusCode;
+    route->headers = headers;
+    route->content = content;
+    d_ptr->routes.append(route);
 }
 
 #ifdef Q_COMPILER_LAMBDA
-void HttpHandlerSimpleRouter::addRoute(const QByteArray &method, const QString &path, const std::function<void(HttpConnection *)> &func)
+void HttpHandlerSimpleRouter::addRoute(const QByteArray& method, const QString& path, const std::function<void(HttpConnection*)>& func)
 {
-	FunctorCallRoute* route = new FunctorCallRoute();
-	route->method = method;
-	route->regExp = pathToRegExp(path, &route->paramNames);
-	route->func = func;
-	d_ptr->routes.append(route);
+    FunctorCallRoute* route = new FunctorCallRoute();
+    route->method = method;
+    route->regExp = pathToRegExp(path, &route->paramNames);
+    route->func = func;
+    d_ptr->routes.append(route);
 }
 #endif // Q_COMPILER_LAMBDA
 
-QRegularExpression Pillow::HttpHandlerSimpleRouter::pathToRegExp(const QString &p, QStringList* outParamNames)
+QRegularExpression Pillow::HttpHandlerSimpleRouter::pathToRegExp(const QString& p, QStringList* outParamNames)
 {
-	QString path = p;
+    QString path = p;
 
-	QRegularExpression paramRegex(":(\\w+)"); QString paramReplacement("([\\w_-]+)");
-	QStringList paramNames;
-	
-	// Find all parameter matches using globalMatch
-	QRegularExpressionMatchIterator paramIterator = paramRegex.globalMatch(path);
-	while (paramIterator.hasNext()) {
-		QRegularExpressionMatch paramMatch = paramIterator.next();
-		paramNames.append(paramMatch.captured(1));
-	}
+    QRegularExpression paramRegex(":(\\w+)");
+    QString paramReplacement("([\\w_-]+)");
+    QStringList paramNames;
 
-	path.replace(paramRegex, paramReplacement);
+    // Find all parameter matches using globalMatch
+    QRegularExpressionMatchIterator paramIterator = paramRegex.globalMatch(path);
+    while (paramIterator.hasNext())
+    {
+        QRegularExpressionMatch paramMatch = paramIterator.next();
+        paramNames.append(paramMatch.captured(1));
+    }
 
-	QRegularExpression splatRegex("\\*(\\w+)"); QString splatReplacement("(.*)");
-	
-	// Find all splat matches using globalMatch
-	QRegularExpressionMatchIterator splatIterator = splatRegex.globalMatch(path);
-	while (splatIterator.hasNext()) {
-		QRegularExpressionMatch splatMatch = splatIterator.next();
-		paramNames.append(splatMatch.captured(1));
-	}
+    path.replace(paramRegex, paramReplacement);
 
-	path.replace(splatRegex, splatReplacement);
+    QRegularExpression splatRegex("\\*(\\w+)");
+    QString splatReplacement("(.*)");
 
-	if (outParamNames)
-		*outParamNames = paramNames;
+    // Find all splat matches using globalMatch
+    QRegularExpressionMatchIterator splatIterator = splatRegex.globalMatch(path);
+    while (splatIterator.hasNext())
+    {
+        QRegularExpressionMatch splatMatch = splatIterator.next();
+        paramNames.append(splatMatch.captured(1));
+    }
 
-	path = "^" + path + "$";
-	return QRegularExpression(path);
+    path.replace(splatRegex, splatReplacement);
+
+    if (outParamNames)
+        *outParamNames = paramNames;
+
+    path = "^" + path + "$";
+    return QRegularExpression(path);
 }
 
-bool HttpHandlerSimpleRouter::handleRequest(Pillow::HttpConnection *request)
+bool HttpHandlerSimpleRouter::handleRequest(Pillow::HttpConnection* request)
 {
-	QVarLengthArray<Route*, 16> matchedRoutes;
+    QVarLengthArray<Route*, 16> matchedRoutes;
 
-	QByteArray requestMethod = request->requestMethod();
-	if (d_ptr->acceptMethodParam)
-	{
-		QString methodParam = request->requestParamValue(methodToken);
-		if (!methodParam.isEmpty())
-			requestMethod = methodParam.toLatin1();
-	}
+    QByteArray requestMethod = request->requestMethod();
+    if (d_ptr->acceptMethodParam)
+    {
+        QString methodParam = request->requestParamValue(methodToken);
+        if (!methodParam.isEmpty())
+            requestMethod = methodParam.toLatin1();
+    }
 
-	QString requestPath = QUrl::fromPercentEncoding(request->requestPath());
+    QString requestPath = QUrl::fromPercentEncoding(request->requestPath());
 
-	for (Route* route : std::as_const(d_ptr->routes))
-	{
-		QRegularExpressionMatch match = route->regExp.match(requestPath);
-		if (match.hasMatch())
-		{
-			matchedRoutes.append(route);
-			if (route->method.isEmpty() ||
-				(route->method.size() == requestMethod.size() && qstricmp(route->method, requestMethod) == 0))
-			{
-				for (int i = 0, iE = route->paramNames.size(); i < iE; ++i)
-					request->setRequestParam(route->paramNames.at(i), match.captured(i + 1));
-				route->invoke(request);
-				return true;
-			}
-		}
-	}
+    for (Route* route : std::as_const(d_ptr->routes))
+    {
+        QRegularExpressionMatch match = route->regExp.match(requestPath);
+        if (match.hasMatch())
+        {
+            matchedRoutes.append(route);
+            if (route->method.isEmpty() || (route->method.size() == requestMethod.size() && qstricmp(route->method, requestMethod) == 0))
+            {
+                for (int i = 0, iE = route->paramNames.size(); i < iE; ++i)
+                    request->setRequestParam(route->paramNames.at(i), match.captured(i + 1));
+                route->invoke(request);
+                return true;
+            }
+        }
+    }
 
-	if (matchedRoutes.isEmpty())
-	{
-		if (unmatchedRequestAction() == Return4xxResponse)
-		{
-			request->writeResponse(404);
-			return true;
-		}
-	}
-	else
-	{
-		if (methodMismatchAction() == Return4xxResponse)
-		{
-			QByteArray allowedMethods;
-			for (int i = 0, iE = matchedRoutes.size(); i < iE; ++i)
-			{
-				if (i > 0) allowedMethods.append(", ");
-				allowedMethods.append(matchedRoutes.at(i)->method);
-			}
-			request->writeResponse(405, HttpHeaderCollection() << HttpHeader("Allow", allowedMethods));
-			return true;
-		}
-	}
+    if (matchedRoutes.isEmpty())
+    {
+        if (unmatchedRequestAction() == Return4xxResponse)
+        {
+            request->writeResponse(404);
+            return true;
+        }
+    }
+    else
+    {
+        if (methodMismatchAction() == Return4xxResponse)
+        {
+            QByteArray allowedMethods;
+            for (int i = 0, iE = matchedRoutes.size(); i < iE; ++i)
+            {
+                if (i > 0)
+                    allowedMethods.append(", ");
+                allowedMethods.append(matchedRoutes.at(i)->method);
+            }
+            request->writeResponse(405, HttpHeaderCollection() << HttpHeader("Allow", allowedMethods));
+            return true;
+        }
+    }
 
-	return false;
+    return false;
 }
 
 Pillow::HttpHandlerSimpleRouter::RoutingErrorAction Pillow::HttpHandlerSimpleRouter::unmatchedRequestAction() const
 {
-	return d_ptr->unmatchedRequestAction;
+    return d_ptr->unmatchedRequestAction;
 }
 
 void Pillow::HttpHandlerSimpleRouter::setUnmatchedRequestAction(Pillow::HttpHandlerSimpleRouter::RoutingErrorAction action)
 {
-	d_ptr->unmatchedRequestAction = action;
+    d_ptr->unmatchedRequestAction = action;
 }
 
 Pillow::HttpHandlerSimpleRouter::RoutingErrorAction Pillow::HttpHandlerSimpleRouter::methodMismatchAction() const
 {
-	return d_ptr->methodMismatchAction;
+    return d_ptr->methodMismatchAction;
 }
 
 void Pillow::HttpHandlerSimpleRouter::setMethodMismatchAction(Pillow::HttpHandlerSimpleRouter::RoutingErrorAction action)
 {
-	d_ptr->methodMismatchAction = action;
+    d_ptr->methodMismatchAction = action;
 }
 
 bool Pillow::HttpHandlerSimpleRouter::acceptsMethodParam() const
 {
-	return d_ptr->acceptMethodParam;
+    return d_ptr->acceptMethodParam;
 }
 
 void Pillow::HttpHandlerSimpleRouter::setAcceptsMethodParam(bool accept)
 {
-	d_ptr->acceptMethodParam = accept;
+    d_ptr->acceptMethodParam = accept;
 }

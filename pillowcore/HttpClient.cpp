@@ -13,732 +13,738 @@
 
 namespace Pillow
 {
-	namespace HttpClientTokens
-	{
-		const QByteArray getMethodToken("GET");
-		const QByteArray headMethodToken("HEAD");
-		const QByteArray postMethodToken("POST");
-		const QByteArray putMethodToken("PUT");
-		const QByteArray deleteMethodToken("DELETE");
-		const QByteArray crlfToken("\r\n");
-		const QByteArray colonSpaceToken(": ");
-		const QByteArray httpOneOneCrlfToken(" HTTP/1.1\r\n");
-		const QByteArray contentLengthColonSpaceToken("Content-Length: ");
-		const QByteArray hostToken("Host");
-	}
+    namespace HttpClientTokens
+    {
+        const QByteArray getMethodToken("GET");
+        const QByteArray headMethodToken("HEAD");
+        const QByteArray postMethodToken("POST");
+        const QByteArray putMethodToken("PUT");
+        const QByteArray deleteMethodToken("DELETE");
+        const QByteArray crlfToken("\r\n");
+        const QByteArray colonSpaceToken(": ");
+        const QByteArray httpOneOneCrlfToken(" HTTP/1.1\r\n");
+        const QByteArray contentLengthColonSpaceToken("Content-Length: ");
+        const QByteArray hostToken("Host");
+    } // namespace HttpClientTokens
 
-	class ContentTransformer
-	{
-	public:
-		virtual ~ContentTransformer() {}
-		virtual QByteArray transform(const char *data, int length) = 0;
-	};
+    class ContentTransformer
+    {
+    public:
+        virtual ~ContentTransformer() {}
+        virtual QByteArray transform(const char* data, int length) = 0;
+    };
 
-	class GunzipContentTransformer : public ContentTransformer
-	{
-	public:
-		GunzipContentTransformer(): _streamBad(false)
-		{
-			memset(&_inflateStream, 0, sizeof(z_stream));
-			inflateInit2(&_inflateStream, 31);
-		}
+    class GunzipContentTransformer : public ContentTransformer
+    {
+    public:
+        GunzipContentTransformer() : _streamBad(false)
+        {
+            memset(&_inflateStream, 0, sizeof(z_stream));
+            inflateInit2(&_inflateStream, 31);
+        }
 
-		~GunzipContentTransformer()
-		{
-			inflateEnd(&_inflateStream);
-		}
+        ~GunzipContentTransformer() { inflateEnd(&_inflateStream); }
 
-		QByteArray transform(const char *data, int length)
-		{
-			unsigned char buffer[32 * 1024];
+        QByteArray transform(const char* data, int length)
+        {
+            unsigned char buffer[32 * 1024];
             if (_inflatedBuffer.isDetached())
                 _inflatedBuffer.resize(0);
             else
                 _inflatedBuffer.clear();
 
-			_inflateStream.next_in = const_cast<unsigned char*>(reinterpret_cast<const unsigned char*>(data));
-			_inflateStream.avail_in = length;
+            _inflateStream.next_in = const_cast<unsigned char*>(reinterpret_cast<const unsigned char*>(data));
+            _inflateStream.avail_in = length;
 
-			do
-			{
-				_inflateStream.next_out = buffer;
-				_inflateStream.avail_out = sizeof(buffer);
+            do
+            {
+                _inflateStream.next_out = buffer;
+                _inflateStream.avail_out = sizeof(buffer);
 
-				if (_streamBad || inflate(&_inflateStream, Z_NO_FLUSH) < 0) // Less than 0 is error.
-				{
-					qWarning("Pillow::GunzipContentTransformer::transform: error inflating input stream passing original content through.");
-					_streamBad = true;
-					break;
-				}
+                if (_streamBad || inflate(&_inflateStream, Z_NO_FLUSH) < 0) // Less than 0 is error.
+                {
+                    qWarning("Pillow::GunzipContentTransformer::transform: error inflating input stream passing original content through.");
+                    _streamBad = true;
+                    break;
+                }
 
-				_inflatedBuffer.append(reinterpret_cast<const char*>(buffer), sizeof(buffer) - _inflateStream.avail_out);
-			}
-			while (_inflateStream.avail_in > 0 && _inflateStream.avail_out == 0);
+                _inflatedBuffer.append(reinterpret_cast<const char*>(buffer), sizeof(buffer) - _inflateStream.avail_out);
+            }
+            while (_inflateStream.avail_in > 0 && _inflateStream.avail_out == 0);
 
-			if (_streamBad)
-			{
+            if (_streamBad)
+            {
                 if (_inflatedBuffer.isDetached())
                     _inflatedBuffer.resize(0);
                 else
                     _inflatedBuffer.clear();
                 _inflatedBuffer.append(data, length);
-			}
+            }
 
-			return _inflatedBuffer;
-		}
+            return _inflatedBuffer;
+        }
 
-	private:
-		z_stream _inflateStream;
-		QByteArray _inflatedBuffer;
-		bool _streamBad;
-	};
-}
+    private:
+        z_stream _inflateStream;
+        QByteArray _inflatedBuffer;
+        bool _streamBad;
+    };
+} // namespace Pillow
 
 //
 // Pillow::HttpRequestWriter
 //
 
-Pillow::HttpRequestWriter::HttpRequestWriter()
-	: _device(0)
+Pillow::HttpRequestWriter::HttpRequestWriter() : _device(0) {}
+
+void Pillow::HttpRequestWriter::get(const QByteArray& path, const Pillow::HttpHeaderCollection& headers)
 {
+    write(Pillow::HttpClientTokens::getMethodToken, path, headers);
 }
 
-void Pillow::HttpRequestWriter::get(const QByteArray &path, const Pillow::HttpHeaderCollection &headers)
+void Pillow::HttpRequestWriter::head(const QByteArray& path, const Pillow::HttpHeaderCollection& headers)
 {
-	write(Pillow::HttpClientTokens::getMethodToken, path, headers);
+    write(Pillow::HttpClientTokens::headMethodToken, path, headers);
 }
 
-void Pillow::HttpRequestWriter::head(const QByteArray &path, const Pillow::HttpHeaderCollection &headers)
+void Pillow::HttpRequestWriter::post(const QByteArray& path, const Pillow::HttpHeaderCollection& headers, const QByteArray& data)
 {
-	write(Pillow::HttpClientTokens::headMethodToken, path, headers);
+    write(Pillow::HttpClientTokens::postMethodToken, path, headers, data);
 }
 
-void Pillow::HttpRequestWriter::post(const QByteArray &path, const Pillow::HttpHeaderCollection &headers, const QByteArray &data)
+void Pillow::HttpRequestWriter::put(const QByteArray& path, const Pillow::HttpHeaderCollection& headers, const QByteArray& data)
 {
-	write(Pillow::HttpClientTokens::postMethodToken, path, headers, data);
+    write(Pillow::HttpClientTokens::putMethodToken, path, headers, data);
 }
 
-void Pillow::HttpRequestWriter::put(const QByteArray &path, const Pillow::HttpHeaderCollection &headers, const QByteArray &data)
+void Pillow::HttpRequestWriter::deleteResource(const QByteArray& path, const Pillow::HttpHeaderCollection& headers)
 {
-	write(Pillow::HttpClientTokens::putMethodToken, path, headers, data);
+    write(Pillow::HttpClientTokens::deleteMethodToken, path, headers);
 }
 
-void Pillow::HttpRequestWriter::deleteResource(const QByteArray &path, const Pillow::HttpHeaderCollection &headers)
+void Pillow::HttpRequestWriter::write(const QByteArray& method, const QByteArray& path, const Pillow::HttpHeaderCollection& headers,
+                                      const QByteArray& data)
 {
-	write(Pillow::HttpClientTokens::deleteMethodToken, path, headers);
+    if (_device == 0)
+    {
+        qWarning() << "Pillow::HttpRequestWriter::write: called while device is not set. Not proceeding.";
+        return;
+    }
+
+    if (_builder.capacity() < 8192)
+        _builder.reserve(8192);
+
+    _builder.append(method).append(' ').append(path).append(Pillow::HttpClientTokens::httpOneOneCrlfToken);
+
+    for (const Pillow::HttpHeader& header : headers)
+        _builder.append(header.first)
+            .append(Pillow::HttpClientTokens::colonSpaceToken)
+            .append(header.second)
+            .append(Pillow::HttpClientTokens::crlfToken);
+
+    if (!data.isEmpty())
+    {
+        _builder.append(Pillow::HttpClientTokens::contentLengthColonSpaceToken);
+        Pillow::ByteArrayHelpers::appendNumber<int, 10>(_builder, data.size());
+        _builder.append(Pillow::HttpClientTokens::crlfToken);
+    }
+
+    _builder.append(Pillow::HttpClientTokens::crlfToken);
+
+    if (data.isEmpty())
+    {
+        _device->write(_builder);
+    }
+    else
+    {
+        if (data.size() < 4096)
+        {
+            _builder.append(data);
+            _device->write(_builder);
+        }
+        else
+        {
+            _device->write(_builder);
+            _device->write(data);
+        }
+    }
+
+    if (_builder.size() > 16384)
+        _builder.clear();
+    else
+        _builder.resize(0);
 }
 
-void Pillow::HttpRequestWriter::write(const QByteArray &method, const QByteArray &path, const Pillow::HttpHeaderCollection &headers, const QByteArray &data)
+void Pillow::HttpRequestWriter::setDevice(QIODevice* device)
 {
-	if (_device == 0)
-	{
-		qWarning() << "Pillow::HttpRequestWriter::write: called while device is not set. Not proceeding.";
-		return;
-	}
-
-	if (_builder.capacity() < 8192)
-		_builder.reserve(8192);
-
-	_builder.append(method).append(' ').append(path).append(Pillow::HttpClientTokens::httpOneOneCrlfToken);
-
-	for (const Pillow::HttpHeader &header : headers)
-		_builder.append(header.first).append(Pillow::HttpClientTokens::colonSpaceToken).append(header.second).append(Pillow::HttpClientTokens::crlfToken);
-
-	if (!data.isEmpty())
-	{
-		_builder.append(Pillow::HttpClientTokens::contentLengthColonSpaceToken);
-		Pillow::ByteArrayHelpers::appendNumber<int, 10>(_builder, data.size());
-		_builder.append(Pillow::HttpClientTokens::crlfToken);
-	}
-
-	_builder.append(Pillow::HttpClientTokens::crlfToken);
-
-	if (data.isEmpty())
-	{
-		_device->write(_builder);
-	}
-	else
-	{
-		if (data.size() < 4096)
-		{
-			_builder.append(data);
-			_device->write(_builder);
-		}
-		else
-		{
-			_device->write(_builder);
-			_device->write(data);
-		}
-	}
-
-	if (_builder.size() > 16384)
-		_builder.clear();
-	else
-		_builder.resize(0);
-}
-
-void Pillow::HttpRequestWriter::setDevice(QIODevice *device)
-{
-	if (_device == device) return;
-	_device = device;
+    if (_device == device)
+        return;
+    _device = device;
 }
 
 //
 // Pillow::HttpResponseParser
 //
 
-Pillow::HttpResponseParser::HttpResponseParser()
-	: _lastWasValue(false), _parsing(false)
+Pillow::HttpResponseParser::HttpResponseParser() : _lastWasValue(false), _parsing(false)
 {
-	parser.data = this;
-	parser_settings.on_message_begin = parser_on_message_begin;
-	parser_settings.on_header_field = parser_on_header_field;
-	parser_settings.on_header_value = parser_on_header_value;
-	parser_settings.on_headers_complete = parser_on_headers_complete;
-	parser_settings.on_body = parser_on_body;
-	parser_settings.on_message_complete = parser_on_message_complete;
-	clear();
+    parser.data = this;
+    parser_settings.on_message_begin = parser_on_message_begin;
+    parser_settings.on_header_field = parser_on_header_field;
+    parser_settings.on_header_value = parser_on_header_value;
+    parser_settings.on_headers_complete = parser_on_headers_complete;
+    parser_settings.on_body = parser_on_body;
+    parser_settings.on_message_complete = parser_on_message_complete;
+    clear();
 }
 
-Pillow::HttpResponseParser::~HttpResponseParser()
+Pillow::HttpResponseParser::~HttpResponseParser() {}
+
+int Pillow::HttpResponseParser::inject(const char* data, int length)
 {
-}
+    if (_parsing)
+    {
+        qWarning() << "Pillow::HttpResponseParser::inject: called while parser is parsing. Not proceeding.";
+        return 0;
+    }
 
-int Pillow::HttpResponseParser::inject(const char *data, int length)
-{
-	if (_parsing)
-	{
-		qWarning() << "Pillow::HttpResponseParser::inject: called while parser is parsing. Not proceeding.";
-		return 0;
-	}
+    _parsing = true;
+    size_t consumed = http_parser_execute(&parser, &parser_settings, data, length);
+    if (parser.http_errno == HPE_PAUSED)
+        parser.http_errno = HPE_OK; // Unpause the parser that got paused upon completing the message.
+    _parsing = false;
 
-	_parsing = true;
-	size_t consumed = http_parser_execute(&parser, &parser_settings, data, length);
-	if (parser.http_errno == HPE_PAUSED) parser.http_errno = HPE_OK; // Unpause the parser that got paused upon completing the message.
-	_parsing = false;
-
-	return static_cast<int>(consumed);
+    return static_cast<int>(consumed);
 }
 
 void Pillow::HttpResponseParser::injectEof()
 {
-	if (_parsing)
-	{
-		qWarning() << "Pillow::HttpResponseParser::injectEof: called while parser is parsing. Not proceeding.";
-		return;
-	}
+    if (_parsing)
+    {
+        qWarning() << "Pillow::HttpResponseParser::injectEof: called while parser is parsing. Not proceeding.";
+        return;
+    }
 
-	_parsing = true;
-	http_parser_execute(&parser, &parser_settings, 0, 0);
-	if (parser.http_errno == HPE_PAUSED) parser.http_errno = HPE_OK; // Unpause the parser that got paused upon completing the message.
-	_parsing = false;
+    _parsing = true;
+    http_parser_execute(&parser, &parser_settings, 0, 0);
+    if (parser.http_errno == HPE_PAUSED)
+        parser.http_errno = HPE_OK; // Unpause the parser that got paused upon completing the message.
+    _parsing = false;
 }
 
 void Pillow::HttpResponseParser::clear()
 {
-	http_parser_init(&parser, HTTP_RESPONSE);
-	while (!_headers.isEmpty()) _headers.pop_back();
-	_content.clear();
+    http_parser_init(&parser, HTTP_RESPONSE);
+    while (!_headers.isEmpty())
+        _headers.pop_back();
+    _content.clear();
 
-	if (_parsing) pause(); // clear() got called from a callback. gracefully recover by pausing the parser.
+    if (_parsing)
+        pause(); // clear() got called from a callback. gracefully recover by pausing the parser.
 }
 
 QByteArray Pillow::HttpResponseParser::errorString() const
 {
-	const char* desc = http_errno_description(HTTP_PARSER_ERRNO(&parser));
-	return QByteArray::fromRawData(desc, qstrlen(desc));
+    const char* desc = http_errno_description(HTTP_PARSER_ERRNO(&parser));
+    return QByteArray::fromRawData(desc, qstrlen(desc));
 }
 
 void Pillow::HttpResponseParser::messageBegin()
 {
-	while (!_headers.isEmpty()) _headers.pop_back();
-	_content.clear();
-	_lastWasValue = false;
+    while (!_headers.isEmpty())
+        _headers.pop_back();
+    _content.clear();
+    _lastWasValue = false;
 }
 
-void Pillow::HttpResponseParser::headersComplete()
+void Pillow::HttpResponseParser::headersComplete() {}
+
+void Pillow::HttpResponseParser::messageContent(const char* data, int length)
 {
+    _content.append(data, length);
 }
 
-void Pillow::HttpResponseParser::messageContent(const char *data, int length)
-{
-	_content.append(data, length);
-}
-
-void Pillow::HttpResponseParser::messageComplete()
-{
-}
+void Pillow::HttpResponseParser::messageComplete() {}
 
 void Pillow::HttpResponseParser::pause()
 {
-	http_parser_pause(&parser, 1);
+    http_parser_pause(&parser, 1);
 }
 
-int Pillow::HttpResponseParser::parser_on_message_begin(http_parser *parser)
+int Pillow::HttpResponseParser::parser_on_message_begin(http_parser* parser)
 {
-	Pillow::HttpResponseParser* self = reinterpret_cast<Pillow::HttpResponseParser*>(parser->data);
-	self->messageBegin();
-	return 0;
+    Pillow::HttpResponseParser* self = reinterpret_cast<Pillow::HttpResponseParser*>(parser->data);
+    self->messageBegin();
+    return 0;
 }
 
-int Pillow::HttpResponseParser::parser_on_header_field(http_parser *parser, const char *at, size_t length)
+int Pillow::HttpResponseParser::parser_on_header_field(http_parser* parser, const char* at, size_t length)
 {
-	Pillow::HttpResponseParser* self = reinterpret_cast<Pillow::HttpResponseParser*>(parser->data);
-	self->pushHeader();
-	self->_field.append(at, static_cast<int>(length));
-	return 0;
+    Pillow::HttpResponseParser* self = reinterpret_cast<Pillow::HttpResponseParser*>(parser->data);
+    self->pushHeader();
+    self->_field.append(at, static_cast<int>(length));
+    return 0;
 }
 
-int Pillow::HttpResponseParser::parser_on_header_value(http_parser *parser, const char *at, size_t length)
+int Pillow::HttpResponseParser::parser_on_header_value(http_parser* parser, const char* at, size_t length)
 {
-	Pillow::HttpResponseParser* self = reinterpret_cast<Pillow::HttpResponseParser*>(parser->data);
-	self->_value.append(at, static_cast<int>(length));
-	self->_lastWasValue = true;
-	return 0;
+    Pillow::HttpResponseParser* self = reinterpret_cast<Pillow::HttpResponseParser*>(parser->data);
+    self->_value.append(at, static_cast<int>(length));
+    self->_lastWasValue = true;
+    return 0;
 }
 
-int Pillow::HttpResponseParser::parser_on_headers_complete(http_parser *parser)
+int Pillow::HttpResponseParser::parser_on_headers_complete(http_parser* parser)
 {
-	Pillow::HttpResponseParser* self = reinterpret_cast<Pillow::HttpResponseParser*>(parser->data);
-	self->pushHeader();
-	self->headersComplete();
-	return 0;
+    Pillow::HttpResponseParser* self = reinterpret_cast<Pillow::HttpResponseParser*>(parser->data);
+    self->pushHeader();
+    self->headersComplete();
+    return 0;
 }
 
-int Pillow::HttpResponseParser::parser_on_body(http_parser *parser, const char *at, size_t length)
+int Pillow::HttpResponseParser::parser_on_body(http_parser* parser, const char* at, size_t length)
 {
-	Pillow::HttpResponseParser* self = reinterpret_cast<Pillow::HttpResponseParser*>(parser->data);
-	self->messageContent(at, static_cast<int>(length));
-	return 0;
+    Pillow::HttpResponseParser* self = reinterpret_cast<Pillow::HttpResponseParser*>(parser->data);
+    self->messageContent(at, static_cast<int>(length));
+    return 0;
 }
 
-int Pillow::HttpResponseParser::parser_on_message_complete(http_parser *parser)
+int Pillow::HttpResponseParser::parser_on_message_complete(http_parser* parser)
 {
-	Pillow::HttpResponseParser* self = reinterpret_cast<Pillow::HttpResponseParser*>(parser->data);
-	self->messageComplete();
+    Pillow::HttpResponseParser* self = reinterpret_cast<Pillow::HttpResponseParser*>(parser->data);
+    self->messageComplete();
 
-	// Pause the parser to avoid parsing the next message (if there is another one in the buffer).
-	http_parser_pause(parser, 1);
+    // Pause the parser to avoid parsing the next message (if there is another one in the buffer).
+    http_parser_pause(parser, 1);
 
-	return 0;
+    return 0;
 }
 
 inline void Pillow::HttpResponseParser::pushHeader()
 {
-	if (_lastWasValue)
-	{
-		_headers << Pillow::HttpHeader(_field, _value);
-		_field.clear();
-		_value.clear();
-		_lastWasValue = false;
-	}
+    if (_lastWasValue)
+    {
+        _headers << Pillow::HttpHeader(_field, _value);
+        _field.clear();
+        _value.clear();
+        _lastWasValue = false;
+    }
 }
 
 //
 // Pillow::HttpClient
 //
 
-Pillow::HttpClient::HttpClient(QObject *parent)
-	: QObject(parent), _responsePending(false), _error(NoError), _keepAliveTimeout(-1), _contentDecoder(0)
+Pillow::HttpClient::HttpClient(QObject* parent)
+    : QObject(parent), _responsePending(false), _error(NoError), _keepAliveTimeout(-1), _contentDecoder(0)
 {
-	_device = new QTcpSocket(this);
-	connect(_device, &QAbstractSocket::errorOccurred, this, &HttpClient::device_error);
-	connect(_device, &QAbstractSocket::connected, this, &HttpClient::device_connected);
-	connect(_device, &QIODevice::readyRead, this, &HttpClient::device_readyRead);
-	_requestWriter.setDevice(_device);
-	_keepAliveTimeoutTimer.invalidate();
+    _device = new QTcpSocket(this);
+    connect(_device, &QAbstractSocket::errorOccurred, this, &HttpClient::device_error);
+    connect(_device, &QAbstractSocket::connected, this, &HttpClient::device_connected);
+    connect(_device, &QIODevice::readyRead, this, &HttpClient::device_readyRead);
+    _requestWriter.setDevice(_device);
+    _keepAliveTimeoutTimer.invalidate();
 }
 
 int Pillow::HttpClient::keepAliveTimeout() const
 {
-	return _keepAliveTimeout;
+    return _keepAliveTimeout;
 }
 
 void Pillow::HttpClient::setKeepAliveTimeout(int timeout)
 {
-	_keepAliveTimeout = timeout;
+    _keepAliveTimeout = timeout;
 }
 
 qint64 Pillow::HttpClient::readBufferSize() const
 {
-	return _device->readBufferSize();
+    return _device->readBufferSize();
 }
 
 void Pillow::HttpClient::setReadBufferSize(qint64 size)
 {
-	_device->setReadBufferSize(size);
+    _device->setReadBufferSize(size);
 }
 
 bool Pillow::HttpClient::responsePending() const
 {
-	return _responsePending;
+    return _responsePending;
 }
 
 Pillow::HttpClient::Error Pillow::HttpClient::error() const
 {
-	return _error;
+    return _error;
 }
 
 bool Pillow::HttpClient::redirected() const
 {
-	switch (statusCode())
-	{
-	case 300: // Multiple Choices
-	case 301: // Moved Permanently
-	case 302: // Found
-	case 303: // See Other
-	case 307: // Temporary Redirect
-		return true;
+    switch (statusCode())
+    {
+    case 300: // Multiple Choices
+    case 301: // Moved Permanently
+    case 302: // Found
+    case 303: // See Other
+    case 307: // Temporary Redirect
+        return true;
 
-	default:
-		return false;
-	}
+    default:
+        return false;
+    }
 }
 
 QByteArray Pillow::HttpClient::redirectionLocation() const
 {
-	for (const Pillow::HttpHeader &header : headers())
-	{
-		if (Pillow::ByteArrayHelpers::asciiEqualsCaseInsensitive(header.first, Pillow::LowerCaseToken("location")))
-			return header.second;
-	}
-	return QByteArray();
+    for (const Pillow::HttpHeader& header : headers())
+    {
+        if (Pillow::ByteArrayHelpers::asciiEqualsCaseInsensitive(header.first, Pillow::LowerCaseToken("location")))
+            return header.second;
+    }
+    return QByteArray();
 }
 
 QByteArray Pillow::HttpClient::consumeContent()
 {
-	QByteArray c = std::move(_content);
-	_content = QByteArray();
+    QByteArray c = std::move(_content);
+    _content = QByteArray();
 
-	if (responsePending() && _device->bytesAvailable())
-		QTimer::singleShot(0, this, &HttpClient::device_readyRead);
+    if (responsePending() && _device->bytesAvailable())
+        QTimer::singleShot(0, this, &HttpClient::device_readyRead);
 
-	return c;
+    return c;
 }
 
-void Pillow::HttpClient::get(const QUrl &url, const Pillow::HttpHeaderCollection &headers)
+void Pillow::HttpClient::get(const QUrl& url, const Pillow::HttpHeaderCollection& headers)
 {
-	request(Pillow::HttpClientTokens::getMethodToken, url, headers);
+    request(Pillow::HttpClientTokens::getMethodToken, url, headers);
 }
 
-void Pillow::HttpClient::head(const QUrl &url, const Pillow::HttpHeaderCollection &headers)
+void Pillow::HttpClient::head(const QUrl& url, const Pillow::HttpHeaderCollection& headers)
 {
-	request(Pillow::HttpClientTokens::headMethodToken, url, headers);
+    request(Pillow::HttpClientTokens::headMethodToken, url, headers);
 }
 
-void Pillow::HttpClient::post(const QUrl &url, const Pillow::HttpHeaderCollection &headers, const QByteArray &data)
+void Pillow::HttpClient::post(const QUrl& url, const Pillow::HttpHeaderCollection& headers, const QByteArray& data)
 {
-	request(Pillow::HttpClientTokens::postMethodToken, url, headers, data);
+    request(Pillow::HttpClientTokens::postMethodToken, url, headers, data);
 }
 
-void Pillow::HttpClient::put(const QUrl &url, const Pillow::HttpHeaderCollection &headers, const QByteArray &data)
+void Pillow::HttpClient::put(const QUrl& url, const Pillow::HttpHeaderCollection& headers, const QByteArray& data)
 {
-	request(Pillow::HttpClientTokens::putMethodToken, url, headers, data);
+    request(Pillow::HttpClientTokens::putMethodToken, url, headers, data);
 }
 
-void Pillow::HttpClient::deleteResource(const QUrl &url, const Pillow::HttpHeaderCollection &headers)
+void Pillow::HttpClient::deleteResource(const QUrl& url, const Pillow::HttpHeaderCollection& headers)
 {
-	request(Pillow::HttpClientTokens::deleteMethodToken, url, headers);
+    request(Pillow::HttpClientTokens::deleteMethodToken, url, headers);
 }
 
-void Pillow::HttpClient::request(const QByteArray &method, const QUrl &url, const Pillow::HttpHeaderCollection &headers, const QByteArray &data)
+void Pillow::HttpClient::request(const QByteArray& method, const QUrl& url, const Pillow::HttpHeaderCollection& headers,
+                                 const QByteArray& data)
 {
-	Pillow::HttpClientRequest newRequest;
-	newRequest.method = method;
-	newRequest.url = url;
-	newRequest.headers = headers;
-	newRequest.data = data;
-	request(newRequest);
+    Pillow::HttpClientRequest newRequest;
+    newRequest.method = method;
+    newRequest.url = url;
+    newRequest.headers = headers;
+    newRequest.data = data;
+    request(newRequest);
 }
 
-void Pillow::HttpClient::request(const Pillow::HttpClientRequest &request)
+void Pillow::HttpClient::request(const Pillow::HttpClientRequest& request)
 {
-	if (_responsePending)
-	{
-		qWarning("Pillow::HttpClient::request: cannot send new request while another one is under way. Request pipelining is not supported.");
-		return;
-	}
+    if (_responsePending)
+    {
+        qWarning(
+            "Pillow::HttpClient::request: cannot send new request while another one is under way. Request pipelining is not supported.");
+        return;
+    }
 
-	if (Pillow::HttpResponseParser::isParsing())
-	{
-		// We most likely got cancelled in a callback or got asked for a new request
-		// in the messageComplete() callback. So we are not responsePending but still parsing.
-		// Keep the request for after we come out of parsing.
-		_pendingRequest = request;
-		return;
-	}
+    if (Pillow::HttpResponseParser::isParsing())
+    {
+        // We most likely got cancelled in a callback or got asked for a new request
+        // in the messageComplete() callback. So we are not responsePending but still parsing.
+        // Keep the request for after we come out of parsing.
+        _pendingRequest = request;
+        return;
+    }
 
-	// We can reuse an active connection if the request is for the same host and port, so make note of those parameters before they are overwritten.
-	const QString previousHost = _request.url.host();
-	const int previousPort = _request.url.port();
+    // We can reuse an active connection if the request is for the same host and port, so make note of those parameters before they are
+    // overwritten.
+    const QString previousHost = _request.url.host();
+    const int previousPort = _request.url.port();
 
-	_request = request;
-	_responsePending = true;
-	_error = NoError;
-	clear();
+    _request = request;
+    _responsePending = true;
+    _error = NoError;
+    clear();
 
-	const bool isConnected = _device->state() == QAbstractSocket::ConnectedState;
-	const bool sameServer = _request.url.host() == previousHost && _request.url.port() == previousPort;
-	const bool keepAliveTimeoutExpired = sameServer && (_keepAliveTimeout >= 0 && _keepAliveTimeoutTimer.isValid() && _keepAliveTimeoutTimer.hasExpired(_keepAliveTimeout));
-	const bool reuseExistingConnection = isConnected && sameServer && !keepAliveTimeoutExpired;
+    const bool isConnected = _device->state() == QAbstractSocket::ConnectedState;
+    const bool sameServer = _request.url.host() == previousHost && _request.url.port() == previousPort;
+    const bool keepAliveTimeoutExpired =
+        sameServer && (_keepAliveTimeout >= 0 && _keepAliveTimeoutTimer.isValid() && _keepAliveTimeoutTimer.hasExpired(_keepAliveTimeout));
+    const bool reuseExistingConnection = isConnected && sameServer && !keepAliveTimeoutExpired;
 
-	if (reuseExistingConnection)
-	{
-		// Reuse current connection to same host and port.
-		sendRequest();
-	}
-	else
-	{
-		if (_hostHeaderValue.isDetached())
-			_hostHeaderValue.resize(0); // Clear the previous host header value (if any), without deallocating memory.
-		else
-			_hostHeaderValue.clear();
+    if (reuseExistingConnection)
+    {
+        // Reuse current connection to same host and port.
+        sendRequest();
+    }
+    else
+    {
+        if (_hostHeaderValue.isDetached())
+            _hostHeaderValue.resize(0); // Clear the previous host header value (if any), without deallocating memory.
+        else
+            _hostHeaderValue.clear();
 
-		if (_device->state() != QAbstractSocket::UnconnectedState)
-			_device->disconnectFromHost();
-		_device->connectToHost(_request.url.host(), _request.url.port(80));
-	}
+        if (_device->state() != QAbstractSocket::UnconnectedState)
+            _device->disconnectFromHost();
+        _device->connectToHost(_request.url.host(), _request.url.port(80));
+    }
 }
 
 void Pillow::HttpClient::abort()
 {
-	if (_device) _device->abort();
+    if (_device)
+        _device->abort();
 
-	if (_responsePending)
-	{
-		Pillow::HttpResponseParser::pause();
-		_error = AbortedError;
-		_responsePending = false;
-		Q_EMIT finished();
-	}
+    if (_responsePending)
+    {
+        Pillow::HttpResponseParser::pause();
+        _error = AbortedError;
+        _responsePending = false;
+        Q_EMIT finished();
+    }
 }
 
 void Pillow::HttpClient::followRedirection()
 {
-	if (!redirected())
-	{
-		qWarning("Pillow::HttpClient::followRedirection(): no redirection to follow.");
-		return;
-	}
+    if (!redirected())
+    {
+        qWarning("Pillow::HttpClient::followRedirection(): no redirection to follow.");
+        return;
+    }
 
-	Pillow::HttpClientRequest newRequest = _request;
-	newRequest.url = QUrl::fromEncoded(redirectionLocation());
-	request(newRequest);
+    Pillow::HttpClientRequest newRequest = _request;
+    newRequest.url = QUrl::fromEncoded(redirectionLocation());
+    request(newRequest);
 }
 
 void Pillow::HttpClient::device_error(QAbstractSocket::SocketError error)
 {
-	if (!_responsePending)
-	{
-		// Errors that happen while we are not waiting for a response are ok. We'll try to
-		// recover on the next time we get a request.
-		return;
-	}
+    if (!_responsePending)
+    {
+        // Errors that happen while we are not waiting for a response are ok. We'll try to
+        // recover on the next time we get a request.
+        return;
+    }
 
-	switch (error)
-	{
-	case QAbstractSocket::RemoteHostClosedError:
-		_error = RemoteHostClosedError;
-		break;
-	default:
-		_error = NetworkError;
-	}
+    switch (error)
+    {
+    case QAbstractSocket::RemoteHostClosedError:
+        _error = RemoteHostClosedError;
+        break;
+    default:
+        _error = NetworkError;
+    }
 
-	_device->close();
-	_responsePending = false;
-	Q_EMIT finished();
+    _device->close();
+    _responsePending = false;
+    Q_EMIT finished();
 }
 
 void Pillow::HttpClient::device_connected()
 {
-	sendRequest();
+    sendRequest();
 }
 
 void Pillow::HttpClient::device_readyRead()
 {
-	if (!responsePending())
-	{
-		// Not supposed to be receiving data at this point. Just
-		// ignore it and close the connection.
-		_device->close();
-		return;
-	}
+    if (!responsePending())
+    {
+        // Not supposed to be receiving data at this point. Just
+        // ignore it and close the connection.
+        _device->close();
+        return;
+    }
 
-	qint64 bytesAvailable = _device->bytesAvailable();
-	if (bytesAvailable == 0) return;
+    qint64 bytesAvailable = _device->bytesAvailable();
+    if (bytesAvailable == 0)
+        return;
 
-	qint64 bufferSize = readBufferSize();
-	if (bufferSize > 0)
-		bytesAvailable = bufferSize - _content.size();
+    qint64 bufferSize = readBufferSize();
+    if (bufferSize > 0)
+        bytesAvailable = bufferSize - _content.size();
 
-	if (bytesAvailable <= 0)
-	{
-		// Nothing to read or no space in buffers. Wait for more data or more space in buffers.
-		return;
-	}
+    if (bytesAvailable <= 0)
+    {
+        // Nothing to read or no space in buffers. Wait for more data or more space in buffers.
+        return;
+    }
 
-	if (_buffer.capacity() < _buffer.size() + bytesAvailable)
-		_buffer.reserve(_buffer.size() + bytesAvailable);
+    if (_buffer.capacity() < _buffer.size() + bytesAvailable)
+        _buffer.reserve(_buffer.size() + bytesAvailable);
 
-	int oldSize = _buffer.size();
-	qint64 bytesRead = _device->read(_buffer.data() + oldSize, bytesAvailable);
-	_buffer.resize(oldSize + bytesRead);
+    int oldSize = _buffer.size();
+    qint64 bytesRead = _device->read(_buffer.data() + oldSize, bytesAvailable);
+    _buffer.resize(oldSize + bytesRead);
 
-	int consumed = inject(_buffer);
+    int consumed = inject(_buffer);
 
-	if (responsePending())
-	{
-		// Response is still pending. One of the following:
-		// 1. Got a parser error. (where hasError)
-		// 2. Waiting for more data to complete the current request. (where _pendingRequest is null and consumed == buffer.size)
-		// 3. Waiting for the real response after a 100-continue response. (where _pendingRequest is null and consumed < buffer.size, because parser will stop consuming after the 100-continue).
+    if (responsePending())
+    {
+        // Response is still pending. One of the following:
+        // 1. Got a parser error. (where hasError)
+        // 2. Waiting for more data to complete the current request. (where _pendingRequest is null and consumed == buffer.size)
+        // 3. Waiting for the real response after a 100-continue response. (where _pendingRequest is null and consumed < buffer.size,
+        // because parser will stop consuming after the 100-continue).
 
-		if (!hasError())
-		{
-			if (consumed < _buffer.size())
-			{
-				// We had multiple responses in the buffer?
-				// It was a 100 Continue since we are still response pending.
-				consumed += inject(_buffer.constData() + consumed, _buffer.size() - consumed);
+        if (!hasError())
+        {
+            if (consumed < _buffer.size())
+            {
+                // We had multiple responses in the buffer?
+                // It was a 100 Continue since we are still response pending.
+                consumed += inject(_buffer.constData() + consumed, _buffer.size() - consumed);
 
-				if (consumed < _buffer.size())
-				{
-					qWarning() << "Left some unconsumed data in the buffer:" << (_buffer.size() - consumed);
-				}
-			}
-			else
-			{
-				// Just waiting for more data to consume.
-			}
-		}
+                if (consumed < _buffer.size())
+                {
+                    qWarning() << "Left some unconsumed data in the buffer:" << (_buffer.size() - consumed);
+                }
+            }
+            else
+            {
+                // Just waiting for more data to consume.
+            }
+        }
 
-		if (hasError()) // Re-check for error in case we injected again in the 100 Continue case above.
-		{
-			_error = ResponseInvalidError;
-			_device->close();
-			_responsePending = false;
-			Q_EMIT finished();
-		}
-	}
+        if (hasError()) // Re-check for error in case we injected again in the 100 Continue case above.
+        {
+            _error = ResponseInvalidError;
+            _device->close();
+            _responsePending = false;
+            Q_EMIT finished();
+        }
+    }
 
-	// Reuse the read buffer if it is not overly large.
-	if (_buffer.capacity() > 128 * 1024)
-		_buffer.clear();
-	else
-		_buffer.resize(0);
+    // Reuse the read buffer if it is not overly large.
+    if (_buffer.capacity() > 128 * 1024)
+        _buffer.clear();
+    else
+        _buffer.resize(0);
 
-	// Response completed or got aborted in a callback.
-	if (!responsePending() && !_pendingRequest.method.isNull())
-	{
-		// Plus we got a new request while in callback.
-		Pillow::HttpClientRequest r = _pendingRequest;
-		_pendingRequest = Pillow::HttpClientRequest(); // Clear it.
-		request(r);
-	}
-
+    // Response completed or got aborted in a callback.
+    if (!responsePending() && !_pendingRequest.method.isNull())
+    {
+        // Plus we got a new request while in callback.
+        Pillow::HttpClientRequest r = _pendingRequest;
+        _pendingRequest = Pillow::HttpClientRequest(); // Clear it.
+        request(r);
+    }
 }
 
 void Pillow::HttpClient::sendRequest()
 {
-	if (!responsePending()) return;
+    if (!responsePending())
+        return;
 
-	if (_hostHeaderValue.isEmpty())
-	{
-		_hostHeaderValue = _request.url.host().toUtf8();
-		if (_request.url.port(80) != 80)
-		{
-			_hostHeaderValue.append(':');
-			Pillow::ByteArrayHelpers::appendNumber<int, 10>(_hostHeaderValue, _request.url.port(80));
-		}
-	}
+    if (_hostHeaderValue.isEmpty())
+    {
+        _hostHeaderValue = _request.url.host().toUtf8();
+        if (_request.url.port(80) != 80)
+        {
+            _hostHeaderValue.append(':');
+            Pillow::ByteArrayHelpers::appendNumber<int, 10>(_hostHeaderValue, _request.url.port(80));
+        }
+    }
 
-	QByteArray uri = _request.url.path(QUrl::FullyEncoded).toUtf8();
-	if (uri.isEmpty()) uri = "/";
-	const QByteArray query = _request.url.query(QUrl::FullyEncoded).toUtf8();
-	if (!query.isEmpty()) uri.append('?').append(query);
+    QByteArray uri = _request.url.path(QUrl::FullyEncoded).toUtf8();
+    if (uri.isEmpty())
+        uri = "/";
+    const QByteArray query = _request.url.query(QUrl::FullyEncoded).toUtf8();
+    if (!query.isEmpty())
+        uri.append('?').append(query);
 
-	Pillow::HttpHeaderCollection headers;
-	headers.reserve(_request.headers.size() + 1);
-	headers << Pillow::HttpHeader(Pillow::HttpClientTokens::hostToken, _hostHeaderValue);
-	for (int i = 0, iE = _request.headers.size(); i < iE; ++i)
-		headers << _request.headers.at(i);
+    Pillow::HttpHeaderCollection headers;
+    headers.reserve(_request.headers.size() + 1);
+    headers << Pillow::HttpHeader(Pillow::HttpClientTokens::hostToken, _hostHeaderValue);
+    for (int i = 0, iE = _request.headers.size(); i < iE; ++i)
+        headers << _request.headers.at(i);
 
-	_requestWriter.write(_request.method, uri, headers, _request.data);
+    _requestWriter.write(_request.method, uri, headers, _request.data);
 }
 
 void Pillow::HttpClient::messageBegin()
 {
-	Pillow::HttpResponseParser::messageBegin();
+    Pillow::HttpResponseParser::messageBegin();
 }
 
 void Pillow::HttpClient::headersComplete()
 {
-	Pillow::HttpResponseParser::headersComplete();
-	if (statusCode() == 100)
-		return;
+    Pillow::HttpResponseParser::headersComplete();
+    if (statusCode() == 100)
+        return;
 
-	Q_EMIT headersCompleted();
+    Q_EMIT headersCompleted();
 
-	if (Pillow::ByteArrayHelpers::asciiEqualsCaseInsensitive(_request.method, Pillow::LowerCaseToken("head")))
-	{
-		pause();
-		messageComplete();
-	}
-	else
-	{
-		for (int i = 0, iE = _headers.size(); i < iE; ++i)
-		{
-			const Pillow::HttpHeader& header = _headers.at(i);
-			if (Pillow::ByteArrayHelpers::asciiEqualsCaseInsensitive(header.first, Pillow::LowerCaseToken("content-encoding")))
-			{
-				if (Pillow::ByteArrayHelpers::asciiEqualsCaseInsensitive(header.second, Pillow::LowerCaseToken("gzip")))
-					_contentDecoder = new Pillow::GunzipContentTransformer();
-			}
-		}
-	}
+    if (Pillow::ByteArrayHelpers::asciiEqualsCaseInsensitive(_request.method, Pillow::LowerCaseToken("head")))
+    {
+        pause();
+        messageComplete();
+    }
+    else
+    {
+        for (int i = 0, iE = _headers.size(); i < iE; ++i)
+        {
+            const Pillow::HttpHeader& header = _headers.at(i);
+            if (Pillow::ByteArrayHelpers::asciiEqualsCaseInsensitive(header.first, Pillow::LowerCaseToken("content-encoding")))
+            {
+                if (Pillow::ByteArrayHelpers::asciiEqualsCaseInsensitive(header.second, Pillow::LowerCaseToken("gzip")))
+                    _contentDecoder = new Pillow::GunzipContentTransformer();
+            }
+        }
+    }
 }
 
-void Pillow::HttpClient::messageContent(const char *data, int length)
+void Pillow::HttpClient::messageContent(const char* data, int length)
 {
-	if (_contentDecoder)
-	{
-		const QByteArray decoded = _contentDecoder->transform(data, length);
-		Pillow::HttpResponseParser::messageContent(decoded.data(), decoded.length());
-	}
-	else
-	{
-		Pillow::HttpResponseParser::messageContent(data, length);
-	}
-	Q_EMIT contentReadyRead();
+    if (_contentDecoder)
+    {
+        const QByteArray decoded = _contentDecoder->transform(data, length);
+        Pillow::HttpResponseParser::messageContent(decoded.data(), decoded.length());
+    }
+    else
+    {
+        Pillow::HttpResponseParser::messageContent(data, length);
+    }
+    Q_EMIT contentReadyRead();
 }
 
 void Pillow::HttpClient::messageComplete()
 {
-	delete _contentDecoder;
-	_contentDecoder = 0;
+    delete _contentDecoder;
+    _contentDecoder = 0;
 
-	if (statusCode() == 100)
-	{
-		// Completely hide and ignore the 100 response we just received.
-		clear();
-	}
-	else
-	{
-		Pillow::HttpResponseParser::messageComplete();
-		_responsePending = false;
+    if (statusCode() == 100)
+    {
+        // Completely hide and ignore the 100 response we just received.
+        clear();
+    }
+    else
+    {
+        Pillow::HttpResponseParser::messageComplete();
+        _responsePending = false;
 
-		if (_keepAliveTimeout == 0)
-			_device->close();
-		else
-		{
-			if (!shouldKeepAlive())
-				_device->close();
+        if (_keepAliveTimeout == 0)
+            _device->close();
+        else
+        {
+            if (!shouldKeepAlive())
+                _device->close();
 
-			_keepAliveTimeoutTimer.start();
-		}
+            _keepAliveTimeoutTimer.start();
+        }
 
-		Q_EMIT finished();
-	}
+        Q_EMIT finished();
+    }
 }
 
 //
@@ -747,234 +753,240 @@ void Pillow::HttpClient::messageComplete()
 
 namespace Pillow
 {
-	class NetworkReply : public QNetworkReply
-	{
-		Q_OBJECT
+    class NetworkReply : public QNetworkReply
+    {
+        Q_OBJECT
 
-	public:
-		NetworkReply(Pillow::HttpClient *client, QNetworkAccessManager::Operation op, const QNetworkRequest& request)
-			:_client(client), _contentPos(0)
-		{
-			connect(client, &HttpClient::headersCompleted, this, &NetworkReply::client_headersCompleted);
-			connect(client, &HttpClient::contentReadyRead, this, &NetworkReply::client_contentReadyRead);
-			connect(client, &HttpClient::finished, this, &NetworkReply::client_finished);
+    public:
+        NetworkReply(Pillow::HttpClient* client, QNetworkAccessManager::Operation op, const QNetworkRequest& request)
+            : _client(client), _contentPos(0)
+        {
+            connect(client, &HttpClient::headersCompleted, this, &NetworkReply::client_headersCompleted);
+            connect(client, &HttpClient::contentReadyRead, this, &NetworkReply::client_contentReadyRead);
+            connect(client, &HttpClient::finished, this, &NetworkReply::client_finished);
 
-			setOperation(op);
-			setRequest(request);
-			setUrl(request.url());
-		}
+            setOperation(op);
+            setRequest(request);
+            setUrl(request.url());
+        }
 
-		~NetworkReply()
-		{}
+        ~NetworkReply() {}
 
-	public:
-		void abort()
-		{
-			if (_client) _client->abort();
-		}
+    public:
+        void abort()
+        {
+            if (_client)
+                _client->abort();
+        }
 
-		qint64 bytesAvailable() const
-		{
-			return QNetworkReply::bytesAvailable() + _content.size() - _contentPos;
-		}
+        qint64 bytesAvailable() const { return QNetworkReply::bytesAvailable() + _content.size() - _contentPos; }
 
-	private slots:
-		void client_headersCompleted()
-		{
-			QList<QNetworkCookie> cookies;
+    private slots:
+        void client_headersCompleted()
+        {
+            QList<QNetworkCookie> cookies;
 
-			setAttribute(QNetworkRequest::HttpStatusCodeAttribute, _client->statusCode());
+            setAttribute(QNetworkRequest::HttpStatusCodeAttribute, _client->statusCode());
 
-			// Setting the reason phrase is not done as the http_parser does not give us access
-			// to the real reason phrase returned by the server.
-			//
-			// setAttribute(QNetworkRequest::HttpReasonPhraseAttribute, ...);
+            // Setting the reason phrase is not done as the http_parser does not give us access
+            // to the real reason phrase returned by the server.
+            //
+            // setAttribute(QNetworkRequest::HttpReasonPhraseAttribute, ...);
 
-			for (const Pillow::HttpHeader &header : _client->headers())
-			{
-				setRawHeader(header.first, header.second);
+            for (const Pillow::HttpHeader& header : _client->headers())
+            {
+                setRawHeader(header.first, header.second);
 
-				if (Pillow::ByteArrayHelpers::asciiEqualsCaseInsensitive(header.first, Pillow::LowerCaseToken("set-cookie")))
-					cookies += QNetworkCookie::parseCookies(header.second);
-				else if (Pillow::ByteArrayHelpers::asciiEqualsCaseInsensitive(header.first, Pillow::LowerCaseToken("location")))
-					setAttribute(QNetworkRequest::RedirectionTargetAttribute, QUrl::fromEncoded(header.second));
-			}
+                if (Pillow::ByteArrayHelpers::asciiEqualsCaseInsensitive(header.first, Pillow::LowerCaseToken("set-cookie")))
+                    cookies += QNetworkCookie::parseCookies(header.second);
+                else if (Pillow::ByteArrayHelpers::asciiEqualsCaseInsensitive(header.first, Pillow::LowerCaseToken("location")))
+                    setAttribute(QNetworkRequest::RedirectionTargetAttribute, QUrl::fromEncoded(header.second));
+            }
 
-			if (!cookies.isEmpty())
-				setHeader(QNetworkRequest::SetCookieHeader, QVariant::fromValue(cookies));
+            if (!cookies.isEmpty())
+                setHeader(QNetworkRequest::SetCookieHeader, QVariant::fromValue(cookies));
 
-			QNetworkAccessManager *nam = manager();
-			if (nam)
-			{
-				QNetworkCookieJar *jar = nam->cookieJar();
-				if (jar)
-				{
-					QUrl url = request().url();
-					url.setPath("/");
-					jar->setCookiesFromUrl(cookies, url);
-				}
-			}
+            QNetworkAccessManager* nam = manager();
+            if (nam)
+            {
+                QNetworkCookieJar* jar = nam->cookieJar();
+                if (jar)
+                {
+                    QUrl url = request().url();
+                    url.setPath("/");
+                    jar->setCookiesFromUrl(cookies, url);
+                }
+            }
 
-			open(QIODevice::ReadOnly | QIODevice::Unbuffered);
+            open(QIODevice::ReadOnly | QIODevice::Unbuffered);
 
-			Q_EMIT metaDataChanged();
-		}
+            Q_EMIT metaDataChanged();
+        }
 
-		void client_contentReadyRead()
-		{
-			_content.append(_client->consumeContent());
-			 Q_EMIT readyRead();
-			 //Q_EMIT downloadProgress();
-		}
+        void client_contentReadyRead()
+        {
+            _content.append(_client->consumeContent());
+            Q_EMIT readyRead();
+            // Q_EMIT downloadProgress();
+        }
 
-		void client_finished()
-		{
-			disconnect(_client, 0, this, 0);
+        void client_finished()
+        {
+            disconnect(_client, 0, this, 0);
 
-			if (_client->error() != Pillow::HttpClient::NoError)
-			{
-				QNetworkReply::NetworkError error = QNetworkReply::UnknownNetworkError;
+            if (_client->error() != Pillow::HttpClient::NoError)
+            {
+                QNetworkReply::NetworkError error = QNetworkReply::UnknownNetworkError;
 
-				switch (_client->error())
-				{
-				case Pillow::HttpClient::NoError: error = QNetworkReply::NoError; break;
-				case Pillow::HttpClient::NetworkError: error = QNetworkReply::UnknownNetworkError; break;
-				case Pillow::HttpClient::ResponseInvalidError: error = QNetworkReply::ProtocolUnknownError; break;
-				case Pillow::HttpClient::RemoteHostClosedError: error = QNetworkReply::RemoteHostClosedError; break;
-				case Pillow::HttpClient::AbortedError: error = QNetworkReply::OperationCanceledError; break;
-				}
+                switch (_client->error())
+                {
+                case Pillow::HttpClient::NoError:
+                    error = QNetworkReply::NoError;
+                    break;
+                case Pillow::HttpClient::NetworkError:
+                    error = QNetworkReply::UnknownNetworkError;
+                    break;
+                case Pillow::HttpClient::ResponseInvalidError:
+                    error = QNetworkReply::ProtocolUnknownError;
+                    break;
+                case Pillow::HttpClient::RemoteHostClosedError:
+                    error = QNetworkReply::RemoteHostClosedError;
+                    break;
+                case Pillow::HttpClient::AbortedError:
+                    error = QNetworkReply::OperationCanceledError;
+                    break;
+                }
 
-				Q_EMIT this->errorOccurred(error);
-			}
+                Q_EMIT this->errorOccurred(error);
+            }
 
-			_client = 0;
-			setFinished(true);
-			Q_EMIT finished();
-		}
+            _client = 0;
+            setFinished(true);
+            Q_EMIT finished();
+        }
 
-	protected:
-		qint64 readData(char *data, qint64 maxSize)
-		{
-			if (_contentPos >= _content.size()) return -1;
-			qint64 bytesRead = qMin(maxSize, static_cast<qint64>(_content.size() - _contentPos));
-			memcpy(data, _content.constData() + _contentPos, bytesRead);
-			_contentPos += bytesRead;
-			return bytesRead;
-		}
+    protected:
+        qint64 readData(char* data, qint64 maxSize)
+        {
+            if (_contentPos >= _content.size())
+                return -1;
+            qint64 bytesRead = qMin(maxSize, static_cast<qint64>(_content.size() - _contentPos));
+            memcpy(data, _content.constData() + _contentPos, bytesRead);
+            _contentPos += bytesRead;
+            return bytesRead;
+        }
 
-	private:
-		Pillow::HttpClient *_client;
-		QByteArray _content;
-		int _contentPos;
-	};
-}
+    private:
+        Pillow::HttpClient* _client;
+        QByteArray _content;
+        int _contentPos;
+    };
+} // namespace Pillow
 
 //
 // Pillow::NetworkAccessManager
 //
 
-Pillow::NetworkAccessManager::NetworkAccessManager(QObject *parent)
-	: QNetworkAccessManager(parent)
+Pillow::NetworkAccessManager::NetworkAccessManager(QObject* parent) : QNetworkAccessManager(parent) {}
+
+Pillow::NetworkAccessManager::~NetworkAccessManager() {}
+
+QNetworkReply* Pillow::NetworkAccessManager::createRequest(QNetworkAccessManager::Operation op, const QNetworkRequest& request,
+                                                           QIODevice* outgoingData)
 {
-}
+    if (request.url().scheme().compare(QLatin1String("http"), Qt::CaseInsensitive) != 0)
+    {
+        // Use base implementation for unsupported schemes.
+        return QNetworkAccessManager::createRequest(op, request, outgoingData);
+    }
 
-Pillow::NetworkAccessManager::~NetworkAccessManager()
-{
-}
+    const QString urlAuthority = request.url().authority();
 
-QNetworkReply *Pillow::NetworkAccessManager::createRequest(QNetworkAccessManager::Operation op, const QNetworkRequest &request, QIODevice *outgoingData)
-{
-	if (request.url().scheme().compare(QLatin1String("http"), Qt::CaseInsensitive) != 0)
-	{
-		// Use base implementation for unsupported schemes.
-		return QNetworkAccessManager::createRequest(op, request, outgoingData);
-	}
+    Pillow::HttpClient* client = 0;
 
-	const QString urlAuthority = request.url().authority();
+    // Find an available (not busy) client for this URL authority
+    UrlClientsMap::Iterator it = _urlToClientsMap.find(urlAuthority);
+    while (it != _urlToClientsMap.end() && it.key() == urlAuthority)
+    {
+        Pillow::HttpClient* candidateClient = it.value();
+        if (!candidateClient->responsePending())
+        {
+            // Found an available client, remove it from the map and use it
+            client = candidateClient;
+            _urlToClientsMap.erase(it);
+            break;
+        }
+        ++it;
+    }
 
-	Pillow::HttpClient *client = 0;
-	
-	// Find an available (not busy) client for this URL authority
-	UrlClientsMap::Iterator it = _urlToClientsMap.find(urlAuthority);
-	while (it != _urlToClientsMap.end() && it.key() == urlAuthority)
-	{
-		Pillow::HttpClient *candidateClient = it.value();
-		if (!candidateClient->responsePending())
-		{
-			// Found an available client, remove it from the map and use it
-			client = candidateClient;
-			_urlToClientsMap.erase(it);
-			break;
-		}
-		++it;
-	}
-	
-	if (client == 0)
-	{
-		client = new Pillow::HttpClient(this);
-		_clientToUrlMap.insert(client, urlAuthority);
-		connect(client, &HttpClient::finished, this, &NetworkAccessManager::client_finished, Qt::DirectConnection);
-	}
+    if (client == 0)
+    {
+        client = new Pillow::HttpClient(this);
+        _clientToUrlMap.insert(client, urlAuthority);
+        connect(client, &HttpClient::finished, this, &NetworkAccessManager::client_finished, Qt::DirectConnection);
+    }
 
-	Pillow::NetworkReply *reply = new Pillow::NetworkReply(client, op, request);
+    Pillow::NetworkReply* reply = new Pillow::NetworkReply(client, op, request);
 
-	Pillow::HttpHeaderCollection headers;
-	for (const QByteArray &headerName : request.rawHeaderList())
-		headers << Pillow::HttpHeader(headerName, request.rawHeader(headerName));
+    Pillow::HttpHeaderCollection headers;
+    for (const QByteArray& headerName : request.rawHeaderList())
+        headers << Pillow::HttpHeader(headerName, request.rawHeader(headerName));
 
-//	headers << Pillow::HttpHeader("Accept-Encoding", "gzip");
+    //	headers << Pillow::HttpHeader("Accept-Encoding", "gzip");
 
-	QNetworkCookieJar *jar = cookieJar();
-	if (jar)
-	{
-		const QList<QNetworkCookie> cookies = jar->cookiesForUrl(request.url());
-		QByteArray cookieHeaderValue;
-		for (int i = 0, iE = cookies.size(); i < iE; ++i)
-		{
-			if (i > 0) cookieHeaderValue.append("; ");
-			cookieHeaderValue.append(cookies.at(i).toRawForm(QNetworkCookie::NameAndValueOnly));
-		}
-		if (!cookieHeaderValue.isEmpty())
-			headers << Pillow::HttpHeader("Cookie", cookieHeaderValue);
-	}
+    QNetworkCookieJar* jar = cookieJar();
+    if (jar)
+    {
+        const QList<QNetworkCookie> cookies = jar->cookiesForUrl(request.url());
+        QByteArray cookieHeaderValue;
+        for (int i = 0, iE = cookies.size(); i < iE; ++i)
+        {
+            if (i > 0)
+                cookieHeaderValue.append("; ");
+            cookieHeaderValue.append(cookies.at(i).toRawForm(QNetworkCookie::NameAndValueOnly));
+        }
+        if (!cookieHeaderValue.isEmpty())
+            headers << Pillow::HttpHeader("Cookie", cookieHeaderValue);
+    }
 
-	switch (op)
-	{
-	case QNetworkAccessManager::HeadOperation:
-		client->head(request.url(), headers);
-		break;
-	case QNetworkAccessManager::GetOperation:
-		client->get(request.url(), headers);
-		break;
-	case QNetworkAccessManager::PutOperation:
-		client->put(request.url(), headers, outgoingData ? outgoingData->readAll() : QByteArray());
-		break;
-	case QNetworkAccessManager::PostOperation:
-		client->post(request.url(), headers, outgoingData ? outgoingData->readAll() : QByteArray());
-		break;
-	case QNetworkAccessManager::DeleteOperation:
-		client->deleteResource(request.url(), headers);
-		break;
-	case QNetworkAccessManager::CustomOperation:
-		client->request(request.attribute(QNetworkRequest::CustomVerbAttribute).toByteArray(), request.url(), headers, outgoingData ? outgoingData->readAll() : QByteArray());
-		break;
+    switch (op)
+    {
+    case QNetworkAccessManager::HeadOperation:
+        client->head(request.url(), headers);
+        break;
+    case QNetworkAccessManager::GetOperation:
+        client->get(request.url(), headers);
+        break;
+    case QNetworkAccessManager::PutOperation:
+        client->put(request.url(), headers, outgoingData ? outgoingData->readAll() : QByteArray());
+        break;
+    case QNetworkAccessManager::PostOperation:
+        client->post(request.url(), headers, outgoingData ? outgoingData->readAll() : QByteArray());
+        break;
+    case QNetworkAccessManager::DeleteOperation:
+        client->deleteResource(request.url(), headers);
+        break;
+    case QNetworkAccessManager::CustomOperation:
+        client->request(request.attribute(QNetworkRequest::CustomVerbAttribute).toByteArray(), request.url(), headers,
+                        outgoingData ? outgoingData->readAll() : QByteArray());
+        break;
 
-	case QNetworkAccessManager::UnknownOperation:
-		break;
-	}
+    case QNetworkAccessManager::UnknownOperation:
+        break;
+    }
 
-	return reply;
+    return reply;
 }
 
 void Pillow::NetworkAccessManager::client_finished()
 {
-	Pillow::HttpClient *client = static_cast<Pillow::HttpClient*>(sender());
-	const QString urlAuthority = _clientToUrlMap.value(client);
+    Pillow::HttpClient* client = static_cast<Pillow::HttpClient*>(sender());
+    const QString urlAuthority = _clientToUrlMap.value(client);
 
-	if (urlAuthority.isEmpty())
-		client->deleteLater();
-	else
-		_urlToClientsMap.insert(urlAuthority, client);
+    if (urlAuthority.isEmpty())
+        client->deleteLater();
+    else
+        _urlToClientsMap.insert(urlAuthority, client);
 }
 
 #include "HttpClient.moc"

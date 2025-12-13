@@ -16,17 +16,21 @@ class BenchHandler : public Pillow::HttpHandler
     Q_OBJECT
 
 public:
-    enum ResponseType { PlainText, Json, Empty };
+    enum ResponseType
+    {
+        PlainText,
+        Json,
+        Empty
+    };
 
-    BenchHandler(ResponseType type, QObject* parent = nullptr)
-        : Pillow::HttpHandler(parent), m_type(type)
-    {}
+    BenchHandler(ResponseType type, QObject* parent = nullptr) : Pillow::HttpHandler(parent), m_type(type) {}
 
-    bool handleRequest(Pillow::HttpConnection *connection) override
+    bool handleRequest(Pillow::HttpConnection* connection) override
     {
         Pillow::HttpHeaderCollection headers;
 
-        switch (m_type) {
+        switch (m_type)
+        {
         case PlainText:
             headers.append(Pillow::HttpHeader("Content-Type", textContentType));
             connection->writeResponse(200, headers, helloResponse);
@@ -47,7 +51,7 @@ private:
     ResponseType m_type;
 };
 
-int main(int argc, char *argv[])
+int main(int argc, char* argv[])
 {
     QCoreApplication app(argc, argv);
     app.setApplicationName("pillow-benchmark");
@@ -58,12 +62,10 @@ int main(int argc, char *argv[])
     parser.addHelpOption();
     parser.addVersionOption();
 
-    QCommandLineOption portOption(QStringList() << "p" << "port",
-        "Port to listen on (default: 8080)", "port", "8080");
+    QCommandLineOption portOption(QStringList() << "p" << "port", "Port to listen on (default: 8080)", "port", "8080");
     parser.addOption(portOption);
 
-    QCommandLineOption typeOption(QStringList() << "t" << "type",
-        "Response type: text, json, empty (default: text)", "type", "text");
+    QCommandLineOption typeOption(QStringList() << "t" << "type", "Response type: text, json, empty (default: text)", "type", "text");
     parser.addOption(typeOption);
 
     parser.process(app);
@@ -72,21 +74,24 @@ int main(int argc, char *argv[])
     QString typeStr = parser.value(typeOption);
 
     BenchHandler::ResponseType responseType = BenchHandler::PlainText;
-    if (typeStr == "json") {
+    if (typeStr == "json")
+    {
         responseType = BenchHandler::Json;
-    } else if (typeStr == "empty") {
+    }
+    else if (typeStr == "empty")
+    {
         responseType = BenchHandler::Empty;
     }
 
     Pillow::HttpServer server(QHostAddress::Any, port);
-    if (!server.isListening()) {
+    if (!server.isListening())
+    {
         qCritical() << "Failed to start server on port" << port;
         return 1;
     }
 
     BenchHandler* handler = new BenchHandler(responseType, &server);
-    QObject::connect(&server, &Pillow::HttpServer::requestReady,
-                     handler, &BenchHandler::handleRequest);
+    QObject::connect(&server, &Pillow::HttpServer::requestReady, handler, &BenchHandler::handleRequest);
 
     qDebug() << "Pillow benchmark server listening on port" << port;
     qDebug() << "Response type:" << typeStr;
