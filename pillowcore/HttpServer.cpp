@@ -86,11 +86,7 @@ HttpServer::~HttpServer()
 	delete d_ptr;
 }
 
-#if QT_VERSION < 0x050000
-void HttpServer::incomingConnection(int socketDescriptor)
-#else
 void HttpServer::incomingConnection(qintptr socketDescriptor)
-#endif
 {
 	QTcpSocket* socket = new QTcpSocket(this);
 	if (socket->setSocketDescriptor(socketDescriptor))

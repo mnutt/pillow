@@ -1,13 +1,6 @@
 #include <QtCore/QtCore>
-//#if (QT_VERSION >= QT_VERSION_CHECK(5, 0, 0))
-#if QT_VERSION >= 0x050000
 #include <QtGui/QGuiApplication>
 #include <QtQuick1/QtQuick1>
-#else
-#include <QtGui/QApplication>
-#include <QtDeclarative/QtDeclarative>
-#include <QtDeclarative/QDeclarativeParserStatus>
-#endif
 
 #include "HttpServer.h"
 #include "HttpConnection.h"

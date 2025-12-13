@@ -4,9 +4,7 @@
 #ifndef QBYTEARRAY_H
 #include <QtCore/QByteArray>
 #endif // QBYTEARRAY_H
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
 #include <QtCore/QByteArrayView>
-#endif
 #ifndef QSTRING_H
 #include <QtCore/QString>
 #endif // QSTRING_H
@@ -29,11 +27,9 @@ namespace Pillow
 		inline const char* data() const { return m_data; }
 		inline char at(int index) const { return m_data[index]; }
 		template <int N> inline Token(const char (&str)[N]) : m_size(N - 1), m_data(str) {}
-		
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-		// Qt6 compatibility: implicit conversion to QByteArrayView
+
+		// Implicit conversion to QByteArrayView
 		inline operator QByteArrayView() const { return QByteArrayView(m_data, m_size); }
-#endif
 	private:
 		const int m_size;
 		const char * const m_data;
@@ -60,16 +56,14 @@ namespace Pillow
 		inline const char* data() const { return m_data; }
 		inline char at(int index) const { return m_data[index]; }
 		template <int N> inline LowerCaseToken(const char (&str)[N]) : m_size(N - 1), m_data(str) {}
-		
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-		// Qt6 compatibility: implicit conversion to QByteArrayView
+
+		// Implicit conversion to QByteArrayView
 		inline operator QByteArrayView() const { return QByteArrayView(m_data, m_size); }
-#endif
 	private:
 		const int m_size;
 		const char * const m_data;
 	};
-	
+
 	// Comparison operators for QByteArray with LowerCaseToken
 	inline bool operator==(const QByteArray& ba, const LowerCaseToken& token)
 	{

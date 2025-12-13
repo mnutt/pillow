@@ -15,11 +15,6 @@
 typedef QList<QByteArray> Chunks;
 Q_DECLARE_METATYPE(Chunks)
 
-#if (QT_VERSION < QT_VERSION_CHECK(5, 0, 0))
-Q_DECLARE_METATYPE(QAbstractSocket::SocketState)
-Q_DECLARE_METATYPE(QNetworkReply::NetworkError)
-#endif
-
 //
 // HttpClient test class
 //
