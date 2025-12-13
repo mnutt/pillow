@@ -143,35 +143,10 @@ namespace Pillow
 			}
 		}
 
-		inline bool asciiEqualsCaseInsensitive(const QByteArray& first, const QByteArray& second)
+		inline bool asciiEqualsCaseInsensitive(QByteArrayView first, QByteArrayView second)
 		{
 			if (first.size() != second.size()) return false;
-			for (int i = 0; i < first.size(); ++i)
-			{
-				char f = first.at(i), s = second.at(i);
-				bool good = (f == s) || ((f - s) == 32 && f >= 'a' && f <= 'z') || ((f - s) == -32 && f >= 'A' && f <= 'Z');
-				if (!good) return false;
-			}
-			return true;
-		}
-
-		inline bool asciiEqualsCaseInsensitive(const QByteArray& first, const QLatin1String& second)
-		{
-			if (first.size() != second.size()) return false;
-			const char* sec = second.data();
-			for (int i = 0; i < first.size(); ++i)
-			{
-				char f = first.at(i), s = sec[i];
-				bool good = (f == s) || ((f - s) == 32 && f >= 'a' && f <= 'z') || ((f - s) == -32 && f >= 'A' && f <= 'Z');
-				if (!good) return false;
-			}
-			return true;
-		}
-
-		inline bool asciiEqualsCaseInsensitive(const char* first, int firstSize, const char* second, int secondSize)
-		{
-			if (firstSize != secondSize) return false;
-			for (int i = 0; i < firstSize; ++i)
+			for (qsizetype i = 0; i < first.size(); ++i)
 			{
 				char f = first[i], s = second[i];
 				bool good = (f == s) || ((f - s) == 32 && f >= 'a' && f <= 'z') || ((f - s) == -32 && f >= 'A' && f <= 'Z');
@@ -180,13 +155,34 @@ namespace Pillow
 			return true;
 		}
 
+		inline bool asciiEqualsCaseInsensitive(const QByteArray& first, const QByteArray& second)
+		{
+			return asciiEqualsCaseInsensitive(QByteArrayView(first), QByteArrayView(second));
+		}
+
+		inline bool asciiEqualsCaseInsensitive(const QByteArray& first, const QLatin1String& second)
+		{
+			return asciiEqualsCaseInsensitive(QByteArrayView(first), QByteArrayView(second.data(), second.size()));
+		}
+
+		inline bool asciiEqualsCaseInsensitive(const char* first, int firstSize, const char* second, int secondSize)
+		{
+			return asciiEqualsCaseInsensitive(QByteArrayView(first, firstSize), QByteArrayView(second, secondSize));
+		}
+
 		inline bool asciiEqualsCaseInsensitive(const QByteArray& first, const Pillow::Token& second)
 		{
-			if (first.size() != second.size()) return false;
-			for (int i = 0; i < first.size(); ++i)
+			return asciiEqualsCaseInsensitive(QByteArrayView(first), QByteArrayView(second));
+		}
+
+		// Optimized version when second is known to be lowercase
+		inline bool asciiEqualsLowerCase(QByteArrayView first, QByteArrayView lowerCaseSecond)
+		{
+			if (first.size() != lowerCaseSecond.size()) return false;
+			for (qsizetype i = 0; i < first.size(); ++i)
 			{
-				char f = first.at(i), s = second.at(i);
-				bool good = (f == s) || ((f - s) == 32 && f >= 'a' && f <= 'z') || ((f - s) == -32 && f >= 'A' && f <= 'Z');
+				char f = first[i], s = lowerCaseSecond[i];
+				bool good = (f == s) || ((f - s) == -32 && f >= 'A' && f <= 'Z');
 				if (!good) return false;
 			}
 			return true;
@@ -194,14 +190,7 @@ namespace Pillow
 
 		inline bool asciiEqualsCaseInsensitive(const QByteArray& first, const Pillow::LowerCaseToken& second)
 		{
-			if (first.size() != second.size()) return false;
-			for (int i = 0; i < first.size(); ++i)
-			{
-				char f = first.at(i), s = second.at(i);
-				bool good = (f == s) || ((f - s) == -32 && f >= 'A' && f <= 'Z');
-				if (!good) return false;
-			}
-			return true;
+			return asciiEqualsLowerCase(QByteArrayView(first), QByteArrayView(second));
 		}
 
 		inline char unhex(const char c)

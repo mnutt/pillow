@@ -190,13 +190,14 @@ inline void Pillow::HttpConnectionPrivate::processInput()
 
 	if (bytesAvailable > 0)
 	{
-		// Use a temporary buffer and append - simpler and safer
-		QByteArray tempBuffer(bytesAvailable, '\0');
-		const qint64 bytesRead = _inputDevice->read(tempBuffer.data(), bytesAvailable);
-		if (bytesRead > 0) {
-			tempBuffer.resize(bytesRead);
-			_requestBuffer.append(tempBuffer);
-		}
+		// Read directly into _requestBuffer to avoid temporary allocation and copy
+		const qint64 oldSize = _requestBuffer.size();
+		_requestBuffer.resize(oldSize + bytesAvailable);
+		const qint64 bytesRead = _inputDevice->read(_requestBuffer.data() + oldSize, bytesAvailable);
+		if (bytesRead > 0)
+			_requestBuffer.resize(oldSize + bytesRead);
+		else
+			_requestBuffer.resize(oldSize);
 	}
 
 	if (_state == Pillow::HttpConnection::ReceivingHeaders)
