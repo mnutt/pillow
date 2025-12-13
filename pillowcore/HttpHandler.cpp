@@ -30,7 +30,7 @@ HttpHandlerStack::HttpHandlerStack(QObject *parent)
 
 bool HttpHandlerStack::handleRequest(Pillow::HttpConnection *connection)
 {
-	foreach (QObject* object, children())
+	for (QObject* object : children())
 	{
 		HttpHandler* handler = qobject_cast<HttpHandler*>(object);
 
@@ -133,7 +133,7 @@ HttpHandlerLog::HttpHandlerLog(QIODevice *device, QObject *parent)
 
 HttpHandlerLog::~HttpHandlerLog()
 {
-	foreach (RequestInfo* info, _requestInfoMap)
+	for (RequestInfo* info : std::as_const(_requestInfoMap))
 		delete info;
 }
 

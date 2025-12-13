@@ -401,7 +401,7 @@ bool Pillow::HttpClient::redirected() const
 
 QByteArray Pillow::HttpClient::redirectionLocation() const
 {
-	foreach (const Pillow::HttpHeader &header, headers())
+	for (const Pillow::HttpHeader &header : headers())
 	{
 		if (Pillow::ByteArrayHelpers::asciiEqualsCaseInsensitive(header.first, Pillow::LowerCaseToken("location")))
 			return header.second;
@@ -794,7 +794,7 @@ namespace Pillow
 			//
 			// setAttribute(QNetworkRequest::HttpReasonPhraseAttribute, ...);
 
-			foreach (const Pillow::HttpHeader &header, _client->headers())
+			for (const Pillow::HttpHeader &header : _client->headers())
 			{
 				setRawHeader(header.first, header.second);
 
@@ -923,7 +923,7 @@ QNetworkReply *Pillow::NetworkAccessManager::createRequest(QNetworkAccessManager
 	Pillow::NetworkReply *reply = new Pillow::NetworkReply(client, op, request);
 
 	Pillow::HttpHeaderCollection headers;
-	foreach (const QByteArray &headerName, request.rawHeaderList())
+	for (const QByteArray &headerName : request.rawHeaderList())
 		headers << Pillow::HttpHeader(headerName, request.rawHeader(headerName));
 
 //	headers << Pillow::HttpHeader("Accept-Encoding", "gzip");

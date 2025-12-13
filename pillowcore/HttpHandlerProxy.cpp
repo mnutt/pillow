@@ -40,7 +40,7 @@ bool Pillow::HttpHandlerProxy::handleRequest(Pillow::HttpConnection *request)
 	if (!request->requestFragment().isEmpty()) targetUrl.setFragment(request->requestFragment());
 
 	QNetworkRequest proxiedRequest(targetUrl);
-	foreach (const Pillow::HttpHeader& header, request->requestHeaders())
+	for (const Pillow::HttpHeader& header : request->requestHeaders())
 		proxiedRequest.setRawHeader(header.first, header.second);
 
 	createPipe(request, createProxiedReply(request, proxiedRequest));
@@ -187,7 +187,7 @@ QNetworkReply * Pillow::ElasticNetworkAccessManager::createRequest(QNetworkAcces
 {
 	// Find the first available child QNetworkAccessManager.
 	QNetworkAccessManager* nam = NULL;
-	foreach (QObject* child, children())
+	for (QObject* child : children())
 	{
 		if ((nam = qobject_cast<QNetworkAccessManager*>(child)))
 		{
