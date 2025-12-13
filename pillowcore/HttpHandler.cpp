@@ -133,21 +133,30 @@ HttpHandlerLog::HttpHandlerLog(QIODevice *device, QObject *parent)
 
 HttpHandlerLog::~HttpHandlerLog()
 {
-	foreach (QElapsedTimer* timer, _requestTimerMap)
-		delete timer;
+	foreach (RequestInfo* info, _requestInfoMap)
+		delete info;
 }
 
 bool HttpHandlerLog::handleRequest(Pillow::HttpConnection *connection)
 {
-	QElapsedTimer* timer = _requestTimerMap.value(connection, NULL);
-	if (timer == NULL)
+	RequestInfo* info = _requestInfoMap.value(connection, NULL);
+	if (info == NULL)
 	{
-		timer = _requestTimerMap[connection] = new QElapsedTimer();
+		info = _requestInfoMap[connection] = new RequestInfo();
 		connect(connection, SIGNAL(requestCompleted(Pillow::HttpConnection*)), this, SLOT(requestCompleted(Pillow::HttpConnection*)));
 		connect(connection, SIGNAL(closed(Pillow::HttpConnection*)), this, SLOT(requestClosed(Pillow::HttpConnection*)));
 		connect(connection, SIGNAL(destroyed(QObject*)), this, SLOT(requestDestroyed(QObject*)));
 	}
-	timer->start();
+	info->timer.start();
+	// Cache request info - the connection's buffer may be invalidated after requestCompleted.
+	// We must force deep copies since the connection's fields use setRawData() pointing
+	// into a buffer that will be modified/cleared.
+	const QByteArray& method = connection->requestMethod();
+	const QByteArray& uri = connection->requestUri();
+	const QByteArray& httpVersion = connection->requestHttpVersion();
+	info->method = QByteArray(method.constData(), method.size());
+	info->uri = QByteArray(uri.constData(), uri.size());
+	info->httpVersion = QByteArray(httpVersion.constData(), httpVersion.size());
 
 	if (_mode == LogCompletedRequests)
 	{
@@ -158,7 +167,7 @@ bool HttpHandlerLog::handleRequest(Pillow::HttpConnection *connection)
 		QString logEntry = QString("[BEGIN] %1 - - [%2] \"%3 %4 %5\" - - -")
 				.arg(connection->remoteAddress().toString())
 				.arg(QDateTime::currentDateTime().toString("dd/MMM/yyyy hh:mm:ss"))
-				.arg(QString(connection->requestMethod())).arg(QString(connection->requestUri())).arg(QString(connection->requestHttpVersion()));
+				.arg(QString(info->method)).arg(QString(info->uri)).arg(QString(info->httpVersion));
 
 		log(logEntry);
 	}
@@ -168,16 +177,16 @@ bool HttpHandlerLog::handleRequest(Pillow::HttpConnection *connection)
 
 void HttpHandlerLog::requestCompleted(Pillow::HttpConnection *connection)
 {
-	QElapsedTimer* timer = _requestTimerMap.value(connection, NULL);
-	if (timer)
+	RequestInfo* info = _requestInfoMap.value(connection, NULL);
+	if (info)
 	{
 		const char* formatString = (_mode == LogCompletedRequests) ? "%1 - - [%2] \"%3 %4 %5\" %6 %7 %8" : "[ END ] %1 - - [%2] \"%3 %4 %5\" %6 %7 %8";
 
-		qint64 elapsed = timer->elapsed();
+		qint64 elapsed = info->timer.elapsed();
 		QString logEntry = QString(formatString)
 				.arg(connection->remoteAddress().toString())
 				.arg(QDateTime::currentDateTime().toString("dd/MMM/yyyy hh:mm:ss"))
-				.arg(QString(connection->requestMethod())).arg(QString(connection->requestUri())).arg(QString(connection->requestHttpVersion()))
+				.arg(QString(info->method)).arg(QString(info->uri)).arg(QString(info->httpVersion))
 				.arg(connection->responseStatusCode()).arg(connection->responseContentLength())
 				.arg(elapsed / 1000.0, 3, 'f', 3);
 
@@ -187,16 +196,16 @@ void HttpHandlerLog::requestCompleted(Pillow::HttpConnection *connection)
 
 void HttpHandlerLog::requestClosed(HttpConnection *connection)
 {
-	QElapsedTimer* timer = _requestTimerMap.value(connection, NULL);
-	if (timer && _mode == TraceRequests)
+	RequestInfo* info = _requestInfoMap.value(connection, NULL);
+	if (info && _mode == TraceRequests)
 	{
 		const char* formatString = "[CLOSE] %1 - - [%2] \"%3 %4 %5\" %6 %7 %8";
 
-		qint64 elapsed = timer->elapsed();
+		qint64 elapsed = info->timer.elapsed();
 		QString logEntry = QString(formatString)
 				.arg(connection->remoteAddress().toString())
 				.arg(QDateTime::currentDateTime().toString("dd/MMM/yyyy hh:mm:ss"))
-				.arg(QString(connection->requestMethod())).arg(QString(connection->requestUri())).arg(QString(connection->requestHttpVersion()))
+				.arg(QString(info->method)).arg(QString(info->uri)).arg(QString(info->httpVersion))
 				.arg(connection->responseStatusCode()).arg(connection->responseContentLength())
 				.arg(elapsed / 1000.0, 3, 'f', 3);
 
@@ -207,8 +216,8 @@ void HttpHandlerLog::requestClosed(HttpConnection *connection)
 void HttpHandlerLog::requestDestroyed(QObject *r)
 {
 	HttpConnection* connection = static_cast<HttpConnection*>(r);
-	delete _requestTimerMap.value(connection, NULL);
-	_requestTimerMap.remove(connection);
+	delete _requestInfoMap.value(connection, NULL);
+	_requestInfoMap.remove(connection);
 }
 
 void HttpHandlerLog::log(const QString &entry)

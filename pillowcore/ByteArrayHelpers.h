@@ -105,15 +105,21 @@ namespace Pillow
 	{
 		inline void setFromRawDataAndNullterm(QByteArray& target, char* data, int start, int length)
 		{
-			// Make a deep copy to avoid memory corruption from null termination
-			// This is safer than the raw data approach for Qt6
+			// This function sets target to reference data within an existing buffer (zero-copy)
+			// and null-terminates the string in place. This is safe because:
+			// 1. The buffer is owned by the caller and has space for the null terminator
+			// 2. The null terminator overwrites data that is no longer needed after parsing
+			//
+			// In Qt6, setRawData() works the same as Qt5 - it references external data
+			// without copying. Any modification to the QByteArray triggers a deep copy.
 			if (length == 0)
 			{
-				target = QByteArray();
+				target.setRawData("", 0);
 			}
 			else
 			{
-				target = QByteArray(data + start, length);
+				target.setRawData(data + start, length);
+				*(data + start + length) = 0; // Null terminate the string.
 			}
 		}
 

@@ -10,12 +10,14 @@
 #ifndef QHASH_H
 #include <QtCore/QHash>
 #endif // QHASH_H
+#ifndef QELAPSEDTIMER_H
+#include <QtCore/QElapsedTimer>
+#endif // QELAPSEDTIMER_H
 #ifdef Q_COMPILER_LAMBDA
 #include <functional>
 #endif //
 
 class QIODevice;
-class QElapsedTimer;
 
 namespace Pillow
 {
@@ -137,6 +139,16 @@ namespace Pillow
 			TraceRequests         // Log requests when they are started until when they complete.
 		};
 
+	private:
+		// Cached request info for logging after connection buffer may be invalidated
+		struct RequestInfo
+		{
+			QElapsedTimer timer;
+			QByteArray method;
+			QByteArray uri;
+			QByteArray httpVersion;
+		};
+
 	public:
 		HttpHandlerLog(QObject* parent = 0);
 		HttpHandlerLog(Mode mode, QIODevice* device, QObject* parent = 0);
@@ -160,7 +172,7 @@ namespace Pillow
 		void log(const QString& entry);
 
 	private:
-		QHash<Pillow::HttpConnection*, QElapsedTimer*> _requestTimerMap;
+		QHash<Pillow::HttpConnection*, RequestInfo*> _requestInfoMap;
 		Mode _mode;
 		QPointer<QIODevice> _device;
 	};
