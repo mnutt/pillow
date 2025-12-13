@@ -36,8 +36,8 @@ void HttpsServer::incomingConnection(qintptr socketDescriptor)
 	{
 		sslSocket->setPrivateKey(privateKey());
 		sslSocket->setLocalCertificate(certificate());
-		connect(sslSocket, SIGNAL(sslErrors(QList<QSslError>)), this, SLOT(sslSocket_sslErrors(QList<QSslError>)));
-		connect(sslSocket, SIGNAL(encrypted()), this, SLOT(sslSocket_encrypted()));
+		connect(sslSocket, &QSslSocket::sslErrors, this, &HttpsServer::sslSocket_sslErrors);
+		connect(sslSocket, &QSslSocket::encrypted, this, &HttpsServer::sslSocket_encrypted);
 		sslSocket->startServerEncryption();
 		// Don't initialize the HttpConnection yet - wait for encrypted() signal
 	}

@@ -174,7 +174,7 @@ inline void Pillow::HttpConnectionPrivate::initialize()
 	// Enter the initial working state and schedule processing of any data already available on the device.
 	transitionToReceivingHeaders();
 	if (_inputDevice && _inputDevice->bytesAvailable() > 0)
-		QTimer::singleShot(0, q_ptr, SLOT(processInput()));
+		QTimer::singleShot(0, q_ptr, &HttpConnection::processInput);
 }
 
 inline void Pillow::HttpConnectionPrivate::processInput()
@@ -420,7 +420,7 @@ inline void Pillow::HttpConnectionPrivate::transitionToFlushing()
 
 	drain(); // Will transition to closed also if there was no data at all to flush.
 	if (_state == Pillow::HttpConnection::Flushing) // A first flush was not enough. Schedule more flushes.
-		QObject::connect(_outputDevice, SIGNAL(bytesWritten(qint64)), q_ptr, SLOT(drain()));
+		QObject::connect(_outputDevice, &QIODevice::bytesWritten, q_ptr, &HttpConnection::drain);
 }
 
 inline void Pillow::HttpConnectionPrivate::transitionToClosed()
@@ -696,19 +696,18 @@ void Pillow::HttpConnection::initialize(QIODevice* inputDevice, QIODevice* outpu
 	{
 		d_ptr->_inputDevice = inputDevice;
 
-		connect(d_ptr->_inputDevice, SIGNAL(readyRead()), this, SLOT(processInput()));
+		connect(d_ptr->_inputDevice, &QIODevice::readyRead, this, &HttpConnection::processInput);
 
-		if (qobject_cast<QAbstractSocket*>(d_ptr->_inputDevice))
-			connect(d_ptr->_inputDevice, SIGNAL(disconnected()), this, SLOT(close()));
-		else if (qobject_cast<QLocalSocket*>(d_ptr->_inputDevice))
+		if (QAbstractSocket* socket = qobject_cast<QAbstractSocket*>(d_ptr->_inputDevice))
+			connect(socket, &QAbstractSocket::disconnected, this, &HttpConnection::close);
+		else if (QLocalSocket* localSocket = qobject_cast<QLocalSocket*>(d_ptr->_inputDevice))
 		{
-			connect(d_ptr->_inputDevice, SIGNAL(disconnected()), this, SLOT(close()));
-			connect(d_ptr->_inputDevice, SIGNAL(aboutToClose()), this, SLOT(close()));
-			connect(d_ptr->_inputDevice, SIGNAL(readChannelFinished()), this, SLOT(close()));
-
+			connect(localSocket, &QLocalSocket::disconnected, this, &HttpConnection::close);
+			connect(d_ptr->_inputDevice, &QIODevice::aboutToClose, this, &HttpConnection::close);
+			connect(localSocket, &QLocalSocket::readChannelFinished, this, &HttpConnection::close);
 		}
 		else
-			connect(d_ptr->_inputDevice, SIGNAL(aboutToClose()), this, SLOT(close()));
+			connect(d_ptr->_inputDevice, &QIODevice::aboutToClose, this, &HttpConnection::close);
 	}
 
 	d_ptr->_outputDevice = outputDevice;

@@ -342,13 +342,9 @@ Pillow::HttpClient::HttpClient(QObject *parent)
 	: QObject(parent), _responsePending(false), _error(NoError), _keepAliveTimeout(-1), _contentDecoder(0)
 {
 	_device = new QTcpSocket(this);
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-	connect(_device, SIGNAL(errorOccurred(QAbstractSocket::SocketError)), this, SLOT(device_error(QAbstractSocket::SocketError)));
-#else
-	connect(_device, SIGNAL(error(QAbstractSocket::SocketError)), this, SLOT(device_error(QAbstractSocket::SocketError)));
-#endif
-	connect(_device, SIGNAL(connected()), this, SLOT(device_connected()));
-	connect(_device, SIGNAL(readyRead()), this, SLOT(device_readyRead()));
+	connect(_device, &QAbstractSocket::errorOccurred, this, &HttpClient::device_error);
+	connect(_device, &QAbstractSocket::connected, this, &HttpClient::device_connected);
+	connect(_device, &QIODevice::readyRead, this, &HttpClient::device_readyRead);
 	_requestWriter.setDevice(_device);
 	_keepAliveTimeoutTimer.invalidate();
 }
@@ -415,7 +411,7 @@ QByteArray Pillow::HttpClient::consumeContent()
 	_content = QByteArray();
 
 	if (responsePending() && _device->bytesAvailable())
-		QTimer::singleShot(0, this, SLOT(device_readyRead()));
+		QTimer::singleShot(0, this, &HttpClient::device_readyRead);
 
 	return c;
 }
@@ -759,9 +755,9 @@ namespace Pillow
 		NetworkReply(Pillow::HttpClient *client, QNetworkAccessManager::Operation op, const QNetworkRequest& request)
 			:_client(client), _contentPos(0)
 		{
-			connect(client, SIGNAL(headersCompleted()), this, SLOT(client_headersCompleted()));
-			connect(client, SIGNAL(contentReadyRead()), this, SLOT(client_contentReadyRead()));
-			connect(client, SIGNAL(finished()), this, SLOT(client_finished()));
+			connect(client, &HttpClient::headersCompleted, this, &NetworkReply::client_headersCompleted);
+			connect(client, &HttpClient::contentReadyRead, this, &NetworkReply::client_contentReadyRead);
+			connect(client, &HttpClient::finished, this, &NetworkReply::client_finished);
 
 			setOperation(op);
 			setRequest(request);
@@ -917,7 +913,7 @@ QNetworkReply *Pillow::NetworkAccessManager::createRequest(QNetworkAccessManager
 	{
 		client = new Pillow::HttpClient(this);
 		_clientToUrlMap.insert(client, urlAuthority);
-		connect(client, SIGNAL(finished()), this, SLOT(client_finished()), Qt::DirectConnection);
+		connect(client, &HttpClient::finished, this, &NetworkAccessManager::client_finished, Qt::DirectConnection);
 	}
 
 	Pillow::NetworkReply *reply = new Pillow::NetworkReply(client, op, request);

@@ -101,19 +101,21 @@ void HttpRequest::initialize(QIODevice* inputDevice, QIODevice* outputDevice)
 	{
 		_inputDevice = inputDevice;
 
-		connect(_inputDevice, SIGNAL(readyRead()), this, SLOT(processInput()));
+		connect(_inputDevice, &QIODevice::readyRead, this, &HttpRequest::processInput);
 
-		if (qobject_cast<QAbstractSocket*>(_inputDevice) || qobject_cast<QLocalSocket*>(_inputDevice))
-			connect(_inputDevice, SIGNAL(disconnected()), this, SLOT(close()));
+		if (QAbstractSocket* socket = qobject_cast<QAbstractSocket*>(_inputDevice))
+			connect(socket, &QAbstractSocket::disconnected, this, &HttpRequest::close);
+		else if (QLocalSocket* localSocket = qobject_cast<QLocalSocket*>(_inputDevice))
+			connect(localSocket, &QLocalSocket::disconnected, this, &HttpRequest::close);
 		else
-			connect(_inputDevice, SIGNAL(aboutToClose()), this, SLOT(close()));
+			connect(_inputDevice, &QIODevice::aboutToClose, this, &HttpRequest::close);
 	}
 
 	_outputDevice = outputDevice;
 
 	// Enter the initial working state and schedule processing of any data already available on the device.
 	transitionToReceivingHeaders();
-	if (_inputDevice->bytesAvailable() > 0) QTimer::singleShot(0, this, SLOT(processInput()));
+	if (_inputDevice->bytesAvailable() > 0) QTimer::singleShot(0, this, &HttpRequest::processInput);
 }
 
 void HttpRequest::processInput()
@@ -304,7 +306,7 @@ void HttpRequest::transitionToFlushing()
 
 	drain(); // Will transition to closed also if there was no data at all to flush.
 	if (_state == Flushing) // A first flush was not enough. Schedule more flushes.
-		connect(_outputDevice, SIGNAL(bytesWritten(qint64)), this, SLOT(drain()));
+		connect(_outputDevice, &QIODevice::bytesWritten, this, &HttpRequest::drain);
 }
 
 void HttpRequest::transitionToClosed()

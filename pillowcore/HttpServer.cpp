@@ -36,8 +36,16 @@ namespace Pillow
 		HttpConnection* createConnection()
 		{
 			HttpConnection* connection = new HttpConnection(q_ptr);
-			QObject::connect(connection, SIGNAL(requestReady(Pillow::HttpConnection*)), q_ptr, SIGNAL(requestReady(Pillow::HttpConnection*)));
-			QObject::connect(connection, SIGNAL(closed(Pillow::HttpConnection*)), q_ptr, SLOT(connection_closed(Pillow::HttpConnection*)));
+			if (HttpServer* server = qobject_cast<HttpServer*>(q_ptr))
+			{
+				QObject::connect(connection, &HttpConnection::requestReady, server, &HttpServer::requestReady);
+				QObject::connect(connection, &HttpConnection::closed, server, &HttpServer::connection_closed);
+			}
+			else if (HttpLocalServer* localServer = qobject_cast<HttpLocalServer*>(q_ptr))
+			{
+				QObject::connect(connection, &HttpConnection::requestReady, localServer, &HttpLocalServer::requestReady);
+				QObject::connect(connection, &HttpConnection::closed, localServer, &HttpLocalServer::connection_closed);
+			}
 			return connection;
 		}
 
@@ -117,14 +125,14 @@ HttpLocalServer::HttpLocalServer(QObject *parent)
 	: QLocalServer(parent), d_ptr(new HttpServerPrivate(this))
 {
 	setMaxPendingConnections(128);
-	connect(this, SIGNAL(newConnection()), this, SLOT(this_newConnection()));
+	connect(this, &QLocalServer::newConnection, this, &HttpLocalServer::this_newConnection);
 }
 
 HttpLocalServer::HttpLocalServer(const QString& serverName, QObject *parent /*= 0*/)
 	: QLocalServer(parent), d_ptr(new HttpServerPrivate(this))
 {
 	setMaxPendingConnections(128);
-	connect(this, SIGNAL(newConnection()), this, SLOT(this_newConnection()));
+	connect(this, &QLocalServer::newConnection, this, &HttpLocalServer::this_newConnection);
 
 	if (!listen(serverName))
 		qWarning() << QString("HttpLocalServer::HttpLocalServer: could not bind to %1 for listening: %2").arg(serverName).arg(errorString());

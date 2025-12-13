@@ -143,9 +143,9 @@ bool HttpHandlerLog::handleRequest(Pillow::HttpConnection *connection)
 	if (info == NULL)
 	{
 		info = _requestInfoMap[connection] = new RequestInfo();
-		connect(connection, SIGNAL(requestCompleted(Pillow::HttpConnection*)), this, SLOT(requestCompleted(Pillow::HttpConnection*)));
-		connect(connection, SIGNAL(closed(Pillow::HttpConnection*)), this, SLOT(requestClosed(Pillow::HttpConnection*)));
-		connect(connection, SIGNAL(destroyed(QObject*)), this, SLOT(requestDestroyed(QObject*)));
+		connect(connection, &HttpConnection::requestCompleted, this, &HttpHandlerLog::requestCompleted);
+		connect(connection, &HttpConnection::closed, this, &HttpHandlerLog::requestClosed);
+		connect(connection, &QObject::destroyed, this, &HttpHandlerLog::requestDestroyed);
 	}
 	info->timer.start();
 	// Cache request info - the connection's buffer may be invalidated after requestCompleted.
@@ -339,7 +339,7 @@ bool HttpHandlerFile::handleRequest(Pillow::HttpConnection *connection)
 			HttpHandlerFileTransfer* transfer = new HttpHandlerFileTransfer(file, connection, bufferSize());
 			file->setParent(transfer);
 			//transfer->setParent(this);
-			connect(transfer, SIGNAL(finished()), transfer, SLOT(deleteLater()));
+			connect(transfer, &HttpHandlerFileTransfer::finished, transfer, &QObject::deleteLater);
 			transfer->writeNextPayload();
 		}
 	}
@@ -360,11 +360,11 @@ HttpHandlerFileTransfer::HttpHandlerFileTransfer(QIODevice *sourceDevice, HttpCo
 		qWarning() << "HttpHandlerFileTransfer::HttpHandlerFileTransfer: requesting a buffer size of" << bufferSize << "bytes. Correcting to" << _bufferSize << "bytes.";
 	}
 
-	connect(sourceDevice, SIGNAL(destroyed()), this, SLOT(deleteLater()));
-	connect(_connection, SIGNAL(requestCompleted(Pillow::HttpConnection*)), this, SLOT(deleteLater()));
-	connect(_connection, SIGNAL(closed(Pillow::HttpConnection*)), this, SLOT(deleteLater()));
-	connect(_connection, SIGNAL(destroyed()), this, SLOT(deleteLater()));
-	connect(_connection->outputDevice(), SIGNAL(bytesWritten(qint64)), this, SLOT(writeNextPayload()), Qt::QueuedConnection);
+	connect(sourceDevice, &QObject::destroyed, this, &QObject::deleteLater);
+	connect(_connection, &HttpConnection::requestCompleted, this, &QObject::deleteLater);
+	connect(_connection, &HttpConnection::closed, this, &QObject::deleteLater);
+	connect(_connection, &QObject::destroyed, this, &QObject::deleteLater);
+	connect(_connection->outputDevice(), &QIODevice::bytesWritten, this, &HttpHandlerFileTransfer::writeNextPayload, Qt::QueuedConnection);
 }
 
 void HttpHandlerFileTransfer::writeNextPayload()

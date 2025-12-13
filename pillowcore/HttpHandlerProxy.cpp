@@ -77,12 +77,12 @@ Pillow::HttpHandlerProxyPipe::HttpHandlerProxyPipe(Pillow::HttpConnection *reque
 	: _request(request), _proxiedReply(proxiedReply), _headersSent(false), _broken(false)
 {
 	// Make sure we stop piping data if the client request finishes early or the proxied request sends too much.
-	connect(request, SIGNAL(requestCompleted(Pillow::HttpConnection*)), this, SLOT(teardown()));
-	connect(request, SIGNAL(closed(Pillow::HttpConnection*)), this, SLOT(teardown()));
-	connect(request, SIGNAL(destroyed()), this, SLOT(teardown()));
-	connect(proxiedReply, SIGNAL(readyRead()), this, SLOT(proxiedReply_readyRead()));
-	connect(proxiedReply, SIGNAL(finished()), this, SLOT(proxiedReply_finished()));
-	connect(proxiedReply, SIGNAL(destroyed()), this, SLOT(teardown()));
+	connect(request, &HttpConnection::requestCompleted, this, &HttpHandlerProxyPipe::teardown);
+	connect(request, &HttpConnection::closed, this, &HttpHandlerProxyPipe::teardown);
+	connect(request, &QObject::destroyed, this, &HttpHandlerProxyPipe::teardown);
+	connect(proxiedReply, &QIODevice::readyRead, this, &HttpHandlerProxyPipe::proxiedReply_readyRead);
+	connect(proxiedReply, &QNetworkReply::finished, this, &HttpHandlerProxyPipe::proxiedReply_finished);
+	connect(proxiedReply, &QObject::destroyed, this, &HttpHandlerProxyPipe::teardown);
 }
 
 Pillow::HttpHandlerProxyPipe::~HttpHandlerProxyPipe()
