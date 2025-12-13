@@ -126,14 +126,14 @@ void HttpHandlerSimpleRouter::addRoute(const QByteArray& method, const QString &
 
 void HttpHandlerSimpleRouter::addRoute(const QByteArray& method, const QString& path, QObject* object, const char* member)
 {
-	if (object == NULL)
+	if (object == nullptr)
 	{
-		qWarning() << "HttpHandlerSimpleRouter::addRoute: NULL target object specified while adding route for" << path << "- not adding route";
+		qWarning() << "HttpHandlerSimpleRouter::addRoute: null target object specified while adding route for" << path << "- not adding route";
 		return;
 	}
-	else if (member == NULL || member[0] == 0)
+	else if (member == nullptr || member[0] == 0)
 	{
-		qWarning() << "HttpHandlerSimpleRouter::addRoute: NULL or empty member specified while adding route for" << path << "- not adding route";
+		qWarning() << "HttpHandlerSimpleRouter::addRoute: null or empty member specified while adding route for" << path << "- not adding route";
 		return;
 	}
 

@@ -490,7 +490,7 @@ inline void Pillow::HttpConnectionPrivate::writeHeaders(int statusCode, const Ht
 	}
 
 	const char* statusCodeAndMessage = HttpProtocol::StatusCodes::getStatusCodeAndMessage(statusCode);
-	if (statusCodeAndMessage == NULL)
+	if (statusCodeAndMessage == nullptr)
 	{
 		// Huh? Trying to send a bad status code...
 		qWarning() << "HttpConnection::writeHeaders:" << statusCode << "is not a valid Http status code. Using 500 Internal Server Error instead.";

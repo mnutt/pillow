@@ -38,7 +38,7 @@ namespace Pillow
 		void addRoute(const QByteArray& method, const QString& path, const std::function<void(Pillow::HttpConnection*)>& func);
 #endif // Q_COMPILER_LAMBDA
 
-		QRegularExpression pathToRegExp(const QString& path, QStringList* outParamNames = NULL);
+		QRegularExpression pathToRegExp(const QString& path, QStringList* outParamNames = nullptr);
 
 		RoutingErrorAction unmatchedRequestAction() const;
 		void setUnmatchedRequestAction(RoutingErrorAction action);

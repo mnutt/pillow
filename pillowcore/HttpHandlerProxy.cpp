@@ -46,7 +46,7 @@ bool Pillow::HttpHandlerProxy::handleRequest(Pillow::HttpConnection *request)
 
 QNetworkReply * Pillow::HttpHandlerProxy::createProxiedReply(Pillow::HttpConnection *request, QNetworkRequest proxiedRequest)
 {
-	QBuffer* requestContentBuffer = NULL;
+	QBuffer* requestContentBuffer = nullptr;
 	if (request->requestContent().size() > 0)
 	{
 		requestContentBuffer = new QBuffer(&(const_cast<QByteArray&>(request->requestContent())));
@@ -91,16 +91,16 @@ void Pillow::HttpHandlerProxyPipe::teardown()
 
 	if (_request)
 	{
-		disconnect(_request, NULL, this, NULL);
-		_request = NULL;
+		disconnect(_request, nullptr, this, nullptr);
+		_request = nullptr;
 	}
 
 	if (_proxiedReply)
 	{
-		disconnect(_proxiedReply, NULL, this, NULL);
+		disconnect(_proxiedReply, nullptr, this, nullptr);
 		if (qobject_cast<QNetworkReply*>(_proxiedReply))
 			_proxiedReply->deleteLater();
-		_proxiedReply = NULL;
+		_proxiedReply = nullptr;
 	}
 
 	deleteLater();
@@ -182,7 +182,7 @@ Pillow::ElasticNetworkAccessManager::~ElasticNetworkAccessManager()
 QNetworkReply * Pillow::ElasticNetworkAccessManager::createRequest(QNetworkAccessManager::Operation op, const QNetworkRequest &request, QIODevice *outgoingData)
 {
 	// Find the first available child QNetworkAccessManager.
-	QNetworkAccessManager* nam = NULL;
+	QNetworkAccessManager* nam = nullptr;
 	for (QObject* child : children())
 	{
 		if ((nam = qobject_cast<QNetworkAccessManager*>(child)))
@@ -190,11 +190,11 @@ QNetworkReply * Pillow::ElasticNetworkAccessManager::createRequest(QNetworkAcces
 			if (nam->children().size() < 6)
 				break; // Found an available one.
 			else
-				nam = NULL; // This one is not available.
+				nam = nullptr; // This one is not available.
 		}
 	}
 
-	if (nam == NULL)
+	if (nam == nullptr)
 	{
 		// Did not find an available manager. Spawn a new one.
 		nam = new QNetworkAccessManager(this);

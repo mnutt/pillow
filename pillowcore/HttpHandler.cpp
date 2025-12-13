@@ -139,8 +139,8 @@ HttpHandlerLog::~HttpHandlerLog()
 
 bool HttpHandlerLog::handleRequest(Pillow::HttpConnection *connection)
 {
-	RequestInfo* info = _requestInfoMap.value(connection, NULL);
-	if (info == NULL)
+	RequestInfo* info = _requestInfoMap.value(connection, nullptr);
+	if (info == nullptr)
 	{
 		info = _requestInfoMap[connection] = new RequestInfo();
 		connect(connection, &HttpConnection::requestCompleted, this, &HttpHandlerLog::requestCompleted);
@@ -177,7 +177,7 @@ bool HttpHandlerLog::handleRequest(Pillow::HttpConnection *connection)
 
 void HttpHandlerLog::requestCompleted(Pillow::HttpConnection *connection)
 {
-	RequestInfo* info = _requestInfoMap.value(connection, NULL);
+	RequestInfo* info = _requestInfoMap.value(connection, nullptr);
 	if (info)
 	{
 		const char* formatString = (_mode == LogCompletedRequests) ? "%1 - - [%2] \"%3 %4 %5\" %6 %7 %8" : "[ END ] %1 - - [%2] \"%3 %4 %5\" %6 %7 %8";
@@ -196,7 +196,7 @@ void HttpHandlerLog::requestCompleted(Pillow::HttpConnection *connection)
 
 void HttpHandlerLog::requestClosed(HttpConnection *connection)
 {
-	RequestInfo* info = _requestInfoMap.value(connection, NULL);
+	RequestInfo* info = _requestInfoMap.value(connection, nullptr);
 	if (info && _mode == TraceRequests)
 	{
 		const char* formatString = "[CLOSE] %1 - - [%2] \"%3 %4 %5\" %6 %7 %8";
@@ -216,13 +216,13 @@ void HttpHandlerLog::requestClosed(HttpConnection *connection)
 void HttpHandlerLog::requestDestroyed(QObject *r)
 {
 	HttpConnection* connection = static_cast<HttpConnection*>(r);
-	delete _requestInfoMap.value(connection, NULL);
+	delete _requestInfoMap.value(connection, nullptr);
 	_requestInfoMap.remove(connection);
 }
 
 void HttpHandlerLog::log(const QString &entry)
 {
-	if (_device == NULL)
+	if (_device == nullptr)
 		qDebug() << qPrintable(entry);
 	else
 	{
@@ -369,7 +369,7 @@ HttpHandlerFileTransfer::HttpHandlerFileTransfer(QIODevice *sourceDevice, HttpCo
 
 void HttpHandlerFileTransfer::writeNextPayload()
 {
-	if (_sourceDevice == NULL || _connection == NULL || _connection->outputDevice() == NULL) return;
+	if (_sourceDevice == nullptr || _connection == nullptr || _connection->outputDevice() == nullptr) return;
 
 	qint64 bytesToRead = _bufferSize - _connection->outputDevice()->bytesToWrite();
 	if (bytesToRead <= 0) return;

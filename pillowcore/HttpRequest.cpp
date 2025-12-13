@@ -63,18 +63,18 @@ static const QByteArray keepAliveToken("keep-alive");
 static const QByteArray xMixedReplaceToken("Movable-[^_^]-Ink");
 
 HttpRequest::HttpRequest(QObject* parent /*= 0*/)
-	: QObject(parent), _inputDevice(NULL), _outputDevice(NULL), _state(Uninitialized)
+	: QObject(parent), _inputDevice(nullptr), _outputDevice(nullptr), _state(Uninitialized)
 {
 }
 
 HttpRequest::HttpRequest(QIODevice* inputOutputDevice, QObject* parent /* = 0 */)
-	: QObject(parent), _inputDevice(NULL), _outputDevice(NULL), _state(Uninitialized)
+	: QObject(parent), _inputDevice(nullptr), _outputDevice(nullptr), _state(Uninitialized)
 {
 	initialize(inputOutputDevice, inputOutputDevice);
 }
 
 HttpRequest::HttpRequest(QIODevice* inputDevice, QIODevice* outputDevice, QObject* parent /*= 0*/)
-	: QObject(parent), _inputDevice(NULL), _outputDevice(NULL), _state(Uninitialized)
+	: QObject(parent), _inputDevice(nullptr), _outputDevice(nullptr), _state(Uninitialized)
 {
 	initialize(inputDevice, outputDevice);
 }
@@ -318,9 +318,9 @@ void HttpRequest::transitionToClosed()
 	if (_outputDevice && (_inputDevice != _outputDevice) && _outputDevice->isOpen()) _outputDevice->close();
 	emit closed(this);
 
-	disconnect(_inputDevice, NULL, this, NULL);
-	_inputDevice = NULL;
-	_outputDevice = NULL;
+	disconnect(_inputDevice, nullptr, this, nullptr);
+	_inputDevice = nullptr;
+	_outputDevice = nullptr;
 }
 
 void HttpRequest::flush()
@@ -417,7 +417,7 @@ void HttpRequest::writeHeaders(int statusCode, const HttpHeaderCollection& heade
 	}
 
 	const char* statusCodeAndMessage = HttpProtocol::StatusCodes::getStatusCodeAndMessage(statusCode);
-	if (statusCodeAndMessage == NULL)
+	if (statusCodeAndMessage == nullptr)
 	{
 		// Huh? Trying to send a bad status code...
 		qWarning() << "HttpRequest::writeHeaders:" << statusCode << "is not a valid Http status code.";
