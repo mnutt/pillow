@@ -67,6 +67,30 @@ Integrate:
 - Link to "libpillowcore.a" or "pillowcore.lib".
 - Add /path/to/pillow/pillowcore to your headers include path.
 
+## Development
+
+### Code Formatting
+
+This project uses [clang-format](https://clang.llvm.org/docs/ClangFormat.html) to maintain consistent code style. A `.clang-format` configuration file is included in the repository.
+
+**Requirements:**
+- clang-format must be installed on your system
+
+**Installation:**
+- macOS: `brew install clang-format`
+- Ubuntu/Debian: `apt install clang-format`
+- Windows: Install via LLVM or use the Visual Studio plugin
+
+A pre-commit hook is available to automatically format staged C++ files before each commit. To install it, run:
+```bash
+./scripts/setup-hooks.sh
+```
+
+To manually format a file:
+```bash
+clang-format -i path/to/file.cpp
+```
+
 ## License
 
 Ruby License, http://www.ruby-lang.org/en/LICENSE.txt.
